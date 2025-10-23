@@ -51,7 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let filteredLocations = [...allLocations];
         const isFiltering = activeFilters.size > 0 || searchQuery !== '';
 
-        // If not filtering, show the initial message and stop.
         if (!isFiltering) {
             locationListContainer.innerHTML = `<div class="initial-message">
                 <h3>Pilih mana-mana kategori atau gunakan 'Search Bar' di atas untuk mencari lokasi.</h3>
@@ -64,6 +63,9 @@ document.addEventListener("DOMContentLoaded", () => {
             filteredLocations = filteredLocations.filter(loc => {
                 const query = searchQuery.toLowerCase();
                 return (
+                    // --- THIS IS THE NEW LINE ---
+                    loc.number.toString().toLowerCase().includes(query) ||
+                    // --- END OF NEW LINE ---
                     loc.place.toLowerCase().includes(query) ||
                     (loc.shortForm && loc.shortForm.toLowerCase().includes(query)) ||
                     (loc.details && loc.details.toLowerCase().includes(query))
@@ -139,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 quickLinksContainer.appendChild(button);
             });
 
-            // Render the initial "call to action" message
             renderLocations();
         })
         .catch(error => {
