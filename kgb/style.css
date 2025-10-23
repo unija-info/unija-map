@@ -1,0 +1,211 @@
+:root {
+    --primary-color: #005a9c;
+    --header-bg-color: #177E89; /* New Teal Color from your image */
+    --header-text-primary: #FFFFFF; /* White for main header text */
+    --header-text-secondary: #E0E0E0; /* Light grey for subtitle */
+    --border-color: #ddd;
+    --background-color: #f9f9f9;
+    --text-color: #333;
+}
+
+/* --- UPDATED BODY STYLE --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0; /* Horizontal padding removed to allow full-width elements */
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* --- UPDATED HEADER STYLES --- */
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 15px 20px; /* Added horizontal padding for content */
+    background-color: var(--header-bg-color); /* The new background color */
+    /* border-bottom is no longer needed with a solid background */
+}
+.header-logo {
+    height: 60px;
+    width: auto;
+}
+.header-text h1 {
+    margin: 0;
+    font-size: 1.8em;
+    color: var(--header-text-primary); /* New text color */
+}
+.header-text p {
+    margin: 0;
+    color: var(--header-text-secondary); /* New subtitle color */
+    font-size: 1.1em;
+}
+/* --- END OF HEADER STYLES --- */
+
+/* --- NEW RULE TO CONSTRAIN CONTENT WIDTH --- */
+main {
+    padding: 0 20px; /* This keeps the map and directory centered */
+}
+/* --- END OF NEW RULE --- */
+
+
+#map-container {
+    max-width: 1200px;
+    margin: 20px auto 0 auto; /* Added top margin */
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+#map-container:hover {
+    transform: scale(1.02);
+}
+#map-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: block;
+}
+
+.map-description {
+    max-width: 1200px;
+    margin: 15px auto 0 auto;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+#directory {
+    max-width: 900px;
+    margin: 40px auto;
+}
+
+.controls-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+#search-bar {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1em;
+}
+.control-btn {
+    padding: 10px 20px;
+    border: none;
+    background-color: #6c757d;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+}
+.control-btn:hover {
+    background-color: #5a6268;
+}
+
+#quick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.filter-btn {
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: filter 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+}
+.filter-btn:hover {
+    filter: brightness(90%);
+}
+.filter-btn.active {
+    box-shadow: 0 0 0 3px rgba(0, 90, 156, 0.3);
+    font-weight: bold;
+}
+.filter-btn.active::after {
+    content: '×';
+    margin-left: 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.category-header {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.location-item {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+.location-item p { margin: 0 0 10px 0; }
+.location-item p:last-child { margin-bottom: 0; }
+.location-title { font-weight: bold; font-size: 1.1em; margin-top: 0; }
+.location-details { color: #555; font-style: italic; }
+.location-link a { color: var(--primary-color); text-decoration: none; font-weight: bold; }
+.location-link a:hover { text-decoration: underline; }
+
+.location-label {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    border-radius: 15px;
+    margin-bottom: 12px;
+}
+
+/* --- UPDATED FOOTER --- */
+footer {
+    text-align: center;
+    margin-top: 60px;
+    padding: 20px; /* Padding now controls internal spacing */
+    border-top: 1px solid var(--border-color);
+    color: #6c757d;
+    font-size: 0.9em;
+}
+footer p { margin: 5px 0; }
+footer a { color: var(--primary-color); }
+
+
+/* UTILITY CLASSES */
+.hidden {
+    display: none !important;
+}
+.initial-message {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6c757d;
+    background-color: #fff;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+/* Color Rules */
+.label-akademik { background-color: #e7f1ff; color: #005a9c !important; }
+.label-sukan { background-color: #8A2BE2; color: white; }
+.label-pentadbiran { background-color: #FFDEAD; color: #5d400c; }
+.label-fakulti { background-color: #FFD700; color: #5c4a00; }
+.label-ibadah { background-color: #32CD32; color: white; }
+.label-cafe-makanan { background-color: #F0E68C; color: #5c5624; }
+.label-kolej-kediaman { background-color: #D2B48C; color: #5c4927; }
+.label-aktiviti { background-color: #FF69B4; color: white; }
+.label-kesihatan { background-color: #DC143C; color: white; }
+.label-uncategorized { background-color: #778899; color: white; }

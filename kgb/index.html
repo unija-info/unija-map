@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Navigasi Kampus</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- UPDATED HEADER -->
+    <header class="site-header">
+        <img src="https://view.unija.info/media/logo/unija-info.png" alt="Unija Info Logo" class="header-logo">
+        <div class="header-text">
+            <h1>Peta Navigasi</h1>
+            <p>UniSZA Kampus Gong Badak</p>
+        </div>
+    </header>
+
+    <main>
+        <section id="map-container">
+            <a href="https://view.unija.info/map/KGB/02_Map-Unija-KGB.png" target="_blank" rel="noopener noreferrer" title="Click to view full-size map">
+                <img src="https://view.unija.info/map/KGB/02_Map-Unija-KGB.png" alt="Campus Map Illustration">
+            </a>
+            <!-- NEW MAP DESCRIPTION -->
+            <p class="map-description">
+                Setiap nombor atau huruf dalam senarai di bawah adalah rujukan kepada lokasi pada peta ini.
+                Klik pada 'View on Google Maps' untuk melihat lokasi sebenar yang tepat.
+            </p>
+        </section>
+
+        <section id="directory">
+            <h2>Location Directory</h2>
+            
+            <div class="controls-container">
+                <input type="text" id="search-bar" placeholder="Search by name, short form, or info...">
+                <!-- The 'hidden' class makes this invisible on page load -->
+                <button id="clear-filters-btn" class="control-btn hidden">Clear Selection</button>
+            </div>
+
+            <nav id="quick-links">
+                <!-- Filter buttons will be generated here by JavaScript -->
+            </nav>
+            
+            <div id="location-list">
+                <!-- The initial call-to-action message will be rendered here -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Copyright 2025 | view.unija.info</p>
+        <p>
+            Nak report apa-apa masalah atau nak kemukakan cadangan? 
+            <a href="https://t.me/unija_minbot" target="_blank" rel="noopener noreferrer">Chat Unija Minmin di Telegram</a>
+        </p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
