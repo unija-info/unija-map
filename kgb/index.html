@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peta Navigasi Kampus</title>
+
+    <!-- NEW: Importing Poppins Font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- UPDATED HEADER -->
     <header class="site-header">
         <img src="https://view.unija.info/media/logo/unija-info.png" alt="Unija Info Logo" class="header-logo">
         <div class="header-text">
@@ -22,28 +27,28 @@
             <a href="https://view.unija.info/map/KGB/02_Map-Unija-KGB.png" target="_blank" rel="noopener noreferrer" title="Click to view full-size map">
                 <img src="https://view.unija.info/map/KGB/02_Map-Unija-KGB.png" alt="Campus Map Illustration">
             </a>
-            <!-- NEW MAP DESCRIPTION -->
             <p class="map-description">
-                Setiap nombor atau huruf dalam senarai di bawah adalah rujukan kepada lokasi pada peta ini.
-                Klik pada 'View on Google Maps' untuk melihat lokasi sebenar yang tepat.
+                Setiap nombor atau huruf dalam senarai di bawah merujuk kepada lokasi pada ilustrasi peta. 
+                Gunakan pautan 'View on Google Maps' untuk melihat lokasi sebenar yang tepat.
             </p>
         </section>
 
         <section id="directory">
             <h2>Location Directory</h2>
             
-            <div class="controls-container">
-                <input type="text" id="search-bar" placeholder="Search by name, short form, or info...">
-                <!-- The 'hidden' class makes this invisible on page load -->
-                <button id="clear-filters-btn" class="control-btn hidden">Clear Selection</button>
+            <div class="search-container">
+                <input type="text" id="search-bar" placeholder="Cari mengikut nama, singkatan, info, atau nombor...">
+                <span id="clear-search-btn" class="clear-icon hidden">&times;</span>
             </div>
 
             <nav id="quick-links">
-                <!-- Filter buttons will be generated here by JavaScript -->
+                <!-- Filter buttons and the clear button will be generated here -->
             </nav>
             
+            <div id="results-count"></div>
+
             <div id="location-list">
-                <!-- The initial call-to-action message will be rendered here -->
+                <!-- Initial message or location list appears here -->
             </div>
         </section>
     </main>
@@ -55,6 +60,9 @@
             <a href="https://t.me/unija_minbot" target="_blank" rel="noopener noreferrer">Chat Unija Minmin di Telegram</a>
         </p>
     </footer>
+
+    <!-- Back to Top Button -->
+    <a href="#" id="back-to-top-btn" class="hidden" title="Kembali ke atas">↑</a>
 
     <script src="script.js"></script>
 </body>
