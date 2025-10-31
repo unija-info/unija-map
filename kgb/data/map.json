@@ -1,6 +1,6 @@
 [
   {
-    "number": "P01",
+    "number": "P1",
     "place": "CANSELORI",
     "googleMapLink": "https://maps.google.com/?q=5.401212744352429,103.08017183323453",
     "locationType": "PENTADBIRAN",
@@ -8,7 +8,7 @@
     "details": "Pejabat Pendaftar"
   },
   {
-    "number": "P02",
+    "number": "P2",
     "place": "PUSAT ALUMNI ",
     "googleMapLink": "https://maps.google.com/?q=5.4014177259252465,103.07962452441085",
     "locationType": "PENTADBIRAN",
@@ -16,7 +16,7 @@
     "details": ""
   },
   {
-    "number": "P03",
+    "number": "P3",
     "place": "PUSAT PENGURUSAN BAKAT DAN LATIHAN",
     "googleMapLink": "https://maps.google.com/?q=5.401162544270471,103.07903181533639",
     "locationType": "PENTADBIRAN",
@@ -24,7 +24,7 @@
     "details": ""
   },
   {
-    "number": "P04",
+    "number": "P4",
     "place": "ABU DZAR",
     "googleMapLink": "https://maps.google.com/?q=5.400477141433807,103.07852161367265",
     "locationType": "PENTADBIRAN",
@@ -32,7 +32,7 @@
     "details": "Media Kreatif"
   },
   {
-    "number": "P05",
+    "number": "P5",
     "place": "PUSAT KESENIAN DAN WARISAN",
     "googleMapLink": "https://maps.google.com/?q=5.401120858615388,103.0784559472976",
     "locationType": "PENTADBIRAN",
@@ -40,7 +40,7 @@
     "details": ""
   },
   {
-    "number": "P06",
+    "number": "P6",
     "place": "PEJABAT KOLEJ KEDIAMAN",
     "googleMapLink": "https://maps.google.com/?q=5.4035506758579075,103.07759670355864",
     "locationType": "PENTADBIRAN",
@@ -48,7 +48,7 @@
     "details": ""
   },
   {
-    "number": "P07",
+    "number": "P7",
     "place": "PEJABAT SUKSIS",
     "googleMapLink": "https://maps.google.com/?q=5.402708819186492,103.07585015209872",
     "locationType": "PENTADBIRAN",
@@ -56,7 +56,7 @@
     "details": ""
   },
   {
-    "number": "P08",
+    "number": "P8",
     "place": "TADIKA",
     "googleMapLink": "https://maps.google.com/?q=5.402109286384535,103.07551634402765",
     "locationType": "PENTADBIRAN",
@@ -64,7 +64,7 @@
     "details": ""
   },
   {
-    "number": "P09",
+    "number": "P9",
     "place": "STOR PPBU",
     "googleMapLink": "https://maps.google.com/?q=5.401373378479535,103.07454555136931",
     "locationType": "PENTADBIRAN",
