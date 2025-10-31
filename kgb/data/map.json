@@ -1,5 +1,405 @@
 [
   {
+    "number": "P01",
+    "place": "CANSELORI",
+    "googleMapLink": "https://maps.google.com/?q=5.401212744352429,103.08017183323453",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": "Pejabat Pendaftar"
+  },
+  {
+    "number": "P02",
+    "place": "PUSAT ALUMNI ",
+    "googleMapLink": "https://maps.google.com/?q=5.4014177259252465,103.07962452441085",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "ACE",
+    "details": ""
+  },
+  {
+    "number": "P03",
+    "place": "PUSAT PENGURUSAN BAKAT DAN LATIHAN",
+    "googleMapLink": "https://maps.google.com/?q=5.401162544270471,103.07903181533639",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P04",
+    "place": "ABU DZAR",
+    "googleMapLink": "https://maps.google.com/?q=5.400477141433807,103.07852161367265",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": "Media Kreatif"
+  },
+  {
+    "number": "P05",
+    "place": "PUSAT KESENIAN DAN WARISAN",
+    "googleMapLink": "https://maps.google.com/?q=5.401120858615388,103.0784559472976",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "PKW",
+    "details": ""
+  },
+  {
+    "number": "P06",
+    "place": "PEJABAT KOLEJ KEDIAMAN",
+    "googleMapLink": "https://maps.google.com/?q=5.4035506758579075,103.07759670355864",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P07",
+    "place": "PEJABAT SUKSIS",
+    "googleMapLink": "https://maps.google.com/?q=5.402708819186492,103.07585015209872",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P08",
+    "place": "TADIKA",
+    "googleMapLink": "https://maps.google.com/?q=5.402109286384535,103.07551634402765",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P09",
+    "place": "STOR PPBU",
+    "googleMapLink": "https://maps.google.com/?q=5.401373378479535,103.07454555136931",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P10",
+    "place": "PUSAT PENGURUSAN HARTA BENDA",
+    "googleMapLink": "https://maps.google.com/?q=5.399419556892442,103.07525589465108",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "PPHB",
+    "details": ""
+  },
+  {
+    "number": "P11",
+    "place": "PUSAT PENGURUSAN HARTA BENDA",
+    "googleMapLink": "https://maps.google.com/?q=5.399347805564079,103.07574142635544",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "PPHB",
+    "details": ""
+  },
+  {
+    "number": "P12",
+    "place": "GARAJ KENDERAAN ",
+    "googleMapLink": "https://maps.google.com/?q=5.3984766351919085,103.07574680356812",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P13",
+    "place": "BANGUNAN PENGURSAN AKADEMIK ",
+    "googleMapLink": "https://maps.google.com/?q=5.398989449556346,103.07758473385337",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "BPA",
+    "details": "Bendahari / Senat / Comai-e"
+  },
+  {
+    "number": "P14",
+    "place": "BANGUNAN AKADEMIK",
+    "googleMapLink": "https://maps.google.com/?q=5.398245400159085,103.07711365509704",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "BA /AUDI",
+    "details": "Auditorium Bangunan Akademik "
+  },
+  {
+    "number": "P15",
+    "place": "BANGUNAN HEPA",
+    "googleMapLink": "https://maps.google.com/?q=5.398215354379296,103.07938904298823",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": "PUSAT TEKNOLOGI MAKLUMAT (PTM)"
+  },
+  {
+    "number": "P16",
+    "place": "RUMAH TAMU",
+    "googleMapLink": "https://maps.google.com/?q=5.396201559175353,103.07786561904906",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P17",
+    "place": "Institut Penyelidikan Alam Sekitar Pantai Timur",
+    "googleMapLink": "https://maps.google.com/?q=5.3963479644097525,103.07828483450643",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": "E-SERI"
+  },
+  {
+    "number": "P18",
+    "place": "KESELAMATAN",
+    "googleMapLink": "https://maps.google.com/?q=5.395825688783594,103.08234545136894",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "P19",
+    "place": "KESELAMATAN (PINTU BELAKANG)",
+    "googleMapLink": "https://maps.google.com/?q=5.408873967463442,103.08024778800242",
+    "locationType": "PENTADBIRAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "A1",
+    "place": "BLOK ABU BAKAR",
+    "googleMapLink": "https://maps.google.com/?q=5.399963742496294,103.0790087915256",
+    "locationType": "AKADEMIK",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "A2",
+    "place": "DEWAN PERDANA",
+    "googleMapLink": "https://maps.google.com/?q=5.399809262541777,103.07852775646195",
+    "locationType": "AKADEMIK",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "A3",
+    "place": "Dewan Al-Muktafi billah shah",
+    "googleMapLink": "https://maps.google.com/?q=5.399765834135115,103.07812757212753",
+    "locationType": "AKADEMIK",
+    "shortForm": "DABS",
+    "details": ""
+  },
+  {
+    "number": "A4",
+    "place": "DEWAN KULIAH UTAMA",
+    "googleMapLink": "https://maps.google.com/?q=5.399909336687785,103.07744763808677",
+    "locationType": "AKADEMIK",
+    "shortForm": "DKU",
+    "details": ""
+  },
+  {
+    "number": "A5",
+    "place": "PERPUSTAKAAN",
+    "googleMapLink": "https://maps.google.com/?q=5.399753759012159,103.07670558790026",
+    "locationType": "AKADEMIK",
+    "shortForm": "PWB",
+    "details": ""
+  },
+  {
+    "number": "A6",
+    "place": "BLOK KHADIJAH",
+    "googleMapLink": "https://maps.google.com/?q=5.399991929952228,103.07571812905074",
+    "locationType": "AKADEMIK",
+    "shortForm": "KH",
+    "details": ""
+  },
+  {
+    "number": "A7",
+    "place": "BLOK FSK HAFSAH",
+    "googleMapLink": "https://maps.google.com/?q=5.4004787079698335,103.07570305150944",
+    "locationType": "AKADEMIK",
+    "shortForm": "HH",
+    "details": ""
+  },
+  {
+    "number": "A8",
+    "place": "BLOK HABIBAH",
+    "googleMapLink": "https://maps.google.com/?q=5.401907844870171,103.0759924482143",
+    "locationType": "AKADEMIK",
+    "shortForm": "BK?",
+    "details": ""
+  },
+  {
+    "number": "A9",
+    "place": "BLOK G",
+    "googleMapLink": "https://maps.google.com/?q=5.401382753237854,103.07684771013976",
+    "locationType": "AKADEMIK",
+    "shortForm": "G",
+    "details": ""
+  },
+  {
+    "number": "A10",
+    "place": "BLOK E",
+    "googleMapLink": "https://maps.google.com/?q=5.4005884329526035,103.0768749318993",
+    "locationType": "AKADEMIK",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "A11",
+    "place": "BLOK A",
+    "googleMapLink": "https://maps.google.com/?q=5.4004487811916055,103.07744578967564",
+    "locationType": "AKADEMIK",
+    "shortForm": "A",
+    "details": "PaKAT"
+  },
+  {
+    "number": "A12",
+    "place": "BLOK C",
+    "googleMapLink": "https://maps.google.com/?q=5.401095512788566,103.07745176285553",
+    "locationType": "AKADEMIK",
+    "shortForm": "C",
+    "details": ""
+  },
+  {
+    "number": "A13",
+    "place": "BLOK D",
+    "googleMapLink": "https://maps.google.com/?q=5.401544851564808,103.07748206502555",
+    "locationType": "AKADEMIK",
+    "shortForm": "D",
+    "details": "Institut Penyelidikan Produk dan Ketamadunan Melayu Islam / Unit Jaminan Kualiti"
+  },
+  {
+    "number": "A14",
+    "place": "BANGUNAN KHALID",
+    "googleMapLink": "https://maps.google.com/?q=5.401576567120551,103.07847125440651",
+    "locationType": "AKADEMIK",
+    "shortForm": "KD",
+    "details": ""
+  },
+  {
+    "number": "A15",
+    "place": "BANGUNAN HAMZAH",
+    "googleMapLink": "https://maps.google.com/?q=5.401349777208889,103.07847900221576",
+    "locationType": "AKADEMIK",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "F1",
+    "place": "BLOK UMAR",
+    "googleMapLink": "https://maps.google.com/?q=5.40019387269499,103.07901704690623",
+    "locationType": "FAKULTI",
+    "shortForm": "UM",
+    "details": "FBK"
+  },
+  {
+    "number": "F2",
+    "place": "BLOK UTHMAN",
+    "googleMapLink": "https://maps.google.com/?q=5.4004256874359635,103.07898600850145",
+    "locationType": "FAKULTI",
+    "shortForm": "OTH",
+    "details": "FSSG"
+  },
+  {
+    "number": "F3",
+    "place": "BLOK ALI",
+    "googleMapLink": "https://maps.google.com/?q=5.400660677627298,103.07900036216093",
+    "locationType": "FAKULTI",
+    "shortForm": "AL",
+    "details": "FSSG"
+  },
+  {
+    "number": "F4",
+    "place": "PPS - Pusat Pengajian Siswazah",
+    "googleMapLink": "https://maps.google.com/?q=5.400910176961806,103.07846594409567",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "F5",
+    "place": "BLOK B",
+    "googleMapLink": "https://maps.google.com/?q=5.400772125679014,103.07745481151558",
+    "locationType": "FAKULTI",
+    "shortForm": "B",
+    "details": "FUPL"
+  },
+  {
+    "number": "F6",
+    "place": "BLOK F",
+    "googleMapLink": "https://maps.google.com/?q=5.401050742769285,103.07689363987394",
+    "locationType": "FAKULTI",
+    "shortForm": "F",
+    "details": "FKI"
+  },
+  {
+    "number": "F7",
+    "place": "FAKULTI FPP",
+    "googleMapLink": "https://maps.google.com/?q=5.40034051240039,103.07625401198284",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "F8",
+    "place": "BLOK AISHAH",
+    "googleMapLink": "https://maps.google.com/?q=5.40021750737347,103.07570805003579",
+    "locationType": "FAKULTI",
+    "shortForm": "AH",
+    "details": "FPP"
+  },
+  {
+    "number": "F9",
+    "place": "BLOK ZAINAB",
+    "googleMapLink": "https://maps.google.com/?q=5.400713694598439,103.07570908647985",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": "FRIT"
+  },
+  {
+    "number": "F10",
+    "place": "BLOK MAIMUNAH",
+    "googleMapLink": "https://maps.google.com/?q=5.4011701904078535,103.07599620157936",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": "FSK"
+  },
+  {
+    "number": "F11",
+    "place": "BLOK UMMU SALAMAH",
+    "googleMapLink": "https://maps.google.com/?q=5.401446905567109,103.07602111137076",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": "PUSPA"
+  },
+  {
+    "number": "F12",
+    "place": "BLOK HAFSAH",
+    "googleMapLink": "https://maps.google.com/?q=5.401672928618017,103.07599418259609",
+    "locationType": "FAKULTI",
+    "shortForm": "HH",
+    "details": "FUHA"
+  },
+  {
+    "number": "F13",
+    "place": "FAKULTI FRIT",
+    "googleMapLink": "https://maps.google.com/?q=5.401592925682774,103.07544547961182",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "F14",
+    "place": "BENGKEL FRIT B",
+    "googleMapLink": "https://maps.google.com/?q=5.400597380286814,103.07450819833646",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "F15",
+    "place": "FRIT BLOK A",
+    "googleMapLink": "https://maps.google.com/?q=5.400300236947365,103.07443536856546",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "F16",
+    "place": "FRIT BLOK B",
+    "googleMapLink": "https://maps.google.com/?q=5.399920386095519,103.07440787592247",
+    "locationType": "FAKULTI",
+    "shortForm": "",
+    "details": ""
+  },
+  {
     "number": "A",
     "place": "BLOK A",
     "googleMapLink": "https://maps.google.com/?q=5.403790085336336,103.07682017794625",
@@ -136,135 +536,7 @@
     "details": ""
   },
   {
-    "number": 1,
-    "place": "GOLF",
-    "googleMapLink": "https://maps.google.com/?q=5.408958219419365,103.08067159696074",
-    "locationType": "SUKAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 2,
-    "place": "TUMPU CU@ UniSZA",
-    "googleMapLink": "https://maps.google.com/?q=5.408747548865256,103.07978895461028",
-    "locationType": "CAFE & MAKANAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 3,
-    "place": "UNI PARCEL STATION",
-    "googleMapLink": "https://maps.google.com/?q=5.408273287695545,103.07966350021519",
-    "locationType": "AKTIVITI",
-    "shortForm": "UNIPS",
-    "details": ""
-  },
-  {
-    "number": 4,
-    "place": "GELANGGANG FUTSAL",
-    "googleMapLink": "https://maps.google.com/?q=5.407023254006314,103.0794339535774",
-    "locationType": "SUKAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 5,
-    "place": "STUDENT HALL",
-    "googleMapLink": "https://maps.google.com/?q=5.4041383032718,103.0759282110364",
-    "locationType": "AKTIVITI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 6,
-    "place": "CAFE BARU",
-    "googleMapLink": "https://maps.google.com/?q=5.404255076600683,103.07761230647776",
-    "locationType": "CAFE & MAKANAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 7,
-    "place": "FOYER - PEJABAT KOLEJ KEDIAMAN",
-    "googleMapLink": "https://maps.google.com/?q=5.4035506758579075,103.07759670355864",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": "ATM"
-  },
-  {
-    "number": 8,
-    "place": "GYM (SEMENTARA)",
-    "googleMapLink": "https://maps.google.com/?q=5.403744184585478,103.07781329887533",
-    "locationType": "SUKAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 9,
-    "place": "SURAU TARIQ",
-    "googleMapLink": "https://maps.google.com/?q=5.404240019193609,103.07841508934193",
-    "locationType": "IBADAH",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 10,
-    "place": "STOR PPBU",
-    "googleMapLink": "https://maps.google.com/?q=5.401373378479535,103.07454555136931",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 11,
-    "place": "BENGKEL FRIT B",
-    "googleMapLink": "https://maps.google.com/?q=5.400597380286814,103.07450819833646",
-    "locationType": "FAKULTI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 12,
-    "place": "FRIT BLOK A",
-    "googleMapLink": "https://maps.google.com/?q=5.400300236947365,103.07443536856546",
-    "locationType": "FAKULTI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 13,
-    "place": "FRIT BLOK B",
-    "googleMapLink": "https://maps.google.com/?q=5.399920386095519,103.07440787592247",
-    "locationType": "FAKULTI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 14,
-    "place": "PEJABAT SUKSIS",
-    "googleMapLink": "https://maps.google.com/?q=5.402708819186492,103.07585015209872",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 15,
-    "place": "TADIKA",
-    "googleMapLink": "https://maps.google.com/?q=5.402109286384535,103.07551634402765",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 16,
-    "place": "FAKULTI FRIT",
-    "googleMapLink": "https://maps.google.com/?q=5.401592925682774,103.07544547961182",
-    "locationType": "FAKULTI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 17,
+    "number": "FH",
     "place": "ASRAMA FATIMAH",
     "googleMapLink": "https://maps.google.com/?q=5.403027367845378,103.07638321422512",
     "locationType": "KOLEJ KEDIAMAN",
@@ -272,7 +544,7 @@
     "details": ""
   },
   {
-    "number": 18,
+    "number": "MY",
     "place": "ASRAMA MARYAM",
     "googleMapLink": "https://maps.google.com/?q=5.402812225642424,103.07637523996988",
     "locationType": "KOLEJ KEDIAMAN",
@@ -280,7 +552,7 @@
     "details": ""
   },
   {
-    "number": 19,
+    "number": "SF",
     "place": "ASRAMA SAFIAH",
     "googleMapLink": "https://maps.google.com/?q=5.402576460095188,103.07639796861027",
     "locationType": "KOLEJ KEDIAMAN",
@@ -288,7 +560,7 @@
     "details": ""
   },
   {
-    "number": 20,
+    "number": "SH",
     "place": "ASRAMA SAUDAH",
     "googleMapLink": "https://maps.google.com/?q=5.402350793278517,103.07639684088026",
     "locationType": "KOLEJ KEDIAMAN",
@@ -296,287 +568,23 @@
     "details": ""
   },
   {
-    "number": 21,
-    "place": "BLOK HABIBAH",
-    "googleMapLink": "https://maps.google.com/?q=5.401907844870171,103.0759924482143",
-    "locationType": "AKADEMIK",
-    "shortForm": "BK",
-    "details": "FUHA"
-  },
-  {
-    "number": 22,
-    "place": "BLOK HAFSAH",
-    "googleMapLink": "https://maps.google.com/?q=5.401672928618017,103.07599418259609",
-    "locationType": "AKADEMIK",
-    "shortForm": "HH",
-    "details": "FUHA"
-  },
-  {
-    "number": 23,
-    "place": "BLOK UMMU SALAMAH",
-    "googleMapLink": "https://maps.google.com/?q=5.401446905567109,103.07602111137076",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": "PUSPA"
-  },
-  {
-    "number": 24,
-    "place": "BLOK MAIMUNAH",
-    "googleMapLink": "https://maps.google.com/?q=5.4011701904078535,103.07599620157936",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": "PEJABAT FSK"
-  },
-  {
-    "number": 25,
-    "place": "BLOK ZAINAB",
-    "googleMapLink": "https://maps.google.com/?q=5.400713694598439,103.07570908647985",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": " "
-  },
-  {
-    "number": 26,
-    "place": "BLOK FSK HAFSAH",
-    "googleMapLink": "https://maps.google.com/?q=5.4004787079698335,103.07570305150944",
-    "locationType": "AKADEMIK",
-    "shortForm": "HH",
-    "details": ""
-  },
-  {
-    "number": 27,
-    "place": "BLOK AISHAH",
-    "googleMapLink": "https://maps.google.com/?q=5.40021750737347,103.07570805003579",
-    "locationType": "AKADEMIK",
-    "shortForm": "AH",
-    "details": ""
-  },
-  {
-    "number": 28,
-    "place": "BLOK KHADIJAH",
-    "googleMapLink": "https://maps.google.com/?q=5.399991929952228,103.07571812905074",
-    "locationType": "AKADEMIK",
-    "shortForm": "KH",
-    "details": ""
-  },
-  {
-    "number": 29,
-    "place": "FAKULTI FPP",
-    "googleMapLink": "https://maps.google.com/?q=5.40034051240039,103.07625401198284",
-    "locationType": "FAKULTI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 30,
-    "place": "PPHB",
-    "googleMapLink": "https://maps.google.com/?q=5.399419556892442,103.07525589465108",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 31,
-    "place": "PPHB",
-    "googleMapLink": "https://maps.google.com/?q=5.399347805564079,103.07574142635544",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 32,
-    "place": "GARAJ KENDERAAN ",
-    "googleMapLink": "https://maps.google.com/?q=5.3984766351919085,103.07574680356812",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 33,
-    "place": "E-SERI",
-    "googleMapLink": "https://maps.google.com/?q=5.3963479644097525,103.07828483450643",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 34,
-    "place": "LAMAN SELERA",
-    "googleMapLink": "https://maps.google.com/?q=5.397451555252221,103.07787618685718",
-    "locationType": "CAFE & MAKANAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 35,
-    "place": "BANGUNAN AKADEMIK",
-    "googleMapLink": "https://maps.google.com/?q=5.398245400159085,103.07711365509704",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "BA /AUDI",
-    "details": "Auditorium Bangunan Akademik "
-  },
-  {
-    "number": 36,
-    "place": "BPA - BENDAHARI",
-    "googleMapLink": "https://maps.google.com/?q=5.398989449556346,103.07758473385337",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 37,
-    "place": "SURAU ABIDIN",
-    "googleMapLink": "https://maps.google.com/?q=5.399537821752416,103.07746633183956",
-    "locationType": "IBADAH",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 38,
-    "place": "PERPUSTAKAAN",
-    "googleMapLink": "https://maps.google.com/?q=5.399753759012159,103.07670558790026",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 39,
-    "place": "BLOK E",
-    "googleMapLink": "https://maps.google.com/?q=5.4005884329526035,103.0768749318993",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 40,
-    "place": "BLOK F",
-    "googleMapLink": "https://maps.google.com/?q=5.401050742769285,103.07689363987394",
-    "locationType": "AKADEMIK",
-    "shortForm": "F",
-    "details": "PEJABAT FKI"
-  },
-  {
-    "number": 41,
-    "place": "BLOK G",
-    "googleMapLink": "https://maps.google.com/?q=5.401382753237854,103.07684771013976",
-    "locationType": "AKADEMIK",
-    "shortForm": "G",
-    "details": ""
-  },
-  {
-    "number": 42,
-    "place": "BLOK D",
-    "googleMapLink": "https://maps.google.com/?q=5.401544851564808,103.07748206502555",
-    "locationType": "AKADEMIK",
-    "shortForm": "D",
-    "details": ""
-  },
-  {
-    "number": 43,
-    "place": "BLOK C",
-    "googleMapLink": "https://maps.google.com/?q=5.401095512788566,103.07745176285553",
-    "locationType": "AKADEMIK",
-    "shortForm": "C",
-    "details": ""
-  },
-  {
-    "number": 44,
-    "place": "BLOK B",
-    "googleMapLink": "https://maps.google.com/?q=5.400772125679014,103.07745481151558",
-    "locationType": "AKADEMIK",
-    "shortForm": "B",
-    "details": ""
-  },
-  {
-    "number": 45,
-    "place": "BLOK A",
-    "googleMapLink": "https://maps.google.com/?q=5.4004487811916055,103.07744578967564",
-    "locationType": "AKADEMIK",
-    "shortForm": "A",
-    "details": "PaKAT"
-  },
-  {
-    "number": 46,
-    "place": "DEWAN KULIAH UTAMA",
-    "googleMapLink": "https://maps.google.com/?q=5.399909336687785,103.07744763808677",
-    "locationType": "AKADEMIK",
-    "shortForm": "DKU",
-    "details": ""
-  },
-  {
-    "number": 47,
-    "place": "DABS",
-    "googleMapLink": "https://maps.google.com/?q=5.399765834135115,103.07812757212753",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 48,
-    "place": "DEWAN PERDANA",
-    "googleMapLink": "https://maps.google.com/?q=5.399809262541777,103.07852775646195",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 49,
-    "place": "MEDIA KREATIF ( ABU DZAR )",
-    "googleMapLink": "https://maps.google.com/?q=5.400477141433807,103.07852161367265",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 50,
-    "place": "PUSAT KESENIAN DAN WARISAN (PKW)",
-    "googleMapLink": "https://maps.google.com/?q=5.401120858615388,103.0784559472976",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": "Pusat Pengajian Siswazah"
-  },
-  {
-    "number": 51,
-    "place": "BANGUNAN HAMZAH",
-    "googleMapLink": "https://maps.google.com/?q=5.401349777208889,103.07847900221576",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 52,
-    "place": "BANGUNAN KHALID",
-    "googleMapLink": "https://maps.google.com/?q=5.401576567120551,103.07847125440651",
-    "locationType": "AKADEMIK",
-    "shortForm": "KD",
-    "details": ""
-  },
-  {
-    "number": 53,
+    "number": "UK",
     "place": "ASRAMA UMMU SALAMAH",
     "googleMapLink": "https://maps.google.com/?q=5.401900294134798,103.07847908945168",
-    "locationType": "AKADEMIK",
+    "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "UK",
     "details": ""
   },
   {
-    "number": 54,
+    "number": "UU",
     "place": "ASRAMA UMMU UMAIRAH",
     "googleMapLink": "https://maps.google.com/?q=5.402125580448953,103.07850206926841",
-    "locationType": "AKADEMIK",
+    "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "UU",
     "details": ""
   },
   {
-    "number": 55,
-    "place": "PAP (PUSAT AKTIVITI PELAJAR)",
-    "googleMapLink": "https://maps.google.com/?q=5.402463647886445,103.07837844628783",
-    "locationType": "AKTIVITI",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 56,
+    "number": "USM",
     "place": "ASRAMA UMMU KALSOM / UMMU SULAM",
     "googleMapLink": "https://maps.google.com/?q=5.402813878386036,103.07848776373322",
     "locationType": "KOLEJ KEDIAMAN",
@@ -584,7 +592,7 @@
     "details": ""
   },
   {
-    "number": 57,
+    "number": "UKS",
     "place": "ASRAMA UMMU KHANSA'",
     "googleMapLink": "https://maps.google.com/?q=5.403019556083701,103.0784915803771",
     "locationType": "KOLEJ KEDIAMAN",
@@ -592,15 +600,7 @@
     "details": ""
   },
   {
-    "number": 58,
-    "place": "SURAU KHANSA'",
-    "googleMapLink": "https://maps.google.com/?q=5.403037020008431,103.07834520293117",
-    "locationType": "IBADAH",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 59,
+    "number": "KD",
     "place": "ASRAMA KINDI",
     "googleMapLink": "https://maps.google.com/?q=5.402996316909282,103.07934192494449",
     "locationType": "KOLEJ KEDIAMAN",
@@ -608,7 +608,7 @@
     "details": ""
   },
   {
-    "number": 60,
+    "number": "KW",
     "place": "ASRAMA KHAWARIZMI",
     "googleMapLink": "https://maps.google.com/?q=5.402791449171532,103.0793428732486",
     "locationType": "KOLEJ KEDIAMAN",
@@ -616,79 +616,63 @@
     "details": ""
   },
   {
-    "number": 61,
-    "place": "CAFE LAMA IBNU SINA",
-    "googleMapLink": "https://maps.google.com/?q=5.402462836279461,103.07954202195498",
-    "locationType": "CAFE & MAKANAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 62,
+    "number": "BR",
     "place": "ASRAMA FARABI  / BIRUNI",
     "googleMapLink": "https://maps.google.com/?q=5.402120130914334,103.07933055013933",
     "locationType": "KOLEJ KEDIAMAN",
-    "shortForm": "BR?",
+    "shortForm": "BR",
     "details": ""
   },
   {
-    "number": 63,
+    "number": "FR",
     "place": "ASRAMA  BAJRUNI / FARABI",
     "googleMapLink": "https://maps.google.com/?q=5.401902045585424,103.0793258086188",
     "locationType": "KOLEJ KEDIAMAN",
-    "shortForm": "FR?",
+    "shortForm": "FR",
     "details": ""
   },
   {
-    "number": 64,
-    "place": "PUSAT ALUMNI (ACE)",
-    "googleMapLink": "https://maps.google.com/?q=5.4014177259252465,103.07962452441085",
-    "locationType": "PENTADBIRAN",
+    "number": "A1",
+    "place": "UniSISWA COMPLEX",
+    "googleMapLink": "https://maps.google.com/?q=5.402462836279461,103.07954202195498",
+    "locationType": "AKTIVITI",
+    "shortForm": "",
+    "details": "UniCafe / UniSpark / UniSpace / UniShop  / UniStall / UniServis"
+  },
+  {
+    "number": "A2",
+    "place": "PUSAT AKTIVITI PELAJAR",
+    "googleMapLink": "https://maps.google.com/?q=5.402463647886445,103.07837844628783",
+    "locationType": "AKTIVITI",
+    "shortForm": "PAP",
+    "details": ""
+  },
+  {
+    "number": "A3",
+    "place": "FOYER",
+    "googleMapLink": "https://maps.google.com/?q=5.40355479139184,103.0776241862228",
+    "locationType": "AKTIVITI",
+    "shortForm": "",
+    "details": "ATM"
+  },
+  {
+    "number": "A4",
+    "place": "STUDENT HALL",
+    "googleMapLink": "https://maps.google.com/?q=5.4041383032718,103.0759282110364",
+    "locationType": "AKTIVITI",
     "shortForm": "",
     "details": ""
   },
   {
-    "number": 65,
-    "place": "PUSAT PENGURUSAN BAKAT DAN LATIHAN",
-    "googleMapLink": "https://maps.google.com/?q=5.401162544270471,103.07903181533639",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
+    "number": "A5",
+    "place": "UNI PARCEL STATION",
+    "googleMapLink": "https://maps.google.com/?q=5.408273287695545,103.07966350021519",
+    "locationType": "AKTIVITI",
+    "shortForm": "UNIPS",
     "details": ""
   },
   {
-    "number": 66,
-    "place": "BLOK ALI",
-    "googleMapLink": "https://maps.google.com/?q=5.400660677627298,103.07900036216093",
-    "locationType": "AKADEMIK",
-    "shortForm": "AL",
-    "details": "FSSG"
-  },
-  {
-    "number": 67,
-    "place": "BLOK UTHMAN",
-    "googleMapLink": "https://maps.google.com/?q=5.4004256874359635,103.07898600850145",
-    "locationType": "AKADEMIK",
-    "shortForm": "OTH",
-    "details": "FSSG"
-  },
-  {
-    "number": 68,
-    "place": "BLOK UMAR",
-    "googleMapLink": "https://maps.google.com/?q=5.40019387269499,103.07901704690623",
-    "locationType": "AKADEMIK",
-    "shortForm": "UM",
-    "details": "FUHA (BLOK LAMA)"
-  },
-  {
-    "number": 69,
-    "place": "BLOK ABU BAKAR",
-    "googleMapLink": "https://maps.google.com/?q=5.399963742496294,103.0790087915256",
-    "locationType": "AKADEMIK",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 70,
+    "number": "S1",
     "place": "GELANGGANG TAKRAW & BOLA TAMPAR",
     "googleMapLink": "https://maps.google.com/?q=5.400294570724202,103.07957300898462",
     "locationType": "SUKAN",
@@ -696,15 +680,7 @@
     "details": ""
   },
   {
-    "number": 71,
-    "place": "HEPA / PUSAT TEKNOLOGI MAKLUMAT (PTM)",
-    "googleMapLink": "https://maps.google.com/?q=5.398215354379296,103.07938904298823",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": 72,
+    "number": "S2",
     "place": "GELANGGGANG PERMAINAN",
     "googleMapLink": "https://maps.google.com/?q=5.400116552884849,103.08057945059936",
     "locationType": "SUKAN",
@@ -712,15 +688,7 @@
     "details": ""
   },
   {
-    "number": 73,
-    "place": "CANSELORI",
-    "googleMapLink": "https://maps.google.com/?q=5.401212744352429,103.08017183323453",
-    "locationType": "PENTADBIRAN",
-    "shortForm": "",
-    "details": "Pejabat Pendaftar"
-  },
-  {
-    "number": 74,
+    "number": "S3",
     "place": "DEWAN GEMILANG",
     "googleMapLink": "https://maps.google.com/?q=5.401830826317258,103.08139824017124",
     "locationType": "SUKAN",
@@ -728,7 +696,7 @@
     "details": ""
   },
   {
-    "number": 75,
+    "number": "S4",
     "place": "STADIUM UniSZA",
     "googleMapLink": "https://maps.google.com/?q=5.4033007687764165,103.08112569324418",
     "locationType": "SUKAN",
@@ -736,7 +704,7 @@
     "details": ""
   },
   {
-    "number": 76,
+    "number": "S5",
     "place": "PADANG BOLA SEPAK",
     "googleMapLink": "https://maps.google.com/?q=5.403795347891299,103.08202658512144",
     "locationType": "SUKAN",
@@ -744,7 +712,7 @@
     "details": ""
   },
   {
-    "number": 77,
+    "number": "S6",
     "place": "DEWAN BADMINTON",
     "googleMapLink": "https://maps.google.com/?q=5.404246032156645,103.08054502320279",
     "locationType": "SUKAN",
@@ -752,7 +720,7 @@
     "details": ""
   },
   {
-    "number": 78,
+    "number": "S7",
     "place": "PUSAT LATIHAN MEMANAH",
     "googleMapLink": "https://maps.google.com/?q=5.4052056174427126,103.0802267963468",
     "locationType": "SUKAN",
@@ -760,7 +728,7 @@
     "details": ""
   },
   {
-    "number": 79,
+    "number": "S8",
     "place": "GELANGGANG PERMAINAN BARU",
     "googleMapLink": "https://maps.google.com/?q=5.405747522241426,103.08110581682824",
     "locationType": "SUKAN",
@@ -768,7 +736,15 @@
     "details": ""
   },
   {
-    "number": 80,
+    "number": "S9",
+    "place": "GELANGGANG FUTSAL",
+    "googleMapLink": "https://maps.google.com/?q=5.407023254006314,103.0794339535774",
+    "locationType": "SUKAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "S10",
     "place": "KANDANG KUDA",
     "googleMapLink": "https://maps.google.com/?q=5.406908042428364,103.08199013964955",
     "locationType": "SUKAN",
@@ -776,7 +752,7 @@
     "details": ""
   },
   {
-    "number": 81,
+    "number": "S11",
     "place": "UniSPORTS ARENA",
     "googleMapLink": "https://maps.google.com/?q=5.408192443245188,103.08198477523146",
     "locationType": "SUKAN",
@@ -784,23 +760,79 @@
     "details": ""
   },
   {
-    "number": 82,
-    "place": "HOSZA",
-    "googleMapLink": "https://maps.google.com/?q=5.40302156211918,103.08389844481094",
-    "locationType": "KESIHATAN",
+    "number": "S12",
+    "place": "GOLF",
+    "googleMapLink": "https://maps.google.com/?q=5.408958219419365,103.08067159696074",
+    "locationType": "SUKAN",
     "shortForm": "",
-    "details": "ATM"
+    "details": ""
   },
   {
-    "number": 83,
-    "place": "PKU",
-    "googleMapLink": "https://maps.google.com/?q=5.399728058606555,103.0838598805674",
+    "number": "S13",
+    "place": "GYM (SEMENTARA)",
+    "googleMapLink": "https://maps.google.com/?q=5.403744184585478,103.07781329887533",
+    "locationType": "SUKAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "C1",
+    "place": "LAMAN SELERA",
+    "googleMapLink": "https://maps.google.com/?q=5.397451555252221,103.07787618685718",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": "ZUS, D'Apple Fried Chicken (DAFC)"
+  },
+  {
+    "number": "C2",
+    "place": "CAFE FPP",
+    "googleMapLink": "https://maps.google.com/?q=5.3997968452488845,103.07564215563234",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "C3",
+    "place": "CAFE FKI",
+    "googleMapLink": "https://maps.google.com/?q=5.400837831490066,103.07707644040742",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "C4",
+    "place": "CAFE BARU",
+    "googleMapLink": "https://maps.google.com/?q=5.404255076600683,103.07761230647776",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "C5",
+    "place": "TUMPU CU@ UniSZA",
+    "googleMapLink": "https://maps.google.com/?q=5.408747548865256,103.07978895461028",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "H1",
+    "place": "HOSZA",
+    "googleMapLink": "https://maps.google.com/?q=5.40302156211918,103.08389844481094",
     "locationType": "KESIHATAN",
     "shortForm": "",
     "details": ""
   },
   {
-    "number": 84,
+    "number": "H2",
+    "place": "PKU",
+    "googleMapLink": "https://maps.google.com/?q=5.399728058606555,103.0838598805674",
+    "locationType": "KESIHATAN",
+    "shortForm": "",
+    "details": "ATM"
+  },
+  {
+    "number": "I1",
     "place": "MASJID UniSZA",
     "googleMapLink": "https://maps.google.com/?q=5.398211816136115,103.08306850967166",
     "locationType": "IBADAH",
@@ -808,10 +840,34 @@
     "details": ""
   },
   {
-    "number": 85,
-    "place": "KESELAMATAN",
-    "googleMapLink": "https://maps.google.com/?q=5.395825688783594,103.08234545136894",
-    "locationType": "PENTADBIRAN",
+    "number": "I2",
+    "place": "SURAU ABIDIN",
+    "googleMapLink": "https://maps.google.com/?q=5.399537821752416,103.07746633183956",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": 13,
+    "place": "SURAU FKI (BLOK E)",
+    "googleMapLink": "https://maps.google.com/?q=5.400658074528107,103.0766769497652",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "I4",
+    "place": "SURAU KHANSA'",
+    "googleMapLink": "https://maps.google.com/?q=5.403037020008431,103.07834520293117",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": 15,
+    "place": "SURAU TARIQ",
+    "googleMapLink": "https://maps.google.com/?q=5.404240019193609,103.07841508934193",
+    "locationType": "IBADAH",
     "shortForm": "",
     "details": ""
   }
