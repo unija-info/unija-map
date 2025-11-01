@@ -4,7 +4,7 @@
     "place": "Canselori",
     "googleMapLink": "https://maps.google.com/?q=5.401212744352429,103.08017183323453",
     "locationType": "PENTADBIRAN & PTJ",
-    "shortForm": "T",
+    "shortForm": "",
     "details": "Pejabat Pendaftar"
   },
   {
@@ -409,7 +409,7 @@
   },
   {
     "number": "A",
-    "place": "BLOK A",
+    "place": "Asrama Blok A",
     "googleMapLink": "https://maps.google.com/?q=5.403790085336336,103.07682017794625",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -417,7 +417,7 @@
   },
   {
     "number": "B",
-    "place": "BLOK  B",
+    "place": "Asrama Blok B",
     "googleMapLink": "https://maps.google.com/?q=5.403812539696369,103.07624729118308",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -425,7 +425,7 @@
   },
   {
     "number": "C",
-    "place": "BLOK  C",
+    "place": "Asrama Blok C",
     "googleMapLink": "https://maps.google.com/?q=5.403641886539214,103.0758886730912",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -433,7 +433,7 @@
   },
   {
     "number": "D",
-    "place": "BLOK  D",
+    "place": "Asrama Blok D",
     "googleMapLink": "https://maps.google.com/?q=5.403796821644425,103.0755255440799",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -441,7 +441,7 @@
   },
   {
     "number": "E",
-    "place": "BLOK  E",
+    "place": "Asrama Blok E",
     "googleMapLink": "https://maps.google.com/?q=5.404462803734366,103.07680686256741",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -449,7 +449,7 @@
   },
   {
     "number": "F",
-    "place": "BLOK  F",
+    "place": "Asrama Blok F",
     "googleMapLink": "https://maps.google.com/?q=5.404410883887637,103.07624970707501",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -457,7 +457,7 @@
   },
   {
     "number": "G",
-    "place": "BLOK  G",
+    "place": "Asrama Blok G",
     "googleMapLink": "https://maps.google.com/?q=5.404590429426167,103.07586927033466",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -465,7 +465,7 @@
   },
   {
     "number": "H",
-    "place": "BLOK  H",
+    "place": "Asrama Blok H",
     "googleMapLink": "https://maps.google.com/?q=5.404441179877909,103.0755024546399",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -473,7 +473,7 @@
   },
   {
     "number": "I",
-    "place": "BLOK  I",
+    "place": "Asrama Blok I",
     "googleMapLink": "https://maps.google.com/?q=5.404428477786992,103.07494106714185",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -481,7 +481,7 @@
   },
   {
     "number": "J",
-    "place": "BLOK J",
+    "place": "Asrama Blok J",
     "googleMapLink": "https://maps.google.com/?q=5.403816414170909,103.07832771843167",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -489,7 +489,7 @@
   },
   {
     "number": "K",
-    "place": "BLOK K",
+    "place": "Asrama Blok K",
     "googleMapLink": "https://maps.google.com/?q=5.403682795647113,103.07866644297782",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -497,7 +497,7 @@
   },
   {
     "number": "L",
-    "place": "BLOK L",
+    "place": "Asrama Blok L",
     "googleMapLink": "https://maps.google.com/?q=5.4038288698564685,103.07903325871058",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -505,7 +505,7 @@
   },
   {
     "number": "M",
-    "place": "BLOK M",
+    "place": "Asrama Blok M",
     "googleMapLink": "https://maps.google.com/?q=5.4037542449930935,103.07949576551607",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -513,7 +513,7 @@
   },
   {
     "number": "N",
-    "place": "BLOK N",
+    "place": "Asrama Blok N",
     "googleMapLink": "https://maps.google.com/?q=5.404224222707011,103.07949576550891",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -521,7 +521,7 @@
   },
   {
     "number": "O",
-    "place": "BLOK O",
+    "place": "Asrama Blok O",
     "googleMapLink": "https://maps.google.com/?q=5.404741832888383,103.07920071806521",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -529,7 +529,7 @@
   },
   {
     "number": "P",
-    "place": "BLOK P",
+    "place": "Asrama Blok P",
     "googleMapLink": "https://maps.google.com/?q=5.405083201312399,103.07936498772372",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -537,7 +537,7 @@
   },
   {
     "number": "Q",
-    "place": "BLOK Q",
+    "place": "Asrama Blok Q",
     "googleMapLink": "https://maps.google.com/?q=5.405443294443503,103.0792333048433",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "",
@@ -545,7 +545,7 @@
   },
   {
     "number": "FH",
-    "place": "ASRAMA FATIMAH",
+    "place": "Asrama Fatimah",
     "googleMapLink": "https://maps.google.com/?q=5.403027367845378,103.07638321422512",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "FH",
@@ -553,7 +553,7 @@
   },
   {
     "number": "MY",
-    "place": "ASRAMA MARYAM",
+    "place": "Asrama Maryam",
     "googleMapLink": "https://maps.google.com/?q=5.402812225642424,103.07637523996988",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "MY",
@@ -561,7 +561,7 @@
   },
   {
     "number": "SF",
-    "place": "ASRAMA SAFIAH",
+    "place": "Asrama Safiah",
     "googleMapLink": "https://maps.google.com/?q=5.402576460095188,103.07639796861027",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "SF",
@@ -569,7 +569,7 @@
   },
   {
     "number": "SH",
-    "place": "ASRAMA SAUDAH",
+    "place": "Asrama Saudah",
     "googleMapLink": "https://maps.google.com/?q=5.402350793278517,103.07639684088026",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "SH",
@@ -577,7 +577,7 @@
   },
   {
     "number": "UK",
-    "place": "ASRAMA UMMU SALAMAH",
+    "place": "Asrama Ummu Salamah",
     "googleMapLink": "https://maps.google.com/?q=5.401900294134798,103.07847908945168",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "UK",
@@ -585,7 +585,7 @@
   },
   {
     "number": "UU",
-    "place": "ASRAMA UMMU UMAIRAH",
+    "place": "Asrama Ummu Umairah",
     "googleMapLink": "https://maps.google.com/?q=5.402125580448953,103.07850206926841",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "UU",
@@ -593,7 +593,7 @@
   },
   {
     "number": "USM",
-    "place": "ASRAMA UMMU SULAM",
+    "place": "Asrama Ummu Kalsom / Ummu Sulam",
     "googleMapLink": "https://maps.google.com/?q=5.402813878386036,103.07848776373322",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "USM",
@@ -601,7 +601,7 @@
   },
   {
     "number": "UKS",
-    "place": "ASRAMA UMMU KHANSA'",
+    "place": "Asrama Ummu Khansa'",
     "googleMapLink": "https://maps.google.com/?q=5.403019556083701,103.0784915803771",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "UKS",
@@ -609,7 +609,7 @@
   },
   {
     "number": "KD",
-    "place": "ASRAMA KINDI",
+    "place": "Asrama Kindi",
     "googleMapLink": "https://maps.google.com/?q=5.402996316909282,103.07934192494449",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "KD",
@@ -617,7 +617,7 @@
   },
   {
     "number": "KW",
-    "place": "ASRAMA KHAWARIZMI",
+    "place": "Asrama Khawarizmi",
     "googleMapLink": "https://maps.google.com/?q=5.402791449171532,103.0793428732486",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "KW",
@@ -625,7 +625,7 @@
   },
   {
     "number": "BR",
-    "place": "ASRAMA BIRUNI",
+    "place": "Asrama Farabi  / Biruni",
     "googleMapLink": "https://maps.google.com/?q=5.402120130914334,103.07933055013933",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "BR",
@@ -633,7 +633,7 @@
   },
   {
     "number": "FR",
-    "place": "ASRAMA  FARABI",
+    "place": "Asrama  Bajruni / Farabi",
     "googleMapLink": "https://maps.google.com/?q=5.401902045585424,103.0793258086188",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "FR",
