@@ -1,15 +1,15 @@
 [
   {
     "number": "P1",
-    "place": "CANSELORI",
+    "place": "Canselori",
     "googleMapLink": "https://maps.google.com/?q=5.401212744352429,103.08017183323453",
     "locationType": "PENTADBIRAN & PTJ",
-    "shortForm": "",
+    "shortForm": "T",
     "details": "Pejabat Pendaftar"
   },
   {
     "number": "P2",
-    "place": "PUSAT ALUMNI ",
+    "place": "Pusat Alumni",
     "googleMapLink": "https://maps.google.com/?q=5.4014177259252465,103.07962452441085",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "ACE",
@@ -17,7 +17,7 @@
   },
   {
     "number": "P3",
-    "place": "PUSAT PENGURUSAN BAKAT DAN LATIHAN",
+    "place": "Pusat Pengurusan Bakat Dan Latihan",
     "googleMapLink": "https://maps.google.com/?q=5.401162544270471,103.07903181533639",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -25,7 +25,7 @@
   },
   {
     "number": "P4",
-    "place": "ABU DZAR",
+    "place": "Abu Dzar",
     "googleMapLink": "https://maps.google.com/?q=5.400477141433807,103.07852161367265",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -33,7 +33,7 @@
   },
   {
     "number": "P5",
-    "place": "PUSAT KESENIAN DAN WARISAN",
+    "place": "Pusat Kesenian Dan Warisan",
     "googleMapLink": "https://maps.google.com/?q=5.401120858615388,103.0784559472976",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "PKW",
@@ -41,7 +41,7 @@
   },
   {
     "number": "P6",
-    "place": "PEJABAT KOLEJ KEDIAMAN",
+    "place": "Pejabat Kolej Kediaman",
     "googleMapLink": "https://maps.google.com/?q=5.4035506758579075,103.07759670355864",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -49,7 +49,7 @@
   },
   {
     "number": "P7",
-    "place": "PEJABAT SUKSIS",
+    "place": "Pejabat Suksis",
     "googleMapLink": "https://maps.google.com/?q=5.402708819186492,103.07585015209872",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -57,7 +57,7 @@
   },
   {
     "number": "P8",
-    "place": "TADIKA",
+    "place": "Tadika",
     "googleMapLink": "https://maps.google.com/?q=5.402109286384535,103.07551634402765",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -65,7 +65,7 @@
   },
   {
     "number": "P9",
-    "place": "STOR PPBU",
+    "place": "Stor PPBU",
     "googleMapLink": "https://maps.google.com/?q=5.401373378479535,103.07454555136931",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -73,7 +73,7 @@
   },
   {
     "number": "P10",
-    "place": "PUSAT PENGURUSAN HARTA BENDA",
+    "place": "Pusat Pengurusan Harta Benda",
     "googleMapLink": "https://maps.google.com/?q=5.399419556892442,103.07525589465108",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "PPHB",
@@ -81,7 +81,7 @@
   },
   {
     "number": "P11",
-    "place": "PUSAT PENGURUSAN HARTA BENDA",
+    "place": "Pusat Pengurusan Harta Benda",
     "googleMapLink": "https://maps.google.com/?q=5.399347805564079,103.07574142635544",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "PPHB",
@@ -89,7 +89,7 @@
   },
   {
     "number": "P12",
-    "place": "GARAJ KENDERAAN ",
+    "place": "Garaj Kenderaan",
     "googleMapLink": "https://maps.google.com/?q=5.3984766351919085,103.07574680356812",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -97,7 +97,7 @@
   },
   {
     "number": "P13",
-    "place": "BANGUNAN PENGURSAN AKADEMIK ",
+    "place": "Bangunan Pengursan Akademik",
     "googleMapLink": "https://maps.google.com/?q=5.398989449556346,103.07758473385337",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "BPA",
@@ -105,7 +105,7 @@
   },
   {
     "number": "P14",
-    "place": "BANGUNAN AKADEMIK",
+    "place": "Bangunan Akademik",
     "googleMapLink": "https://maps.google.com/?q=5.398245400159085,103.07711365509704",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "BA /AUDI",
@@ -113,7 +113,7 @@
   },
   {
     "number": "P15",
-    "place": "BANGUNAN HEPA",
+    "place": "Bangunan HEPA",
     "googleMapLink": "https://maps.google.com/?q=5.398215354379296,103.07938904298823",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -121,7 +121,7 @@
   },
   {
     "number": "P16",
-    "place": "RUMAH TAMU",
+    "place": "Rumah Tamu",
     "googleMapLink": "https://maps.google.com/?q=5.396201559175353,103.07786561904906",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -132,12 +132,12 @@
     "place": "Institut Penyelidikan Alam Sekitar Pantai Timur",
     "googleMapLink": "https://maps.google.com/?q=5.3963479644097525,103.07828483450643",
     "locationType": "PENTADBIRAN & PTJ",
-    "shortForm": "",
-    "details": "E-SERI"
+    "shortForm": "ESERI",
+    "details": ""
   },
   {
     "number": "P18",
-    "place": "KESELAMATAN",
+    "place": "Keselamatan",
     "googleMapLink": "https://maps.google.com/?q=5.395825688783594,103.08234545136894",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -145,7 +145,7 @@
   },
   {
     "number": "P19",
-    "place": "KESELAMATAN (PINTU BELAKANG)",
+    "place": "Keselamatan (Pintu Belakang)",
     "googleMapLink": "https://maps.google.com/?q=5.408873967463442,103.08024778800242",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -153,15 +153,15 @@
   },
   {
     "number": "A1",
-    "place": "BLOK ABU BAKAR",
+    "place": "Blok Abu Bakar",
     "googleMapLink": "https://maps.google.com/?q=5.399963742496294,103.0790087915256",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "",
+    "shortForm": "T",
     "details": ""
   },
   {
     "number": "A2",
-    "place": "DEWAN PERDANA",
+    "place": "Dewan Perdana",
     "googleMapLink": "https://maps.google.com/?q=5.399809262541777,103.07852775646195",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "",
@@ -169,7 +169,7 @@
   },
   {
     "number": "A3",
-    "place": "Dewan Al-Muktafi billah shah",
+    "place": "Dewan Al-Muktafi Billah Shah",
     "googleMapLink": "https://maps.google.com/?q=5.399765834135115,103.07812757212753",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "DABS",
@@ -177,7 +177,7 @@
   },
   {
     "number": "A4",
-    "place": "DEWAN KULIAH UTAMA",
+    "place": "Dewan Kuliah Utama",
     "googleMapLink": "https://maps.google.com/?q=5.399909336687785,103.07744763808677",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "DKU",
@@ -185,7 +185,7 @@
   },
   {
     "number": "A5",
-    "place": "PERPUSTAKAAN",
+    "place": "Perpustakaan",
     "googleMapLink": "https://maps.google.com/?q=5.399753759012159,103.07670558790026",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "PWB",
@@ -193,7 +193,7 @@
   },
   {
     "number": "A6",
-    "place": "BLOK KHADIJAH",
+    "place": "Blok Khadijah",
     "googleMapLink": "https://maps.google.com/?q=5.399991929952228,103.07571812905074",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "KH",
@@ -201,7 +201,7 @@
   },
   {
     "number": "A7",
-    "place": "BLOK FSK HAFSAH",
+    "place": "Blok Hafsah",
     "googleMapLink": "https://maps.google.com/?q=5.4004787079698335,103.07570305150944",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "HH",
@@ -209,23 +209,23 @@
   },
   {
     "number": "A8",
-    "place": "BLOK HABIBAH",
+    "place": "Blok Habibah",
     "googleMapLink": "https://maps.google.com/?q=5.401907844870171,103.0759924482143",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "BK?",
+    "shortForm": "BK",
     "details": ""
   },
   {
     "number": "A9",
-    "place": "BLOK G",
+    "place": "Blok G",
     "googleMapLink": "https://maps.google.com/?q=5.401382753237854,103.07684771013976",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "G",
+    "shortForm": "",
     "details": ""
   },
   {
     "number": "A10",
-    "place": "BLOK E",
+    "place": "Blok E",
     "googleMapLink": "https://maps.google.com/?q=5.4005884329526035,103.0768749318993",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "",
@@ -233,31 +233,31 @@
   },
   {
     "number": "A11",
-    "place": "BLOK A",
+    "place": "Blok A",
     "googleMapLink": "https://maps.google.com/?q=5.4004487811916055,103.07744578967564",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "A",
+    "shortForm": "",
     "details": "PaKAT"
   },
   {
     "number": "A12",
-    "place": "BLOK C",
+    "place": "Blok C",
     "googleMapLink": "https://maps.google.com/?q=5.401095512788566,103.07745176285553",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "C",
+    "shortForm": "",
     "details": ""
   },
   {
     "number": "A13",
-    "place": "BLOK D",
+    "place": "Blok D",
     "googleMapLink": "https://maps.google.com/?q=5.401544851564808,103.07748206502555",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "D",
+    "shortForm": "",
     "details": "Institut Penyelidikan Produk dan Ketamadunan Melayu Islam / Unit Jaminan Kualiti"
   },
   {
     "number": "A14",
-    "place": "BANGUNAN KHALID",
+    "place": "Bangunan Khalid",
     "googleMapLink": "https://maps.google.com/?q=5.401576567120551,103.07847125440651",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "KD",
@@ -265,137 +265,145 @@
   },
   {
     "number": "A15",
-    "place": "BANGUNAN HAMZAH",
+    "place": "Bangunan Hamzah",
     "googleMapLink": "https://maps.google.com/?q=5.401349777208889,103.07847900221576",
     "locationType": "BLOK AKADEMIK & KELAS",
     "shortForm": "",
     "details": ""
   },
   {
+    "number": "",
+    "place": "",
+    "googleMapLink": "",
+    "locationType": "",
+    "shortForm": "",
+    "details": ""
+  },
+  {
     "number": "F1",
-    "place": "BLOK UMAR",
+    "place": "Blok Umar",
     "googleMapLink": "https://maps.google.com/?q=5.40019387269499,103.07901704690623",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "UM",
     "details": "FBK"
   },
   {
     "number": "F2",
-    "place": "BLOK UTHMAN",
+    "place": "Blok Uthman",
     "googleMapLink": "https://maps.google.com/?q=5.4004256874359635,103.07898600850145",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "OTH",
     "details": "FSSG"
   },
   {
     "number": "F3",
-    "place": "BLOK ALI",
+    "place": "Blok Ali",
     "googleMapLink": "https://maps.google.com/?q=5.400660677627298,103.07900036216093",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "AL",
     "details": "FSSG"
   },
   {
     "number": "F4",
-    "place": "PPS - Pusat Pengajian Siswazah",
+    "place": "Pusat Pengajian Siswazah",
     "googleMapLink": "https://maps.google.com/?q=5.400910176961806,103.07846594409567",
-    "locationType": "BLOK FAKULTI",
-    "shortForm": "",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
+    "shortForm": "PPS",
     "details": ""
   },
   {
     "number": "F5",
-    "place": "BLOK B",
+    "place": "Blok B",
     "googleMapLink": "https://maps.google.com/?q=5.400772125679014,103.07745481151558",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "B",
     "details": "FUPL"
   },
   {
     "number": "F6",
-    "place": "BLOK F",
+    "place": "Blok F",
     "googleMapLink": "https://maps.google.com/?q=5.401050742769285,103.07689363987394",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "F",
     "details": "FKI"
   },
   {
     "number": "F7",
-    "place": "FAKULTI FPP",
+    "place": "Fakulti FPP",
     "googleMapLink": "https://maps.google.com/?q=5.40034051240039,103.07625401198284",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": ""
   },
   {
     "number": "F8",
-    "place": "BLOK AISHAH",
+    "place": "Blok Aishah",
     "googleMapLink": "https://maps.google.com/?q=5.40021750737347,103.07570805003579",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "AH",
     "details": "FPP"
   },
   {
     "number": "F9",
-    "place": "BLOK ZAINAB",
+    "place": "Blok Zainab",
     "googleMapLink": "https://maps.google.com/?q=5.400713694598439,103.07570908647985",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": "FRIT"
   },
   {
     "number": "F10",
-    "place": "BLOK MAIMUNAH",
+    "place": "Blok Maimunah",
     "googleMapLink": "https://maps.google.com/?q=5.4011701904078535,103.07599620157936",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": "FSK"
   },
   {
     "number": "F11",
-    "place": "BLOK UMMU SALAMAH",
+    "place": "Blok Ummu Salamah",
     "googleMapLink": "https://maps.google.com/?q=5.401446905567109,103.07602111137076",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": "PUSPA"
   },
   {
     "number": "F12",
-    "place": "BLOK HAFSAH",
+    "place": "Blok Hafsah",
     "googleMapLink": "https://maps.google.com/?q=5.401672928618017,103.07599418259609",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "HH",
     "details": "FUHA"
   },
   {
     "number": "F13",
-    "place": "FAKULTI FRIT",
+    "place": "Fakulti FRIT",
     "googleMapLink": "https://maps.google.com/?q=5.401592925682774,103.07544547961182",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": ""
   },
   {
     "number": "F14",
-    "place": "BENGKEL FRIT B",
+    "place": "Bengkel FRIT B",
     "googleMapLink": "https://maps.google.com/?q=5.400597380286814,103.07450819833646",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": ""
   },
   {
     "number": "F15",
-    "place": "FRIT BLOK A",
+    "place": "Frit Blok A",
     "googleMapLink": "https://maps.google.com/?q=5.400300236947365,103.07443536856546",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": ""
   },
   {
     "number": "F16",
-    "place": "FRIT BLOK B",
+    "place": "Frit Blok B",
     "googleMapLink": "https://maps.google.com/?q=5.399920386095519,103.07440787592247",
-    "locationType": "BLOK FAKULTI",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
     "details": ""
   },
@@ -585,7 +593,7 @@
   },
   {
     "number": "USM",
-    "place": "ASRAMA UMMU KALSOM / UMMU SULAM",
+    "place": "ASRAMA UMMU SULAM",
     "googleMapLink": "https://maps.google.com/?q=5.402813878386036,103.07848776373322",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "USM",
@@ -617,7 +625,7 @@
   },
   {
     "number": "BR",
-    "place": "ASRAMA FARABI  / BIRUNI",
+    "place": "ASRAMA BIRUNI",
     "googleMapLink": "https://maps.google.com/?q=5.402120130914334,103.07933055013933",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "BR",
@@ -625,7 +633,7 @@
   },
   {
     "number": "FR",
-    "place": "ASRAMA  BAJRUNI / FARABI",
+    "place": "ASRAMA  FARABI",
     "googleMapLink": "https://maps.google.com/?q=5.401902045585424,103.0793258086188",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "FR",
@@ -633,7 +641,7 @@
   },
   {
     "number": "A1",
-    "place": "UniSISWA COMPLEX",
+    "place": "Unisiswa Complex",
     "googleMapLink": "https://maps.google.com/?q=5.402462836279461,103.07954202195498",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "",
@@ -641,7 +649,7 @@
   },
   {
     "number": "A2",
-    "place": "PUSAT AKTIVITI PELAJAR",
+    "place": "Pusat Aktiviti Pelajar",
     "googleMapLink": "https://maps.google.com/?q=5.402463647886445,103.07837844628783",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "PAP",
@@ -649,7 +657,7 @@
   },
   {
     "number": "A3",
-    "place": "FOYER",
+    "place": "Foyer",
     "googleMapLink": "https://maps.google.com/?q=5.40355479139184,103.0776241862228",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "",
@@ -657,7 +665,7 @@
   },
   {
     "number": "A4",
-    "place": "STUDENT HALL",
+    "place": "Student Hall",
     "googleMapLink": "https://maps.google.com/?q=5.4041383032718,103.0759282110364",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "",
@@ -665,7 +673,7 @@
   },
   {
     "number": "A5",
-    "place": "UNI PARCEL STATION",
+    "place": "Uni Parcel Station",
     "googleMapLink": "https://maps.google.com/?q=5.408273287695545,103.07966350021519",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "UNIPS",
@@ -785,7 +793,7 @@
   },
   {
     "number": "C2",
-    "place": "CAFE FPP",
+    "place": "CAFETRIA FPP",
     "googleMapLink": "https://maps.google.com/?q=5.3997968452488845,103.07564215563234",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
@@ -793,7 +801,7 @@
   },
   {
     "number": "C3",
-    "place": "CAFE FKI",
+    "place": "CAFETRIA FKI",
     "googleMapLink": "https://maps.google.com/?q=5.400837831490066,103.07707644040742",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
@@ -801,7 +809,7 @@
   },
   {
     "number": "C4",
-    "place": "CAFE BARU",
+    "place": "CAFETRIA BARU",
     "googleMapLink": "https://maps.google.com/?q=5.404255076600683,103.07761230647776",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
@@ -816,19 +824,19 @@
     "details": ""
   },
   {
-    "number": "H1",
-    "place": "HOSZA",
+    "number": " ",
+    "place": "Hospital Sultan Zainal Abidin",
     "googleMapLink": "https://maps.google.com/?q=5.40302156211918,103.08389844481094",
     "locationType": "KESIHATAN",
-    "shortForm": "",
+    "shortForm": "HoSZA",
     "details": ""
   },
   {
     "number": "H2",
-    "place": "PKU",
+    "place": "Pusat Kesihatan UniSZA",
     "googleMapLink": "https://maps.google.com/?q=5.399728058606555,103.0838598805674",
     "locationType": "KESIHATAN",
-    "shortForm": "",
+    "shortForm": "PKU",
     "details": "ATM"
   },
   {
