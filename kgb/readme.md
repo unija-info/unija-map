@@ -33,7 +33,7 @@ unija-map/
 Sistem ini direka untuk automasi. Pengemaskinian laman web tidak memerlukan sebarang penyuntingan kod secara langsung.
 
 1.  **Sumber Data (Google Sheet):** Semua maklumat lokasi disimpan dan diuruskan dalam satu fail Google Sheet. Ini adalah satu-satunya tempat di mana data perlu diubah.
-    - **Pautan Google Sheet:** `[[PAUTAN KE GOOGLE SHEET ANDA DI SINI](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing)]`
+    - **Pautan Google Sheet:** `[PAUTAN KE GOOGLE SHEET ANDA DI SINI](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing)`
 
 2.  **Automasi (Google Apps Script):** Di dalam Google Sheet, terdapat satu skrip khas yang berfungsi sebagai jambatan. Apabila dijalankan, ia akan:
     - Membaca data dari lajur yang ditetapkan (`number`, `place`, dll.).
