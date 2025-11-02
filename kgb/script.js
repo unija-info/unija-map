@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const dataUrl = 'https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/map.json';
+    const dataUrl = `https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/map.json?v=${new Date().getTime()}`;
 
     // DOM ELEMENTS
     const quickLinksContainer = document.getElementById('quick-links');
@@ -44,6 +44,32 @@ document.addEventListener("DOMContentLoaded", () => {
         return 'label-' + category.toString().toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
     }
 
+    function customSort(a, b) {
+        const strA = String(a.number).trim();
+        const strB = String(b.number).trim();
+        const regex = /^([A-Z]*)(\d+)?([A-Z]*)?$/i;
+        const matchA = strA.match(regex) || [];
+        const matchB = strB.match(regex) || [];
+        const lettersA = (matchA[1] || '').toUpperCase();
+        const numberA = matchA[2] ? parseInt(matchA[2], 10) : Infinity;
+        const lettersB = (matchB[1] || '').toUpperCase();
+        const numberB = matchB[2] ? parseInt(matchB[2], 10) : Infinity;
+        const aIsPureNumber = /^\d+$/.test(strA);
+        const bIsPureNumber = /^\d+$/.test(strB);
+
+        if (aIsPureNumber && !bIsPureNumber) return 1;
+        if (!aIsPureNumber && bIsPureNumber) return -1;
+        if (aIsPureNumber && bIsPureNumber) return parseInt(strA, 10) - parseInt(strB, 10);
+        
+        if (lettersA < lettersB) return -1;
+        if (lettersA > lettersB) return 1;
+        
+        if (numberA < numberB) return -1;
+        if (numberA > numberB) return 1;
+        
+        return strA.localeCompare(strB);
+    }
+
     function renderLocations() {
         let filteredLocations = [...allLocations];
         const isFiltering = activeFilters.size > 0 || searchQuery !== '';
@@ -58,10 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
             filteredLocations = filteredLocations.filter(loc => {
                 const query = searchQuery.toLowerCase();
                 return (
-                    loc.number.toString().toLowerCase().includes(query) ||
-                    loc.place.toLowerCase().includes(query) ||
-                    (loc.shortForm && loc.shortForm.toLowerCase().includes(query)) ||
-                    (loc.details && loc.details.toLowerCase().includes(query))
+                    (loc.number || '').toString().toLowerCase().includes(query) ||
+                    (loc.place || '').toLowerCase().includes(query) ||
+                    (loc.shortForm || '').toLowerCase().includes(query) ||
+                    (loc.details || '').toLowerCase().includes(query)
                 );
             });
         }
@@ -88,6 +114,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 header.className = 'category-header';
                 header.textContent = category;
                 locationListContainer.appendChild(header);
+                
+                locationsByCategory[category].sort(customSort);
+                
                 locationsByCategory[category].forEach(loc => locationListContainer.appendChild(createLocationElement(loc)));
             });
         }
@@ -108,7 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (loc.details && loc.details.trim() !== '') {
             const details = document.createElement('p');
             details.className = 'location-details';
-            details.textContent = `Info Tambahan: ${loc.details.trim()}`;
+            // Gunakan innerHTML untuk memasukkan tag <br> (line break)
+            details.innerHTML = `Info Tambahan:<br>${loc.details.trim()}`;
             itemDiv.appendChild(details);
         }
         const mapLink = document.createElement('p');
@@ -121,8 +151,33 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch(dataUrl)
         .then(response => { if (!response.ok) throw new Error(`HTTP error!`); return response.json(); })
         .then(data => {
-            allLocations = data;
-            const categories = [...new Set(allLocations.map(loc => loc.locationType).filter(Boolean))].sort();
+            allLocations = data.sort(customSort);
+            
+            let categories = [...new Set(allLocations.map(loc => loc.locationType).filter(Boolean))];
+
+            // --- NEW: CUSTOM SORTING FOR CATEGORY BUTTONS ---
+            const desiredOrder = [
+                "PENTADBIRAN & PTJ",
+                "BLOK AKADEMIK & KELAS",
+                "BLOK FAKULTI & PUSAT PENGAJIAN",
+                "KOLEJ KEDIAMAN",
+                "PUSAT AKTIVITI",
+                "SUKAN & REKREASI",
+                "CAFE & MAKANAN",
+                "KESIHATAN",
+                "IBADAH"
+            ];
+
+            categories.sort((a, b) => {
+                let indexA = desiredOrder.indexOf(a);
+                let indexB = desiredOrder.indexOf(b);
+                // If a category is not in our list, push it to the end
+                if (indexA === -1) indexA = Infinity;
+                if (indexB === -1) indexB = Infinity;
+                return indexA - indexB;
+            });
+            // --- END OF NEW LOGIC ---
+
             categories.forEach(category => {
                 const button = document.createElement('button');
                 button.className = 'filter-btn ' + getLabelClass(category);
@@ -174,9 +229,10 @@ document.addEventListener("DOMContentLoaded", () => {
     backToTopBtn.addEventListener('click', (e) => {
         e.preventDefault();
         const directorySection = document.getElementById('directory');
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+        if (directorySection) {
+            directorySection.scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
     });
 });
