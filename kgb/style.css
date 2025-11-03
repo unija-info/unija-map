@@ -233,7 +233,7 @@ footer a { color: var(--primary-color); }
 /* --- UPDATED COLOR RULES --- */
 .label-blok-akademik-kelas { background-color: #205c8c; color: #ffffff !important; } /* BLOK AKADEMIK & KELAS */
 .label-sukan-rekreasi { background-color: #8A2BE2; color: white; } /* SUKAN & REKREASI */
-.label-pentadbiran-ptj { background-color: #FFDEAD; color: #5d400c; } /* PENTADBIRAN & PTJ */
+.label-pentadbiran-ptj { background-color: #2b8a8f; color: #ffffff; } /* PENTADBIRAN & PTJ */
 .label-blok-fakulti-pusat-pengajian { background-color: #FFD700; color: #000000; } /* BLOK FAKULTI */
 .label-ibadah { background-color: #32CD32; color: rgb(0, 0, 0); }
 .label-cafe-makanan { background-color: #F0E68C; color: #5c5624; }
@@ -251,4 +251,5 @@ footer a { color: var(--primary-color); }
   #search-bar::placeholder {
     font-size: 12px; /* Saiz fon untuk teks placeholder ("Cari mengikut...") */
   }
+
 }
