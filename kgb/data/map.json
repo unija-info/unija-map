@@ -641,22 +641,22 @@
   },
   {
     "number": "A1",
-    "place": "Unisiswa Complex",
+    "place": "Cafe Lama Ibnu Sina",
     "googleMapLink": "https://maps.google.com/?q=5.402462836279461,103.07954202195498",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "A1",
+    "place": "Unisiswa Complex / Pusat Aktiviti Pelajar",
+    "googleMapLink": "https://maps.google.com/?q=5.402463647886445,103.07837844628783",
+    "locationType": "PUSAT AKTIVITI",
+    "shortForm": "PAP",
     "details": "UniCafe / UniSpark / UniSpace / UniShop  / UniStall / UniServis"
   },
   {
     "number": "A2",
-    "place": "Pusat Aktiviti Pelajar",
-    "googleMapLink": "https://maps.google.com/?q=5.402463647886445,103.07837844628783",
-    "locationType": "PUSAT AKTIVITI",
-    "shortForm": "PAP",
-    "details": ""
-  },
-  {
-    "number": "A3",
     "place": "Foyer",
     "googleMapLink": "https://maps.google.com/?q=5.40355479139184,103.0776241862228",
     "locationType": "PUSAT AKTIVITI",
@@ -664,7 +664,7 @@
     "details": "ATM"
   },
   {
-    "number": "A4",
+    "number": "A3",
     "place": "Student Hall",
     "googleMapLink": "https://maps.google.com/?q=5.4041383032718,103.0759282110364",
     "locationType": "PUSAT AKTIVITI",
@@ -672,7 +672,7 @@
     "details": ""
   },
   {
-    "number": "A5",
+    "number": "A4",
     "place": "Uni Parcel Station",
     "googleMapLink": "https://maps.google.com/?q=5.408273287695545,103.07966350021519",
     "locationType": "PUSAT AKTIVITI",
@@ -809,6 +809,14 @@
   },
   {
     "number": "C4",
+    "place": "Cafe Lama Ibnu Sina",
+    "googleMapLink": "https://maps.google.com/?q=5.402462836279461,103.07954202195498",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "C5",
     "place": "CAFETRIA BARU",
     "googleMapLink": "https://maps.google.com/?q=5.404255076600683,103.07761230647776",
     "locationType": "CAFE & MAKANAN",
@@ -816,7 +824,7 @@
     "details": ""
   },
   {
-    "number": "C5",
+    "number": "C6",
     "place": "TUMPU CU@ UniSZA",
     "googleMapLink": "https://maps.google.com/?q=5.408747548865256,103.07978895461028",
     "locationType": "CAFE & MAKANAN",
@@ -824,7 +832,7 @@
     "details": ""
   },
   {
-    "number": " ",
+    "number": "H1",
     "place": "Hospital Sultan Zainal Abidin",
     "googleMapLink": "https://maps.google.com/?q=5.40302156211918,103.08389844481094",
     "locationType": "KESIHATAN",
