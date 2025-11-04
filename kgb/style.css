@@ -242,23 +242,54 @@ footer a { color: var(--primary-color); }
 .label-kesihatan { background-color: #DC143C; color: white; }
 .label-uncategorized { background-color: #778899; color: white; }
 
-/* --- GAYA UNTUK HALAMAN MAKLUM BALAS (FEEDBACK PAGE) --- */
+/* --- GAYA KHAS UNTUK HALAMAN MAKLUM BALAS (FULLSCREEN FORM) --- */
 
-.form-embed-container {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    padding-top: 310%; /* Nisbah aspek untuk borang yang tinggi. Boleh diubah jika perlu */
-    margin-top: 30px;
+/* --- GAYA UNTUK HALAMAN MAKLUM BALAS (SCROLLABLE PAGE) --- */
+
+/* Kawal kandungan utama halaman maklum balas */
+.feedback-main {
+    max-width: 900px; /* Hadkan lebar untuk kebolehbacaan */
+    margin: 40px auto;
+    padding: 0 20px;
 }
 
-.form-embed-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: 0;
+/* Teks pengenalan di atas borang */
+.feedback-intro {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.feedback-intro h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+}
+
+/* Tetapan untuk iframe Google Form (Full-Width Bleed) */
+.google-form-iframe {
+    /* 1. Jadikan lebar iframe sama dengan lebar penuh skrin */
+    width: 100vw; 
+
+    /* 2. Berikan ketinggian yang besar untuk elak double scrollbar */
+    height: 2800px; 
+
+    /* 3. Gunakan trik margin untuk menariknya ke posisi yang betul */
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+
+    /* 4. Buang sempadan untuk rupa yang bersih */
+    border: none;
+}
+
+/* Penyesuaian untuk skrin kecil */
+@media (max-width: 600px) {
+    .google-form-iframe {
+        height: 2200px; /* Tambah ketinggian untuk peranti mudah alih */
+    }
+
+      .google-form-iframe {
+        height: 3200px; /* Anda boleh laraskan nilai ini jika perlu */
+    }
 }
 
 /* --- PENAMBAHBAIKAN UNTUK PAPARAN MUDAH ALIH (MOBILE VIEW) --- */

@@ -7,7 +7,7 @@
 
     <!-- Menggunakan fon dan fail CSS yang sama -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="/kgb/style.css">
@@ -22,37 +22,25 @@
         </div>
     </header>
 
-    <main>
-        <div class="info-container">
-            <h2 style="text-align: center;">Borang Maklum Balas & Cadangan</h2>
-            <p style="text-align: center;">
-                Setiap maklum balas anda amat penting bagi kami untuk menambah baik Peta Navigasi ini. Terima kasih!
-            </p>
-
-            <!-- ARAHAN: Gantikan keseluruhan kod <iframe> di bawah dengan kod embed dari Google Form anda. -->
-            <!-- 1. Buka Google Form anda. -->
-            <!-- 2. Klik butang 'Send' (Hantar) di penjuru atas kanan. -->
-            <!-- 3. Pilih tab '< >' (Embed HTML). -->
-            <!-- 4. Salin kod <iframe> yang diberikan dan tampalkannya di sini. -->
-            <div class="form-embed-container">
-                <iframe 
-                    src="https://docs.google.com/forms/d/e/1FAIpQLSfSAkaUo1NZF57zWEZirw0QyJ-6VZ8C-tuw7h6V3bynR1PMig/viewform?usp=header" 
-                    width="900" 
-                    height="28" 
-                    frameborder="0" 
-                    marginheight="0" 
-                    marginwidth="0">
-                    Memuatkan…
-                </iframe>
-            </div>
-            <!-- AKHIR BAHAGIAN GOOGLE FORM -->
-            
+    <main class="feedback-main">
+        <div class="feedback-intro">
+            <h2>Borang Maklum Balas & Cadangan</h2>
+            <p>Setiap maklum balas anda amat penting bagi kami untuk menambah baik Peta Navigasi ini. Terima kasih!</p>
         </div>
+
+        <iframe 
+            class="google-form-iframe"
+            src="https://docs.google.com/forms/d/e/1FAIpQLSfSAkaUo1NZF57zWEZirw0QyJ-6VZ8C-tuw7h6V3bynR1PMig/viewform" 
+            frameborder="0" 
+            marginheight="0" 
+            marginwidth="0">
+            Memuatkan…
+        </iframe>
     </main>
 
     <footer>
         <!-- Pautan untuk kembali ke halaman info -->
-        <p><a href="/kgb/info.html">Kembali ke Halaman Info</a></p>
+        <p><a href="/kgb/info.html">Kembali ke Halaman Info Projek</a></p>
         
         <p>Copyright 2025 | <a href="https://unija.info" target="_blank" rel="noopener noreferrer">unija.info</a> | Version 1.0 011125-0000</p>
         <p>
