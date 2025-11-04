@@ -235,4 +235,72 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     });
+
+    // --- FUNGSI UNTUK MENDAPATKAN TARIKH & MASA KEMAS KINI DARI GITHUB (FORMAT KHAS) ---
+
+    async function fetchLastUpdateDates() {
+        const REPO_OWNER = 'unija-info';
+        const REPO_NAME = 'unija-map';
+        const DATA_FILE_PATH = 'kgb/data/map.json';
+        const MAP_IMAGE_PATH = 'kgb/file/02_Map-Unija-KGB.png'; // Pastikan laluan ini betul
+
+        // Fungsi bantuan baharu untuk memformat tarikh dan masa mengikut format yang diminta
+        const formatDateTime = (dateString) => {
+            if (!dateString) return "Tidak tersedia";
+
+            const date = new Date(dateString);
+            
+            // Menggunakan nama bulan dalam Bahasa Inggeris untuk sepadan dengan 'PM'
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+
+            let hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+
+            hours = hours % 12;
+            hours = hours ? hours : 12; // jam '0' sepatutnya menjadi '12'
+
+            // Tambah '0' di depan minit jika ia kurang dari 10 (cth: 05)
+            const paddedMinutes = minutes < 10 ? '0' + minutes : minutes;
+
+            const timeString = `${hours}:${paddedMinutes} ${ampm}`;
+
+            return `${day} ${month} ${year}, ${timeString}`;
+        };
+
+        // Fungsi untuk mendapatkan tarikh commit terakhir bagi satu fail
+        const getLastCommitDate = async (filePath) => {
+            const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?path=${filePath}&per_page=1`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+                const commits = await response.json();
+                if (commits.length > 0) {
+                    return formatDateTime(commits[0].commit.committer.date);
+                }
+                return "Tidak tersedia";
+            } catch (error) {
+                console.error(`Failed to fetch update date for ${filePath}:`, error);
+                return "Tidak tersedia";
+            }
+        };
+
+        // Dapatkan kedua-dua tarikh
+        const mapDate = await getLastCommitDate(MAP_IMAGE_PATH);
+        const dataDate = await getLastCommitDate(DATA_FILE_PATH);
+
+        // Kemas kini elemen di footer
+        const mapDateElement = document.getElementById('map-update-date');
+        const dataDateElement = document.getElementById('data-update-date');
+        
+        if (mapDateElement) mapDateElement.textContent = mapDate;
+        if (dataDateElement) dataDateElement.textContent = dataDate;
+    }
+
+    // Panggil fungsi untuk memulakan proses
+    fetchLastUpdateDates();
 });

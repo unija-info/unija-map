@@ -242,6 +242,25 @@ footer a { color: var(--primary-color); }
 .label-kesihatan { background-color: #DC143C; color: white; }
 .label-uncategorized { background-color: #778899; color: white; }
 
+/* --- GAYA UNTUK HALAMAN MAKLUM BALAS (FEEDBACK PAGE) --- */
+
+.form-embed-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding-top: 310%; /* Nisbah aspek untuk borang yang tinggi. Boleh diubah jika perlu */
+    margin-top: 30px;
+}
+
+.form-embed-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 /* --- PENAMBAHBAIKAN UNTUK PAPARAN MUDAH ALIH (MOBILE VIEW) --- */
 @media (max-width: 600px) {
   #search-bar {
@@ -252,4 +271,135 @@ footer a { color: var(--primary-color); }
     font-size: 12px; /* Saiz fon untuk teks placeholder ("Cari mengikut...") */
   }
 
+}
+
+/* --- GAYA UNTUK HALAMAN INFO --- */
+
+.info-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    animation: fadeIn 0.5s ease-in-out; /* Tambah animasi yang sama seperti .location-item */
+}
+
+/* Menetapkan warna pautan di dalam info-container */
+.info-container a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+.info-container a:hover {
+    text-decoration: underline;
+}
+
+.info-container h2 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-top: 30px;
+    font-weight: 700;
+}
+.info-container h2:first-child {
+    margin-top: 0;
+}
+
+.info-container ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+.info-container li {
+    margin-bottom: 10px;
+}
+
+/* Butang untuk Virtual Tour */
+.virtual-tour-btn {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white !important; /* Guna !important untuk pastikan warna teks kekal putih */
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 10px;
+    transition: transform 0.2s, filter 0.2s;
+}
+.virtual-tour-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(110%);
+    text-decoration: none;
+}
+
+/* --- GAYA UNTUK SEKSYEN PROMOSI LAWATAN MAYA DI HALAMAN UTAMA --- */
+
+#virtual-tour-promo {
+    max-width: 900px; /* Samakan lebar dengan #directory */
+    margin: 40px auto; /* Jarak atas/bawah dan tengahkan */
+    padding: 25px 30px;
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+#virtual-tour-promo h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+#virtual-tour-promo p {
+    margin-bottom: 20px;
+    color: #555;
+    font-size: 1.1em;
+    line-height: 1.7;
+}
+
+/* --- GAYA UNTUK INFO KEMAS KINI DI FOOTER --- */
+.update-info {
+    margin: 25px auto;
+    padding: 15px;
+    max-width: 650px; /* Lebar maksimum container */
+    font-size: 0.9em;
+    color: #6c757d;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.update-info p {
+    margin: 5px 0;
+}
+
+/* Tajuk "Kemas Kini Terakhir:" */
+.update-title {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px; /* Jarak antara tajuk dan baris butiran */
+}
+
+/* Baris yang mengandungi Peta & Database */
+.update-details {
+    line-height: 1.6;
+}
+
+/* Pemisah '|' di antara item */
+.update-details .separator {
+    margin: 0 10px;
+    color: #ccc;
+}
+
+/* Penyesuaian untuk skrin kecil (RESPONSIVE) */
+@media (max-width: 550px) {
+    .update-details span {
+        display: block; /* Letakkan setiap item pada baris baru */
+        margin-bottom: 5px;
+    }
+    .update-details .separator {
+        display: none; /* Sembunyikan pemisah '|' pada skrin kecil */
+    }
 }
