@@ -1,12 +1,4 @@
 {
   "cleanUrls": true,
-  "trailingSlash": true
-}
-{
-  "rewrites": [
-    {
-      "source": "/kgb/:path*",
-      "destination": "/kgb/:path*"
-    }
-  ]
+  "trailingSlash": false
 }
