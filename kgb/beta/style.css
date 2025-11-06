@@ -1,0 +1,504 @@
+:root {
+    --primary-color: #005a9c;
+    --header-bg-color: #177E89;
+    --header-text-primary: #FFFFFF;
+    --header-text-secondary: #E0E0E0;
+    --border-color: #ddd;
+    --background-color: #f9f9f9;
+    --text-color: #333;
+}
+
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 15px 20px;
+    background-color: var(--header-bg-color);
+}
+.header-logo { height: 60px; width: auto; }
+.header-text h1 { margin: 0; font-size: 1.8em; color: var(--header-text-primary); font-weight: 700; }
+.header-text p { margin: 0; color: var(--header-text-secondary); font-size: 1.1em; }
+
+main {
+    padding: 0 20px;
+}
+
+#map-container {
+    max-width: 1200px;
+    margin: 20px auto 0 auto;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+#map-container:hover { transform: scale(1.02); }
+#map-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: block;
+}
+
+.map-description {
+    max-width: 1200px;
+    margin: 15px auto 0 auto;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+#directory {
+    max-width: 900px;
+    margin: 40px auto;
+}
+
+.search-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+#search-bar {
+    width: 100%;
+    padding: 10px 40px 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1em;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+.clear-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5em;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+.clear-icon:hover { color: #333; }
+
+#quick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.filter-btn, .clear-filters-btn {
+    text-decoration: none;
+    padding: 8px 28px 8px 15px; 
+    border-radius: 20px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+}
+.filter-btn:hover, .clear-filters-btn:hover { filter: brightness(90%); }
+
+.filter-btn::after {
+    content: '×';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2em;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.filter-btn.active {
+    box-shadow: 0 0 0 3px rgba(0, 90, 156, 0.3);
+    font-weight: 700;
+}
+.filter-btn.active::after {
+    opacity: 1;
+}
+
+.clear-filters-btn {
+    background-color: #6c757d;
+    color: white;
+    font-weight: 700;
+}
+
+#results-count {
+    margin: 20px 0;
+    font-weight: 600;
+    color: #555;
+    font-size: 1.1em;
+}
+
+.category-header, .location-item {
+    animation: fadeIn 0.5s ease-in-out;
+}
+.category-header {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+    font-weight: 700;
+}
+.category-header:first-child { margin-top: 0; }
+
+.location-item {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+.location-item p { margin: 0 0 10px 0; }
+.location-item p:last-child { margin-bottom: 0; }
+.location-title { font-weight: 700; font-size: 1.1em; margin-top: 0; }
+.location-details { color: #555; font-style: italic; }
+.location-link a { color: var(--primary-color); text-decoration: none; font-weight: 600; }
+.location-link a:hover { text-decoration: underline; }
+
+.location-label {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    border-radius: 15px;
+    margin-bottom: 12px;
+}
+
+footer {
+    text-align: center;
+    margin-top: 60px;
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    color: #6c757d;
+    font-size: 0.9em;
+}
+footer p { margin: 5px 0; }
+footer a { color: var(--primary-color); }
+
+.hidden { display: none !important; }
+
+.initial-message {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6c757d;
+    background-color: #fff;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#back-to-top-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: var(--primary-color);
+    color: white;
+    text-align: center;
+    line-height: 50px;
+    font-size: 24px;
+    border-radius: 50%;
+    text-decoration: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+    transform: translateY(20px);
+}
+#back-to-top-btn.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+#back-to-top-btn:hover {
+    filter: brightness(120%);
+}
+
+/* --- UPDATED COLOR RULES --- */
+.label-blok-akademik-kelas { background-color: #205c8c; color: #ffffff !important; } /* BLOK AKADEMIK & KELAS */
+.label-sukan-rekreasi { background-color: #8A2BE2; color: white; } /* SUKAN & REKREASI */
+.label-pentadbiran-ptj { background-color: #2b8a8f; color: #ffffff; } /* PENTADBIRAN & PTJ */
+.label-blok-fakulti-pusat-pengajian { background-color: #FFD700; color: #000000; } /* BLOK FAKULTI */
+.label-ibadah { background-color: #32CD32; color: rgb(0, 0, 0); }
+.label-cafe-makanan { background-color: #F0E68C; color: #5c5624; }
+.label-kolej-kediaman { background-color: #ecaa2b; color: #000000; }
+.label-pusat-aktiviti { background-color: #FF69B4; color: rgb(0, 0, 0); } /* PUSAT AKTIVITI */
+.label-kesihatan { background-color: #DC143C; color: white; }
+.label-uncategorized { background-color: #778899; color: white; }
+
+/* --- GAYA KHAS UNTUK HALAMAN MAKLUM BALAS (FULLSCREEN FORM) --- */
+
+/* --- GAYA UNTUK HALAMAN MAKLUM BALAS (SCROLLABLE PAGE) --- */
+
+/* Kawal kandungan utama halaman maklum balas */
+.feedback-main {
+    max-width: 900px; /* Hadkan lebar untuk kebolehbacaan */
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+/* Teks pengenalan di atas borang */
+.feedback-intro {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.feedback-intro h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+}
+
+/* Tetapan untuk iframe Google Form (Full-Width Bleed) */
+.google-form-iframe {
+    /* 1. Jadikan lebar iframe sama dengan lebar penuh skrin */
+    width: 100vw; 
+
+    /* 2. Berikan ketinggian yang besar untuk elak double scrollbar */
+    height: 2800px; 
+
+    /* 3. Gunakan trik margin untuk menariknya ke posisi yang betul */
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+
+    /* 4. Buang sempadan untuk rupa yang bersih */
+    border: none;
+}
+
+/* Penyesuaian untuk skrin kecil */
+@media (max-width: 600px) {
+    .google-form-iframe {
+        height: 2200px; /* Tambah ketinggian untuk peranti mudah alih */
+    }
+
+      .google-form-iframe {
+        height: 3200px; /* Anda boleh laraskan nilai ini jika perlu */
+    }
+}
+
+/* --- PENAMBAHBAIKAN UNTUK PAPARAN MUDAH ALIH (MOBILE VIEW) --- */
+@media (max-width: 600px) {
+  #search-bar {
+    font-size: 14px; /* Saiz fon untuk teks yang ditaip */
+  }
+
+  #search-bar::placeholder {
+    font-size: 12px; /* Saiz fon untuk teks placeholder ("Cari mengikut...") */
+  }
+
+}
+
+/* --- GAYA UNTUK HALAMAN INFO --- */
+
+.info-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    animation: fadeIn 0.5s ease-in-out; /* Tambah animasi yang sama seperti .location-item */
+}
+
+/* Menetapkan warna pautan di dalam info-container */
+.info-container a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+.info-container a:hover {
+    text-decoration: underline;
+}
+
+.info-container h2 {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-top: 30px;
+    font-weight: 700;
+}
+.info-container h2:first-child {
+    margin-top: 0;
+}
+
+.info-container ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+.info-container li {
+    margin-bottom: 10px;
+}
+
+/* Butang untuk Virtual Tour */
+.virtual-tour-btn {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white !important; /* Guna !important untuk pastikan warna teks kekal putih */
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 10px;
+    transition: transform 0.2s, filter 0.2s;
+}
+.virtual-tour-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(110%);
+    text-decoration: none;
+}
+
+/* --- GAYA UNTUK SEKSYEN PROMOSI LAWATAN MAYA DI HALAMAN UTAMA --- */
+
+#virtual-tour-promo {
+    max-width: 900px; /* Samakan lebar dengan #directory */
+    margin: 40px auto; /* Jarak atas/bawah dan tengahkan */
+    padding: 25px 30px;
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+#virtual-tour-promo h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+#virtual-tour-promo p {
+    margin-bottom: 20px;
+    color: #555;
+    font-size: 1.1em;
+    line-height: 1.7;
+}
+
+/* --- GAYA UNTUK INFO KEMAS KINI DI FOOTER --- */
+.update-info {
+    margin: 25px auto;
+    padding: 15px;
+    max-width: 650px; /* Lebar maksimum container */
+    font-size: 0.9em;
+    color: #6c757d;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.update-info p {
+    margin: 5px 0;
+}
+
+/* Tajuk "Kemas Kini Terakhir:" */
+.update-title {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px; /* Jarak antara tajuk dan baris butiran */
+}
+
+/* Baris yang mengandungi Peta & Database */
+.update-details {
+    line-height: 1.6;
+}
+
+/* Pemisah '|' di antara item */
+.update-details .separator {
+    margin: 0 10px;
+    color: #ccc;
+}
+
+/* Penyesuaian untuk skrin kecil (RESPONSIVE) */
+@media (max-width: 550px) {
+    .update-details span {
+        display: block; /* Letakkan setiap item pada baris baru */
+        margin-bottom: 5px;
+    }
+    .update-details .separator {
+        display: none; /* Sembunyikan pemisah '|' pada skrin kecil */
+    }
+}
+
+/* --- GAYA UNTUK BANNER PEMASANGAN PWA --- */
+
+.install-banner {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+}
+
+.install-banner.hidden {
+    display: none;
+}
+
+.banner-content {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.banner-content p {
+    margin: 0 0 10px 0;
+    font-weight: 500;
+}
+
+.banner-button {
+    background-color: #ffffff;
+    color: var(--primary-color);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.banner-button:hover {
+    background-color: #f0f0f0;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2.0em;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.8;
+    padding: 0 5px;
+}
+
+.close-button:hover {
+    opacity: 1;
+}
+
+/* Penyesuaian untuk skrin kecil */
+@media (max-width: 600px) {
+    .banner-content {
+        text-align: left;
+    }
+}
