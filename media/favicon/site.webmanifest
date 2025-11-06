@@ -1,21 +1,21 @@
 {
-  "name": "Unija-map (KGB)",
-  "short_name": "Unija-map (KGB)",
+  "name": "UMap (KGB)",
+  "short_name": "UMap (KGB)",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "/media/favicon/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "/media/favicon/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#12b5d8",
+  "theme_color": "#126c76",
+  "background_color": "#177e89",
   "display": "standalone"
 }
