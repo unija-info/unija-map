@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bus Stop Locator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <button id="toggle-view" class="mobile-toggle">Show Map</button>
+
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Bus Companies</h2>
+                <input type="text" id="search-bar" placeholder="Search company...">
+                <button id="show-all" class="btn-reset">Show All Stops</button>
+            </div>
+            <div id="company-list" class="company-list"></div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
