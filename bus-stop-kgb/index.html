@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bus Stop Locator</title>
+    <title>Bus Stop @ UniSZA Gong Badak</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-container">
-        <button id="toggle-view" class="mobile-toggle">Show Map</button>
+        <div id="map"></div>
+
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Search for bus stops or companies...">
+        </div>
 
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>Bus Companies</h2>
-                <input type="text" id="search-bar" placeholder="Search company...">
-                <button id="show-all" class="btn-reset">Show All Stops</button>
+                <h2>Bus Stop @ UniSZA KGB</h2>
+                <p class="subtitle">Peta Lokasi Pick Up & Drop Point Bas Ekspres di sekitar UniSZA Kampus Gong Badak</p>
+                <button id="show-all" class="btn-reset">📍 Papar semua Lokasi Bus Stop</button>
+                <button id="toggle-all-groups" class="btn-toggle-groups">📋 Papar Semua Operator</button>
             </div>
             <div id="company-list" class="company-list"></div>
         </div>
 
-        <div id="map"></div>
+        <button id="toggle-view" class="mobile-toggle">Show Map</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
