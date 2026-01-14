@@ -4,8 +4,120 @@ let busData = [];
 let isMapView = false;
 let currentActiveCompany = null;
 
+// Bottom sheet state management (mobile only)
+let sheetState = 'peek'; // 'peek' (15%), 'half' (50%), 'full' (90%)
+let touchStartY = 0;
+let touchCurrentY = 0;
+let isDragging = false;
+let sheetElement = null;
+
+function initBottomSheet() {
+    if (window.innerWidth > 768) return; // Desktop only
+
+    sheetElement = document.getElementById('sidebar');
+    const handleElement = document.querySelector('.sheet-handle');
+
+    if (!sheetElement) return;
+
+    // Create handle if it doesn't exist
+    if (!handleElement) {
+        const handle = document.createElement('div');
+        handle.className = 'sheet-handle';
+        handle.innerHTML = '<div class="handle-bar"></div>';
+        sheetElement.insertBefore(handle, sheetElement.firstChild);
+    }
+
+    // Set initial state
+    sheetElement.classList.add('sheet-peek');
+
+    // Attach event listeners
+    const actualHandle = sheetElement.querySelector('.sheet-handle');
+
+    // Touch events for swipe
+    actualHandle.addEventListener('touchstart', handleTouchStart, { passive: false });
+    actualHandle.addEventListener('touchmove', handleTouchMove, { passive: false });
+    actualHandle.addEventListener('touchend', handleTouchEnd);
+
+    // Click event for tap toggle
+    actualHandle.addEventListener('click', handleSheetTap);
+}
+
+function handleTouchStart(e) {
+    touchStartY = e.touches[0].clientY;
+    isDragging = true;
+}
+
+function handleTouchMove(e) {
+    if (!isDragging) return;
+
+    e.preventDefault(); // Prevent page scroll while dragging
+    touchCurrentY = e.touches[0].clientY;
+
+    // Optional: Add visual feedback during drag
+    const deltaY = touchStartY - touchCurrentY;
+    // Can implement real-time sheet height adjustment here for smoother UX
+}
+
+function handleTouchEnd(e) {
+    if (!isDragging) return;
+
+    const deltaY = touchStartY - touchCurrentY;
+    const velocity = Math.abs(deltaY);
+
+    // Determine swipe direction and update state
+    if (deltaY > 50) {
+        // Swipe up
+        if (sheetState === 'peek') {
+            setSheetState('half');
+        } else if (sheetState === 'half') {
+            setSheetState('full');
+        }
+    } else if (deltaY < -50) {
+        // Swipe down
+        if (sheetState === 'full') {
+            setSheetState('half');
+        } else if (sheetState === 'half') {
+            setSheetState('peek');
+        }
+    }
+
+    isDragging = false;
+}
+
+function handleSheetTap(e) {
+    // Tap cycles through states: peek -> half -> full -> peek
+    if (sheetState === 'peek') {
+        setSheetState('half');
+    } else if (sheetState === 'half') {
+        setSheetState('full');
+    } else if (sheetState === 'full') {
+        setSheetState('peek');
+    }
+}
+
+function setSheetState(newState) {
+    if (!sheetElement) return;
+
+    // Remove all state classes
+    sheetElement.classList.remove('sheet-peek', 'sheet-half', 'sheet-full');
+
+    // Add new state class (CSS handles height via classes)
+    // Note: No class for 'peek' - that's the default mobile .sidebar style
+    if (newState === 'half') {
+        sheetElement.classList.add('sheet-half');
+    } else if (newState === 'full') {
+        sheetElement.classList.add('sheet-full');
+    }
+
+    sheetState = newState;
+}
+
 function initMap() {
-    map = L.map('map', { maxZoom: 22, zoomControl: false }).setView([5.3950, 103.0830], 14);
+    // Detect mobile and adjust initial zoom
+    const isMobile = window.innerWidth <= 768;
+    const initialZoom = isMobile ? 13 : 14;
+
+    map = L.map('map', { maxZoom: 22, zoomControl: false }).setView([5.3950, 103.0830], initialZoom);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
@@ -37,6 +149,7 @@ function initMap() {
             busData = data.stops;
             renderGroupedList();
             showAllStops();
+            createNoResultsMessage(); // Create after list is populated
         });
 }
 
@@ -150,8 +263,6 @@ function filterByCompany(companyName, btn) {
             markers.push(createMarker(stop, true));
         }
     });
-
-    if (window.innerWidth <= 768 && !isAlreadyActive) toggleMobileView();
 }
 
 function createMarker(stop, isSelected) {
@@ -235,18 +346,17 @@ function createMarker(stop, isSelected) {
 function clearMarkers() { markers.forEach(m => map.removeLayer(m)); markers = []; }
 function resetButtons() { document.querySelectorAll('.company-btn').forEach(b => b.classList.remove('active')); }
 
-function toggleMobileView() {
-    const sidebar = document.getElementById('sidebar');
-    const toggleBtn = document.getElementById('toggle-view');
-    isMapView = !isMapView;
-    sidebar.classList.toggle('hidden', isMapView);
-    toggleBtn.innerText = isMapView ? "Show List" : "Show Map";
-    setTimeout(() => map.invalidateSize(), 300);
-}
-
 // Advanced Search: Handles stop names and company names
 document.getElementById('search-bar').addEventListener('keyup', function(e) {
     const term = e.target.value.toLowerCase();
+
+    // Auto-expand sheet to half when user types (mobile only)
+    if (window.innerWidth <= 768 && term.length > 0 && sheetState === 'peek') {
+        setSheetState('half');
+    }
+
+    let totalVisibleGroups = 0; // Track visible groups
+
     document.querySelectorAll('.stop-group').forEach(group => {
         const stopHeader = group.querySelector('.stop-header');
         const stopName = stopHeader ? stopHeader.innerText.toLowerCase() : '';
@@ -271,14 +381,102 @@ document.getElementById('search-bar').addEventListener('keyup', function(e) {
         // Hide entire stop group if no matches, otherwise show it
         group.style.display = hasVisibleCompany ? 'block' : 'none';
 
+        // Count visible groups
+        if (hasVisibleCompany) {
+            totalVisibleGroups++;
+        }
+
         // Auto-expand if searching and has matches
         if(term.length > 0 && hasVisibleCompany) {
             group.classList.remove('collapsed');
         }
     });
+
+    // Show/hide "No results found" message
+    const noResultsMsg = document.getElementById('no-results-message');
+    if (noResultsMsg) {
+        if (term.length > 0 && totalVisibleGroups === 0) {
+            // Show message when search term exists but no results
+            noResultsMsg.style.display = 'block';
+        } else {
+            // Hide message when not searching or when results exist
+            noResultsMsg.style.display = 'none';
+        }
+    }
 });
 
-document.getElementById('toggle-view').onclick = toggleMobileView;
 document.getElementById('show-all').onclick = showAllStops;
 document.getElementById('toggle-all-groups').onclick = toggleAllGroups;
-window.onload = initMap;
+
+function createNoResultsMessage() {
+    const companyList = document.getElementById('company-list');
+    if (!companyList) return;
+
+    // Check if message already exists
+    if (document.getElementById('no-results-message')) return;
+
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.id = 'no-results-message';
+    noResultsDiv.className = 'no-results-message';
+    noResultsDiv.style.display = 'none';
+
+    noResultsDiv.innerHTML = `
+        <div class="no-results-icon">🔍</div>
+        <p class="no-results-title">No results found</p>
+        <p class="no-results-subtitle">Try different keywords or check spelling</p>
+    `;
+
+    // Insert at beginning of company list
+    companyList.insertBefore(noResultsDiv, companyList.firstChild);
+}
+
+function createClearSearchButton() {
+    const searchContainer = document.querySelector('.search-container');
+    if (!searchContainer) return;
+
+    // Check if button already exists
+    if (document.getElementById('clear-search')) return;
+
+    const clearBtn = document.createElement('button');
+    clearBtn.id = 'clear-search';
+    clearBtn.className = 'clear-search-btn';
+    clearBtn.style.display = 'none';
+    clearBtn.setAttribute('aria-label', 'Clear search');
+    clearBtn.textContent = '×';
+
+    // Insert after search bar
+    searchContainer.appendChild(clearBtn);
+}
+
+function initClearSearchButton() {
+    const searchBar = document.getElementById('search-bar');
+    const clearBtn = document.getElementById('clear-search');
+
+    if (searchBar && clearBtn) {
+        searchBar.addEventListener('input', function() {
+            clearBtn.style.display = this.value.length > 0 ? 'block' : 'none';
+        });
+
+        clearBtn.addEventListener('click', function() {
+            searchBar.value = '';
+            searchBar.dispatchEvent(new Event('keyup')); // Trigger search update
+            this.style.display = 'none';
+            searchBar.focus(); // Return focus to search bar
+        });
+    }
+}
+
+window.onload = function() {
+    initMap();
+    initBottomSheet();
+    createClearSearchButton();
+    initClearSearchButton();
+};
+
+// Re-initialize bottom sheet on window resize
+window.addEventListener('resize', function() {
+    // Re-initialize bottom sheet if switching to/from mobile
+    if (window.innerWidth <= 768) {
+        initBottomSheet();
+    }
+});
