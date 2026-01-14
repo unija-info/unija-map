@@ -5,6 +5,29 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-01-14
+
+### Added
+- Side-by-side button layout for sidebar header controls
+- Flexbox-based button container (`.button-group`) for responsive horizontal layout
+- Equal width distribution for action buttons using `flex: 1`
+
+### Changed
+- **Sidebar Button Layout**:
+  - Changed "Show All Locations" and "Show All Operators" buttons from stacked (vertical) to side-by-side (horizontal) layout
+  - Buttons now appear next to each other on both desktop and mobile views
+  - Maintained 8px gap between buttons using flexbox `gap` property
+  - Each button takes 50% of available width with equal distribution
+  - Improved visual hierarchy and better use of horizontal space
+
+### Technical Details
+- Added `.button-group` wrapper div in HTML ([index.html:26-29](index.html#L26-L29))
+- Implemented flexbox container with `display: flex`, `gap: 8px`, `width: 100%` ([style.css:129-134](style.css#L129-L134))
+- Changed button width from `width: 100%` to `flex: 1` for equal distribution ([style.css:99](style.css#L99))
+- No JavaScript changes required - purely HTML/CSS layout modification
+- Maintains all existing button functionality (zoom to all stops, expand/collapse operators)
+- Responsive across all screen sizes without media queries
+
 ## [2.1.0] - 2026-01-14
 
 ### Added

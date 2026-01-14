@@ -276,7 +276,7 @@ function createMarker(stop, isSelected) {
     const defaultIcon = L.icon({
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], tooltipAnchor: [16, -28], shadowSize: [41, 41]
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], tooltipAnchor: [13, 20], shadowSize: [41, 41]
     });
 
     const marker = L.marker(stop.coords, { icon: defaultIcon });
@@ -300,11 +300,15 @@ function createMarker(stop, isSelected) {
         </div>
     `;
 
+    // Use tooltipPosition from data.json, default to 'right' if not specified
+    const direction = stop.tooltipPosition || 'right';
+    const offset = direction === 'left' ? [-35, -40] : [5, -40];  // Left tooltips: 15px left, Right: 5px right
+
     marker.bindTooltip(tooltipContent, {
         permanent: true,
-        direction: 'top',
+        direction: direction,
         className: 'custom-tooltip-popup',
-        offset: isSelected ? [-14, -5] : [-14, -15]
+        offset: offset  // Adjusts based on direction: left uses negative offset
     });
 
     // Toggle this marker's button on click

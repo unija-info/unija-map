@@ -1,5 +1,5 @@
 # Developer Documentation
-## Bus Stop @ UniSZA Gong Badak v2.1
+## Bus Stop @ UniSZA Gong Badak v2.2
 
 This document provides technical details for developers working on the Bus Stop mapping application.
 
@@ -114,6 +114,64 @@ function renderGroupedList() {
     // - Sub-list of company buttons
 }
 ```
+
+### 4. Sidebar Button Layout (v2.2.0)
+
+The sidebar header contains two action buttons displayed side-by-side using flexbox.
+
+#### HTML Structure ([index.html:26-29](index.html#L26-L29))
+
+```html
+<div class="button-group">
+    <button id="show-all" class="btn-reset">📍 Papar semua Lokasi Bus Stop</button>
+    <button id="toggle-all-groups" class="btn-toggle-groups">📋 Papar Semua Operator</button>
+</div>
+```
+
+**Layout Container**:
+- `.button-group` wrapper enables flexbox horizontal layout
+- Both buttons wrapped in single container for equal distribution
+- Maintains semantic HTML structure
+
+#### CSS Implementation
+
+**Button Container ([style.css:129-134](style.css#L129-L134))**:
+```css
+.button-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+```
+
+**Button Styling ([style.css:98-111](style.css#L98-L111))**:
+```css
+.btn-reset, .btn-toggle-groups {
+    flex: 1;  /* Equal width distribution */
+    padding: 12px 24px;
+    border: none;
+    border-radius: 24px;
+    background: #1967d2;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+}
+```
+
+**Key Features** (v2.2.0):
+- `flex: 1`: Buttons share available space equally (50% each)
+- `gap: 8px`: Consistent spacing between buttons
+- Responsive without media queries - works on all screen sizes
+- Maintains Material Design styling with rounded corners and shadows
+- Hover and active states preserved from v2.1
+
+**Button Functions**:
+- **Show All Locations** (`#show-all`): Zooms map to display all bus stop markers
+- **Show All Operators** (`#toggle-all-groups`): Expands/collapses all accordion groups
+
+**Layout Evolution**:
+- v2.0-2.1: Buttons stacked vertically (`width: 100%`)
+- v2.2.0: Buttons side-by-side (`flex: 1` with flexbox container)
 
 ---
 
@@ -612,6 +670,14 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 
 ## Version History
 
+### v2.2.0 (2026-01-14)
+- Changed sidebar button layout from stacked to side-by-side
+- Implemented flexbox-based button container for responsive horizontal layout
+- Added `.button-group` wrapper with `display: flex` and `gap: 8px`
+- Changed button width from `width: 100%` to `flex: 1` for equal distribution
+- Improved visual hierarchy and better use of horizontal space
+- Maintained Material Design styling and all existing functionality
+
 ### v2.1.0 (2026-01-14)
 - Fixed critical gap between tooltip and arrow indicator
 - Optimized tooltip styling for compact display
@@ -670,5 +736,5 @@ This project is developed for UniSZA internal use.
 ---
 
 **Last Updated**: 2026-01-14
-**Version**: 2.1.0
+**Version**: 2.2.0
 **Maintained By**: Development Team
