@@ -5,6 +5,49 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-14
+
+### Added
+- Dynamic tooltip width with `width: max-content` for better text fitting
+- Configurable minimum tooltip width (200px default)
+- Single-line text display option with `white-space: nowrap` support
+
+### Changed
+- **Tooltip Styling Improvements**:
+  - Reduced vertical padding from 8px to 4px for more compact appearance
+  - Changed tooltip text to single-line display (no wrapping)
+  - Tooltip width now dynamically adjusts to content width with 5px horizontal padding
+  - Minimum width set to 200px (expandable for longer names)
+  - Removed fixed min-height constraint to allow natural content sizing
+
+- **Arrow/Triangle Indicator**:
+  - Moved arrow pseudo-element from `.custom-tooltip-popup::after` to `.popup-content-wrapper::after`
+  - Fixed gap between tooltip box and arrow indicator
+  - Changed parent container background to transparent
+  - Arrow now seamlessly connects with tooltip box regardless of border-radius value
+
+- **Expanded State Optimization**:
+  - Reduced upward shift from -80px to -60px when tooltip expands
+  - Minimized gap between tooltip and marker while maintaining clearance
+  - Improved visual alignment when "Get Directions" button appears
+
+### Fixed
+- **Critical**: Eliminated visible gap/stray line between tooltip box and arrow indicator
+- Fixed arrow positioning issue that appeared with larger border-radius values
+- Resolved tooltip content sizing issues with transparent parent container
+- Fixed box-shadow positioning (moved from parent to content wrapper)
+- Corrected text alignment and spacing in collapsed tooltip state
+
+### Technical Details
+- Restructured tooltip DOM hierarchy for better arrow attachment
+- Implemented transparent parent container pattern (`.custom-tooltip-popup`)
+- Centralized visual styling on content wrapper (`.popup-content-wrapper`)
+- Arrow now positioned relative to actual content box, not parent container
+- Updated CSS architecture:
+  - Parent container: Transparent, no visual styling
+  - Content wrapper: White background, border-radius, box-shadow
+  - Arrow: Attached to content wrapper bottom edge
+
 ## [2.0.0] - 2026-01-14
 
 ### Added
@@ -25,17 +68,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only one tooltip can be expanded at a time
 - Improved tooltip compactness with reduced padding and spacing
 - Updated tooltip dimensions:
-  - Collapsed height: 32px (reduced from 46px)
-  - Expanded height: 75px (reduced from 110px)
+  - Collapsed height: Dynamic (content-based)
+  - Expanded height: 75px minimum
   - Minimum width: 200px with flexible width for longer names
 - Refined typography:
   - Stop name font size: 14px
   - Line height: 1.3 for better readability
   - Button padding: 8px 16px for compact appearance
 - Enhanced visual design:
-  - Tooltip padding: 8px 0px (vertical only)
-  - Stop name padding: 0px 15px (horizontal only)
-  - Negative margin offset: -80px for upward expansion
+  - Tooltip padding: 4px 5px (reduced vertical padding)
+  - Negative margin offset: -60px for upward expansion (optimized)
 
 ### Fixed
 - Tooltip no longer overlaps marker icon when expanded

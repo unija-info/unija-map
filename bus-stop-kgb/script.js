@@ -193,7 +193,7 @@ function createMarker(stop, isSelected) {
         permanent: true,
         direction: 'top',
         className: 'custom-tooltip-popup',
-        offset: isSelected ? [-14, -20] : [-14, -15]
+        offset: isSelected ? [-14, -5] : [-14, -15]
     });
 
     // Toggle this marker's button on click

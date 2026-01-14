@@ -1,5 +1,5 @@
 # Developer Documentation
-## Bus Stop @ UniSZA Gong Badak v2.0
+## Bus Stop @ UniSZA Gong Badak v2.1
 
 This document provides technical details for developers working on the Bus Stop mapping application.
 
@@ -132,43 +132,50 @@ The tooltip system is the most complex part of v2.0, providing:
 
 ```css
 .custom-tooltip-popup {
-    background: white !important;
+    background: transparent !important;
     border: none !important;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    box-shadow: none;
     padding: 0;
     font-family: 'Google Sans', sans-serif;
     pointer-events: auto !important;
     overflow: visible !important;
+    width: max-content !important;
 }
 ```
 
-**Key Properties**:
-- `overflow: visible`: Allows button to expand beyond container
+**Key Properties** (v2.1):
+- `background: transparent`: No background on parent, styling moved to content wrapper
+- `width: max-content`: Dynamically sizes to content width
+- `overflow: visible`: Allows button and arrow to extend beyond container
 - `pointer-events: auto`: Enables click events on tooltip
 
-#### 2. Content Wrapper ([style.css:261-272](style.css#L261-L272))
+#### 2. Content Wrapper ([style.css:251-262](style.css#L251-L262))
 
 ```css
 .popup-content-wrapper {
     text-align: center;
-    padding: 8px 0px;
+    padding: 4px 5px;       /* Reduced vertical padding (v2.1) */
     position: relative;
-    min-height: 32px;       /* Collapsed state */
     min-width: 200px;       /* Minimum width */
     overflow: visible;
     transition: min-height 0.3s ease, margin-top 0.3s ease;
     background: white;
     border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);  /* Moved from parent (v2.1) */
 }
 ```
 
-#### 3. Expanded State ([style.css:275-278](style.css#L275-L278))
+**v2.1 Changes**:
+- `padding`: Reduced from `8px 0px` to `4px 5px` for more compact appearance
+- `box-shadow`: Moved from parent container to content wrapper
+- Removed `min-height`: Now dynamically sizes based on content
+
+#### 3. Expanded State ([style.css:280-284](style.css#L280-L284))
 
 ```css
 .custom-tooltip-popup.expanded .popup-content-wrapper {
     min-height: 75px;
-    margin-top: -80px;  /* Shifts tooltip upward to prevent marker overlap */
+    margin-top: -60px;  /* Reduced from -80px (v2.1) */
 }
 ```
 
@@ -178,25 +185,34 @@ The tooltip system is the most complex part of v2.0, providing:
 - Negative margin pulls the entire tooltip upward
 - Result: Marker stays visible, button appears above
 
-#### 4. Stop Name Positioning ([style.css:280-296](style.css#L280-L296))
+**v2.1 Optimization**:
+- Reduced from `-80px` to `-60px` to minimize gap between tooltip and marker
+- Balances marker clearance with visual connection
+- User can adjust between `-20px` (minimal gap) to `-80px` (maximum clearance)
+
+#### 4. Stop Name Positioning ([style.css:286-297](style.css#L286-L297))
 
 ```css
 .popup-stop-name {
-    position: absolute;
-    top: 8px;
-    left: 12px;
-    right: 12px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-    max-width: 100%;
+    font-family: 'Google Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.3;
+    color: #202124;
+    display: inline-block;  /* Changed from absolute (v2.1) */
+    position: relative;     /* Changed from absolute (v2.1) */
+    padding: 0;
+    z-index: 1;
+    white-space: nowrap;    /* Single-line display (v2.1) */
 }
 ```
 
-**Absolute positioning**:
-- Allows precise placement at top of tooltip
-- `word-wrap` handles long location names
-- `white-space: normal` enables multi-line text
+**v2.1 Changes**:
+- Changed from `position: absolute` to `position: relative` with `display: inline-block`
+- Added `white-space: nowrap` for single-line text display (no wrapping)
+- Removed `word-wrap` and `overflow-wrap` (no longer needed for single-line)
+- Text now flows naturally within flex container
+- Width adjusts dynamically to text content
 
 #### 5. Button Positioning ([style.css:298-317](style.css#L298-L317))
 
@@ -228,6 +244,32 @@ The tooltip system is the most complex part of v2.0, providing:
 - `.popup-link`: Visible state (opacity: 1, full height)
 - `.popup-link-hidden`: Hidden state (opacity: 0, height: 0)
 - CSS transitions provide smooth show/hide animation
+
+#### 6. Arrow Indicator ([style.css:264-277](style.css#L264-L277)) **v2.1 Update**
+
+```css
+.popup-content-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+    pointer-events: none;
+}
+```
+
+**v2.1 Critical Fix**:
+- **Moved from** `.custom-tooltip-popup::after` **to** `.popup-content-wrapper::after`
+- Arrow now positioned relative to content box, not parent container
+- Eliminates gap/stray line between tooltip and arrow
+- Seamless connection regardless of border-radius value
+- Maintains proper centering with `left: 50%` and `translateX(-50%)`
 
 ### JavaScript Implementation
 
@@ -501,20 +543,37 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 - Wrong `min-height` calculation
 
 **Solutions**:
-1. Adjust `margin-top` in [style.css:277](style.css#L277)
-2. Formula: `margin-top = -(expanded_height - collapsed_height + padding_adjustments)`
-3. Current: `-80px` for `75px - 32px = 43px` + adjustments
+1. Adjust `margin-top` in [style.css:283](style.css#L283)
+2. Recommended values:
+   - `-20px`: Minimal gap, slight overlap with marker
+   - `-30px`: Small gap, good balance
+   - `-60px`: Current default (v2.1)
+   - `-80px`: Original value (v2.0), larger gap
+3. Test different values to find optimal balance
 
-#### Issue: Long Location Names Overflow
+#### Issue: Gap Between Tooltip and Arrow **v2.1**
+**Symptoms**: Visible line or space between tooltip box and arrow indicator
+**Causes**:
+- Arrow positioned on parent container (`.custom-tooltip-popup::after`)
+- Parent has background/styling creating visual separation
+
+**Solution**:
+1. Move arrow from `.custom-tooltip-popup::after` to `.popup-content-wrapper::after`
+2. Set parent container background to `transparent`
+3. Move visual styling (background, box-shadow) to content wrapper
+4. Arrow now seamlessly connects with content box
+
+#### Issue: Long Location Names Overflow **v2.1**
 **Symptoms**: Text extends beyond tooltip box
 **Causes**:
-- Missing `word-wrap` or `overflow-wrap`
-- Fixed width without flexibility
+- `white-space: nowrap` prevents wrapping (v2.1 intentional)
+- Parent container width not adjusting
 
-**Solutions**:
-1. Verify `.popup-stop-name` has `word-wrap: break-word`
-2. Ensure `white-space: normal` is set
-3. Check `max-width: 100%` is applied
+**Solutions (v2.1)**:
+1. Ensure `.custom-tooltip-popup` has `width: max-content !important`
+2. Set `min-width: 200px` on `.popup-content-wrapper` for minimum size
+3. Text will display on single line with tooltip expanding as needed
+4. For text wrapping, change `white-space: nowrap` to `white-space: normal`
 
 #### Issue: Search Not Working
 **Symptoms**: Typing in search bar does nothing
@@ -552,6 +611,13 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 ---
 
 ## Version History
+
+### v2.1.0 (2026-01-14)
+- Fixed critical gap between tooltip and arrow indicator
+- Optimized tooltip styling for compact display
+- Improved dynamic width calculation
+- Reduced expanded state gap (margin-top: -60px)
+- Restructured CSS architecture for arrow positioning
 
 ### v2.0.0 (2026-01-14)
 - Complete tooltip system redesign
@@ -604,5 +670,5 @@ This project is developed for UniSZA internal use.
 ---
 
 **Last Updated**: 2026-01-14
-**Version**: 2.0.0
+**Version**: 2.1.0
 **Maintained By**: Development Team
