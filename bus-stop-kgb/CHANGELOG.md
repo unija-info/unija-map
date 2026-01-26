@@ -5,6 +5,42 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-26
+
+### Added
+- **"See on Map" Button Per Stop (Mobile)**:
+  - Each bus stop now has a dedicated "See on map" button below the header
+  - Button appears on its own row, separate from the accordion toggle
+  - Tapping the button zooms to that stop and collapses the bottom sheet to peek
+  - Tapping the stop header still expands/collapses the accordion (no zoom on mobile)
+  - Button hidden on desktop - current desktop behavior preserved
+
+- **Bottom Sheet Auto-Expand**:
+  - "Papar Semua Operator" button now fully expands the bottom sheet on mobile
+  - Allows users to see all operators without manually dragging the sheet
+
+### Changed
+- **"See on Map" Button Styling**:
+  - Pill-shaped button with `border-radius: 50px`
+  - Google Sans font family for consistency
+  - Teal color scheme: `#c2eaf2` background, `#014f5a` text
+  - Compact inline-flex layout (not full-width)
+  - Left margin alignment within button row
+
+### Fixed
+- **Search Bar Position on Mobile**:
+  - Changed from `position: absolute` to `position: fixed`
+  - Search bar now stays fixed at top of viewport
+  - No longer moves when scrolling content inside the bottom sheet
+
+### Technical Details
+- Added `.stop-map-btn-row` container for button positioning (hidden on desktop via CSS)
+- New `showStopOnMap()` function for mobile-specific zoom behavior
+- Updated `toggleAllGroups()` to expand sheet to full state when expanding operators
+- CSS fix in mobile media query for search container positioning
+
+---
+
 ## [2.3.0] - 2026-01-26
 
 ### Added

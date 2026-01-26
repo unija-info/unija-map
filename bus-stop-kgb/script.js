@@ -357,27 +357,22 @@ function renderGroupedList() {
         const header = document.createElement('button');
         header.className = 'stop-header';
         header.innerHTML = `<span>${stop.name}</span>`;
-
-        // Add "See on map" button (mobile only, hidden via CSS on desktop)
-        const seeMapBtn = document.createElement('button');
-        seeMapBtn.className = 'see-on-map-btn';
-        seeMapBtn.innerHTML = 'See on map';
-        seeMapBtn.onclick = (e) => {
-            e.stopPropagation();  // Don't toggle accordion
-            // Zoom to stop and collapse sheet
-            showStopOnMap(stop);
-        };
-        header.appendChild(seeMapBtn);
-
-        header.onclick = (e) => {
-            // Only toggle accordion, don't zoom on mobile
-            if (e.target.closest('.see-on-map-btn')) return;
+        header.onclick = () => {
             groupDiv.classList.toggle('collapsed');
             // On desktop, also zoom to stop
             if (window.innerWidth > 768) {
                 filterByStop(stop);
             }
         };
+
+        // Create button row (separate from header, mobile only)
+        const buttonRow = document.createElement('div');
+        buttonRow.className = 'stop-map-btn-row';
+        const seeMapBtn = document.createElement('button');
+        seeMapBtn.className = 'see-on-map-btn';
+        seeMapBtn.innerHTML = '📍 See on map';
+        seeMapBtn.onclick = () => showStopOnMap(stop);
+        buttonRow.appendChild(seeMapBtn);
 
         const subList = document.createElement('div');
         subList.className = 'company-sub-list';
@@ -394,6 +389,7 @@ function renderGroupedList() {
         });
 
         groupDiv.appendChild(header);
+        groupDiv.appendChild(buttonRow);
         groupDiv.appendChild(subList);
         container.appendChild(groupDiv);
     });
@@ -478,6 +474,12 @@ function toggleAllGroups() {
         // Expand all
         allGroups.forEach(group => group.classList.remove('collapsed'));
         toggleBtn.textContent = '📋 Tutup Semua Senarai';
+
+        // On mobile, fully expand the bottom sheet to show all operators
+        if (window.innerWidth <= 768 && sheetElement) {
+            sheetElement.style.height = '';
+            setSheetState('full');
+        }
     } else {
         // Collapse all
         allGroups.forEach(group => group.classList.add('collapsed'));

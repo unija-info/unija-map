@@ -1,5 +1,5 @@
 # Developer Documentation
-## Bus Stop @ UniSZA Gong Badak v2.2
+## Bus Stop @ UniSZA Gong Badak v2.4
 
 This document provides technical details for developers working on the Bus Stop mapping application.
 
@@ -670,6 +670,20 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 
 ## Version History
 
+### v2.4.0 (2026-01-26)
+- Added "See on Map" button per stop on mobile (separate row below header)
+- Button styling: pill shape, Google Sans font, teal colors (#c2eaf2/#014f5a)
+- "Papar Semua Operator" now fully expands bottom sheet on mobile
+- Fixed search bar position on mobile (position: fixed to prevent scroll issues)
+- New `showStopOnMap()` function for mobile-specific zoom behavior
+- Added `.stop-map-btn-row` container for button layout
+
+### v2.3.0 (2026-01-26)
+- Google Maps-style search dropdown with autocomplete results
+- Tooltip close button for single-focus mode
+- Desktop collapsible sidebar with smooth animations
+- Map padding adjusts dynamically based on sidebar state
+
 ### v2.2.0 (2026-01-14)
 - Changed sidebar button layout from stacked to side-by-side
 - Implemented flexbox-based button container for responsive horizontal layout
@@ -735,6 +749,6 @@ This project is developed for UniSZA internal use.
 
 ---
 
-**Last Updated**: 2026-01-14
-**Version**: 2.2.0
+**Last Updated**: 2026-01-26
+**Version**: 2.4.0
 **Maintained By**: Development Team
