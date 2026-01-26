@@ -25,20 +25,26 @@ body, html {
     background: #ebe7de;
 }
 
-/* Search Container - Floating at top */
+/* Search Container - Floating at top, repositions with sidebar */
 .search-container {
     position: absolute;
     top: 20px;
-    left: 20px;
+    left: 420px; /* To the right of expanded sidebar */
     z-index: 1002;
     width: 380px;
+    transition: left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Search repositions when sidebar is collapsed */
+.sidebar.collapsed ~ .search-container {
+    left: 70px; /* Past the expand button */
 }
 
 #search-bar {
     width: 100%;
     padding: 14px 20px 14px 48px;
     border: none;
-    border-radius: 8px;
+    border-radius: 24px; /* Pill shape like Google Maps */
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     box-sizing: border-box;
     outline: none;
@@ -49,6 +55,8 @@ body, html {
     background-position: 14px center;
     background-size: 20px 20px;
     color: #202124;
+    position: relative;  /* Enable z-index */
+    z-index: 11;         /* Above search results (z-index: 10) */
 }
 
 #search-bar:focus {
@@ -59,26 +67,122 @@ body, html {
     color: #5f6368;
 }
 
-/* Sidebar - Floating card overlay */
+/* Search Results Dropdown */
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+    margin-top: -24px;  /* Overlap with search bar for seamless look */
+    padding-top: 28px;  /* Compensate so content isn't hidden */
+    z-index: 10;
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-result-item {
+    padding: 12px 16px 12px 48px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+}
+
+.search-result-item:hover {
+    background: #f8f9fa;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 16px 16px;
+}
+
+/* Result type icons */
+.search-result-item::before {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+}
+
+.search-result-item.stop::before {
+    content: "📍";
+}
+
+.search-result-item.company::before {
+    content: "🚌";
+}
+
+.result-title {
+    font-weight: 500;
+    font-size: 14px;
+    color: #202124;
+    margin-bottom: 2px;
+}
+
+.result-subtitle {
+    font-size: 12px;
+    color: #5f6368;
+}
+
+.search-results .no-results {
+    padding: 24px 16px;
+    text-align: center;
+    color: #5f6368;
+    font-size: 14px;
+}
+
+/* Search results scrollbar */
+.search-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: #dadce0;
+    border-radius: 3px;
+}
+
+/* Sidebar - Edge-attached collapsible panel (Desktop) */
 .sidebar {
     position: absolute;
-    top: 80px;
-    left: 20px;
-    width: 380px;
-    max-height: calc(100vh - 120px);
+    top: 0;
+    left: 0;
+    width: 400px;
+    height: 100vh;
     background: rgba(255, 255, 255, 0.98);
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    border-radius: 0;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
     display: flex;
     flex-direction: column;
     z-index: 1001;
     overflow: hidden;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Collapsed state - slides out to left */
+.sidebar.collapsed {
+    transform: translateX(-100%);
 }
 
 .sidebar-header {
     padding: 20px;
+    padding-right: 60px; /* Make room for collapse button */
     background: white;
     border-bottom: 1px solid #e8e8e8;
+    position: relative;
 }
 
 .sidebar-header h2 {
@@ -132,10 +236,84 @@ body, html {
     width: 100%;
 }
 
+/* Sidebar Collapse Button - inside header */
+.sidebar-collapse-btn {
+    position: absolute;
+    top: 16px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #5f6368;
+    transition: background 0.2s, color 0.2s;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-collapse-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #202124;
+}
+
+.sidebar-collapse-btn:active {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+/* Sidebar Expand Button - visible when collapsed */
+.sidebar-expand-btn {
+    position: absolute;
+    top: 20px; /* Same level as search bar */
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    background: white;
+    border: none;
+    border-radius: 0 24px 24px 0; /* Half pill - flat left, rounded right */
+    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    cursor: pointer;
+    color: #5f6368;
+    z-index: 1002;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s, visibility 0.3s, background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-expand-btn:hover {
+    background: #f8f9fa;
+    color: #202124;
+}
+
+.sidebar-expand-btn:active {
+    background: #e8e8e8;
+}
+
+/* Show expand button when sidebar is collapsed */
+.sidebar.collapsed ~ .sidebar-expand-btn {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
 .company-list {
     flex-grow: 1;
     overflow-y: auto;
     background: #ededed;
+}
+
+/* See on map button - hidden on desktop */
+.see-on-map-btn {
+    display: none;
 }
 
 /* Custom scrollbar */
@@ -317,7 +495,7 @@ body, html {
 
 .popup-content-wrapper {
     text-align: center;
-    padding: 4px 5px;
+    padding: 4px 28px 4px 5px; /* Right padding for close button */
     position: relative;
     /* Collapsed height: just enough for title */
     min-width: 200px;
@@ -326,6 +504,44 @@ body, html {
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    cursor: pointer; /* Indicate tooltip is clickable */
+}
+
+/* Tooltip Close Button - hidden by default */
+.tooltip-close-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #5f6368;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s, color 0.2s;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+/* Show close button when tooltip has focus class */
+.show-close-btn .tooltip-close-btn {
+    display: flex;
+}
+
+.tooltip-close-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #202124;
+}
+
+.tooltip-close-btn:active {
+    background: rgba(0, 0, 0, 0.12);
 }
 
 /* Create custom arrow tip from content wrapper - points left toward marker (for right-side tooltips) */
@@ -480,12 +696,23 @@ body, html {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+    /* Hide desktop sidebar toggle buttons on mobile */
+    .sidebar-collapse-btn,
+    .sidebar-expand-btn {
+        display: none !important;
+    }
+
     .search-container {
         top: 12px;
         left: 12px;
         right: 12px;
         width: auto;
         z-index: 1600; /* Above bottom sheet */
+    }
+
+    /* Reset search container positioning for mobile */
+    .sidebar.collapsed ~ .search-container {
+        left: 12px;
     }
 
     #search-bar {
@@ -500,7 +727,7 @@ body, html {
         width: 100%;
 
         /* Initial state: Collapsed/Peek (15% of viewport height) */
-        height: 15vh;
+        height: 22vh;
         max-height: none; /* Remove desktop constraint */
 
         /* Visual styling: Semi-transparent with blur */
@@ -514,8 +741,11 @@ body, html {
         /* Shadow above sheet */
         box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
 
-        /* Smooth transitions between states */
+        /* Smooth transitions between states - only height for mobile */
         transition: height 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+        /* Disable desktop collapse transform */
+        transform: none !important;
 
         /* High z-index but map markers still clickable */
         z-index: 1500;
@@ -527,6 +757,11 @@ body, html {
 
         /* Safe area support for modern phones (notches, home indicators) */
         padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    /* Ensure collapsed class doesn't affect mobile */
+    .sidebar.collapsed {
+        transform: none !important;
     }
 
     /* State: Half-expanded (50% viewport height) */
@@ -573,6 +808,7 @@ body, html {
     /* Adjust sidebar header for bottom sheet */
     .sidebar-header {
         padding: 12px 20px; /* Reduced top/bottom padding */
+        padding-right: 20px; /* Reset right padding (no collapse button on mobile) */
         flex-shrink: 0; /* Don't shrink */
     }
 
@@ -596,6 +832,26 @@ body, html {
     /* Hide old mobile toggle button - replaced by sheet gestures */
     .mobile-toggle {
         display: none !important;
+    }
+
+    /* See on map button - inline in each stop header (mobile only) */
+    .see-on-map-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 12px;
+        background: #1967d2;
+        color: white;
+        border: none;
+        border-radius: 16px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .see-on-map-btn:active {
+        background: #1557b0;
     }
 
     /* No Results Message - Mobile adjustments */

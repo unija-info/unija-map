@@ -6,10 +6,15 @@ let currentActiveCompany = null;
 
 // Bottom sheet state management (mobile only)
 let sheetState = 'peek'; // 'peek' (15%), 'half' (50%), 'full' (90%)
+
+// Desktop sidebar state management
+let desktopSidebarCollapsed = false;
 let touchStartY = 0;
 let touchCurrentY = 0;
 let isDragging = false;
 let sheetElement = null;
+let sheetStartHeight = 0;  // Sheet height when drag started
+let lastTouchY = 0;        // For velocity calculation
 
 function initBottomSheet() {
     if (window.innerWidth > 768) return; // Desktop only
@@ -44,53 +49,73 @@ function initBottomSheet() {
 
 function handleTouchStart(e) {
     touchStartY = e.touches[0].clientY;
+    lastTouchY = touchStartY;
     isDragging = true;
+
+    // Store current sheet height
+    sheetStartHeight = sheetElement.offsetHeight;
+
+    // Disable CSS transition during drag for instant response
+    sheetElement.style.transition = 'none';
 }
 
 function handleTouchMove(e) {
     if (!isDragging) return;
+    e.preventDefault();
 
-    e.preventDefault(); // Prevent page scroll while dragging
     touchCurrentY = e.touches[0].clientY;
+    const deltaY = touchStartY - touchCurrentY;  // Positive = dragging up
 
-    // Optional: Add visual feedback during drag
-    const deltaY = touchStartY - touchCurrentY;
-    // Can implement real-time sheet height adjustment here for smoother UX
+    // Calculate new height
+    let newHeight = sheetStartHeight + deltaY;
+
+    // Clamp between min (15vh) and max (90vh)
+    const minHeight = window.innerHeight * 0.15;
+    const maxHeight = window.innerHeight * 0.90;
+    newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+
+    // Apply height directly for real-time feedback
+    sheetElement.style.height = newHeight + 'px';
+
+    // Track for velocity calculation
+    lastTouchY = touchCurrentY;
 }
 
 function handleTouchEnd(e) {
     if (!isDragging) return;
-
-    const deltaY = touchStartY - touchCurrentY;
-    const velocity = Math.abs(deltaY);
-
-    // Determine swipe direction and update state
-    if (deltaY > 50) {
-        // Swipe up
-        if (sheetState === 'peek') {
-            setSheetState('half');
-        } else if (sheetState === 'half') {
-            setSheetState('full');
-        }
-    } else if (deltaY < -50) {
-        // Swipe down
-        if (sheetState === 'full') {
-            setSheetState('half');
-        } else if (sheetState === 'half') {
-            setSheetState('peek');
-        }
-    }
-
     isDragging = false;
+
+    // Re-enable CSS transition for future animations (tap cycling)
+    sheetElement.style.transition = '';
+
+    // Keep the sheet at current position (no snapping)
+    // The inline height style remains set from handleTouchMove
+
+    // Update sheetState based on current position (for tap cycling to work)
+    const currentHeight = sheetElement.offsetHeight;
+    const vh = window.innerHeight;
+    const heightPercent = (currentHeight / vh) * 100;
+
+    // Determine closest state for tap cycling reference
+    if (heightPercent < 32) {
+        sheetState = 'peek';
+    } else if (heightPercent < 70) {
+        sheetState = 'half';
+    } else {
+        sheetState = 'full';
+    }
 }
 
 function handleSheetTap(e) {
+    // Clear any inline height from dragging
+    sheetElement.style.height = '';
+
     // Tap cycles through states: peek -> half -> full -> peek
     if (sheetState === 'peek') {
         setSheetState('half');
     } else if (sheetState === 'half') {
         setSheetState('full');
-    } else if (sheetState === 'full') {
+    } else {
         setSheetState('peek');
     }
 }
@@ -112,12 +137,181 @@ function setSheetState(newState) {
     sheetState = newState;
 }
 
+// Desktop sidebar collapse/expand functionality
+function initDesktopSidebar() {
+    if (window.innerWidth <= 768) return; // Mobile uses bottom sheet
+
+    const sidebar = document.getElementById('sidebar');
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    const expandBtn = document.getElementById('sidebar-expand-btn');
+
+    if (!sidebar || !collapseBtn || !expandBtn) return;
+
+    // Collapse button click
+    collapseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleDesktopSidebar(true); // Collapse
+    });
+
+    // Expand button click
+    expandBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleDesktopSidebar(false); // Expand
+    });
+}
+
+function toggleDesktopSidebar(collapse) {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar || window.innerWidth <= 768) return;
+
+    if (collapse === undefined) {
+        collapse = !desktopSidebarCollapsed;
+    }
+
+    desktopSidebarCollapsed = collapse;
+
+    if (collapse) {
+        sidebar.classList.add('collapsed');
+    } else {
+        sidebar.classList.remove('collapsed');
+    }
+}
+
+// Dynamic map padding based on sidebar state
+function getMapPadding() {
+    if (window.innerWidth <= 768) {
+        return [100, 100]; // Mobile padding (higher = more zoomed out)
+    }
+
+    if (desktopSidebarCollapsed) {
+        return [50, 50, 50, 80]; // Minimal left padding when collapsed
+    } else {
+        return [50, 50, 50, 420]; // Left padding for expanded sidebar
+    }
+}
+
+// Search Results Dropdown - Google Maps Style
+function renderSearchResults(term) {
+    const resultsContainer = document.getElementById('search-results');
+    if (!resultsContainer) return;
+
+    if (!term || term.length === 0) {
+        resultsContainer.classList.remove('active');
+        resultsContainer.innerHTML = '';
+        return;
+    }
+
+    const lowerTerm = term.toLowerCase();
+    let html = '';
+
+    // Search stops
+    const matchingStops = busData.filter(stop =>
+        stop.name.toLowerCase().includes(lowerTerm)
+    );
+
+    // Search companies (get unique company names)
+    const allCompanies = [...new Set(busData.flatMap(stop => stop.companies))];
+    const matchingCompanies = allCompanies.filter(company =>
+        company.toLowerCase().includes(lowerTerm)
+    );
+
+    // Render stop results
+    matchingStops.forEach(stop => {
+        html += `
+            <div class="search-result-item stop" data-type="stop" data-id="${stop.id}">
+                <div class="result-content">
+                    <div class="result-title">${stop.name}</div>
+                    <div class="result-subtitle">${stop.companies.join(', ')}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    // Render company results
+    matchingCompanies.forEach(company => {
+        const stopCount = busData.filter(s => s.companies.includes(company)).length;
+        html += `
+            <div class="search-result-item company" data-type="company" data-name="${company}">
+                <div class="result-content">
+                    <div class="result-title">${company}</div>
+                    <div class="result-subtitle">${stopCount} stop${stopCount > 1 ? 's' : ''}</div>
+                </div>
+            </div>
+        `;
+    });
+
+    // No results
+    if (matchingStops.length === 0 && matchingCompanies.length === 0) {
+        html = '<div class="no-results">No results found</div>';
+    }
+
+    resultsContainer.innerHTML = html;
+    resultsContainer.classList.add('active');
+}
+
+function initSearchDropdown() {
+    const searchBar = document.getElementById('search-bar');
+    const resultsContainer = document.getElementById('search-results');
+
+    if (!searchBar || !resultsContainer) return;
+
+    // Search input handler
+    searchBar.addEventListener('input', function(e) {
+        renderSearchResults(e.target.value.trim());
+    });
+
+    // Click on result item
+    resultsContainer.addEventListener('click', function(e) {
+        const item = e.target.closest('.search-result-item');
+        if (!item) return;
+
+        const type = item.dataset.type;
+
+        if (type === 'stop') {
+            const stopId = parseInt(item.dataset.id);
+            const stop = busData.find(s => s.id === stopId);
+            if (stop) filterByStop(stop);
+        } else if (type === 'company') {
+            const companyName = item.dataset.name;
+            filterByCompany(companyName);
+        }
+
+        // Clear search and hide dropdown
+        searchBar.value = '';
+        renderSearchResults('');
+
+        // Hide clear button
+        const clearBtn = document.getElementById('clear-search');
+        if (clearBtn) clearBtn.style.display = 'none';
+    });
+
+    // Click outside to close dropdown
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            renderSearchResults('');
+        }
+    });
+
+    // Escape to close
+    searchBar.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            searchBar.value = '';
+            renderSearchResults('');
+            searchBar.blur();
+
+            // Hide clear button
+            const clearBtn = document.getElementById('clear-search');
+            if (clearBtn) clearBtn.style.display = 'none';
+        }
+    });
+}
+
 function initMap() {
     // Detect mobile and adjust initial zoom
     const isMobile = window.innerWidth <= 768;
-    const initialZoom = isMobile ? 13 : 14;
+    const initialZoom = isMobile ? 14 : 14;
 
-    map = L.map('map', { maxZoom: 22, zoomControl: false }).setView([5.3950, 103.0830], initialZoom);
+    map = L.map('map', { maxZoom: 25, zoomControl: false }).setView([5.3950, 103.0830], initialZoom);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
@@ -149,7 +343,6 @@ function initMap() {
             busData = data.stops;
             renderGroupedList();
             showAllStops();
-            createNoResultsMessage(); // Create after list is populated
         });
 }
 
@@ -164,11 +357,26 @@ function renderGroupedList() {
         const header = document.createElement('button');
         header.className = 'stop-header';
         header.innerHTML = `<span>${stop.name}</span>`;
+
+        // Add "See on map" button (mobile only, hidden via CSS on desktop)
+        const seeMapBtn = document.createElement('button');
+        seeMapBtn.className = 'see-on-map-btn';
+        seeMapBtn.innerHTML = 'See on map';
+        seeMapBtn.onclick = (e) => {
+            e.stopPropagation();  // Don't toggle accordion
+            // Zoom to stop and collapse sheet
+            showStopOnMap(stop);
+        };
+        header.appendChild(seeMapBtn);
+
         header.onclick = (e) => {
-            // Toggle accordion
+            // Only toggle accordion, don't zoom on mobile
+            if (e.target.closest('.see-on-map-btn')) return;
             groupDiv.classList.toggle('collapsed');
-            // Zoom to stop
-            filterByStop(stop);
+            // On desktop, also zoom to stop
+            if (window.innerWidth > 768) {
+                filterByStop(stop);
+            }
         };
 
         const subList = document.createElement('div');
@@ -191,19 +399,52 @@ function renderGroupedList() {
     });
 }
 
+// Desktop only: zoom to stop and show marker
 function filterByStop(stop) {
     resetButtons();
     currentActiveCompany = null;
     clearMarkers();
 
-    // Zoom specifically to this stop (add left padding for sidebar on desktop)
-    const padding = window.innerWidth > 768 ? [100, 100, 100, 420] : [150, 150];
+    const basePadding = getMapPadding();
+    const padding = [100, 100, 100, basePadding[3]];
     map.flyToBounds([stop.coords], { padding: padding, maxZoom: 18, duration: 1.2 });
 
-    // Highlight this stop's marker
     const marker = createMarker(stop, false);
     marker.openPopup();
     markers.push(marker);
+
+    setTimeout(() => {
+        const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
+        if (tooltipEl) {
+            tooltipEl.classList.add('show-close-btn');
+        }
+    }, 100);
+}
+
+// Mobile-specific: zoom to stop and collapse sheet
+function showStopOnMap(stop) {
+    resetButtons();
+    currentActiveCompany = null;
+    clearMarkers();
+
+    map.flyToBounds([stop.coords], { padding: [150, 150], maxZoom: 18, duration: 1.2 });
+
+    const marker = createMarker(stop, false);
+    marker.openPopup();
+    markers.push(marker);
+
+    setTimeout(() => {
+        const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
+        if (tooltipEl) {
+            tooltipEl.classList.add('show-close-btn');
+        }
+    }, 100);
+
+    // Collapse sheet to peek
+    if (sheetElement) {
+        sheetElement.style.height = '';
+        setSheetState('peek');
+    }
 }
 
 function showAllStops() {
@@ -214,10 +455,16 @@ function showAllStops() {
         markers.push(createMarker(stop, false));
         coords.push(stop.coords);
     });
-    // Add left padding for sidebar on desktop
-    const padding = window.innerWidth > 768 ? [50, 50, 50, 420] : [50, 50];
+    // Use dynamic padding based on sidebar state
+    const padding = getMapPadding();
     if(coords.length > 0) map.flyToBounds(coords, { padding: padding, maxZoom: 18 });
     resetButtons();
+
+    // Collapse bottom sheet on mobile
+    if (window.innerWidth <= 768 && sheetElement) {
+        sheetElement.style.height = '';
+        setSheetState('peek');
+    }
 }
 
 function toggleAllGroups() {
@@ -251,8 +498,9 @@ function filterByCompany(companyName, btn) {
 
         const activeCoords = busData.filter(s => s.companies.includes(companyName)).map(s => s.coords);
         if (activeCoords.length > 0) {
-            // Add left padding for sidebar on desktop
-            const padding = window.innerWidth > 768 ? [100, 100, 100, 420] : [100, 100];
+            const isMobile = window.innerWidth <= 768;
+            const basePadding = getMapPadding();
+            const padding = isMobile ? [100, 100] : [100, 100, 100, basePadding[3]];
             map.flyToBounds(activeCoords, { padding: padding, duration: 1.2, maxZoom: 18 });
         }
     }
@@ -263,6 +511,24 @@ function filterByCompany(companyName, btn) {
             markers.push(createMarker(stop, true));
         }
     });
+
+    // Show close button on all tooltips
+    setTimeout(() => {
+        markers.forEach(marker => {
+            if (marker.getTooltip) {
+                const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
+                if (tooltipEl) {
+                    tooltipEl.classList.add('show-close-btn');
+                }
+            }
+        });
+    }, 100);
+
+    // Collapse bottom sheet on mobile
+    if (window.innerWidth <= 768 && sheetElement) {
+        sheetElement.style.height = '';
+        setSheetState('peek');
+    }
 }
 
 function createMarker(stop, isSelected) {
@@ -295,6 +561,7 @@ function createMarker(stop, isSelected) {
     // Create permanent tooltip with stop name and button hidden by default
     const tooltipContent = `
         <div class="popup-content-wrapper">
+            <button class="tooltip-close-btn" onclick="event.stopPropagation(); showAllStops();">×</button>
             <strong class="popup-stop-name">${stop.name}</strong>
             <a href="${googleUrl}" target="_blank" class="popup-link popup-link-hidden" onclick="event.stopPropagation();">Get Directions</a>
         </div>
@@ -311,38 +578,59 @@ function createMarker(stop, isSelected) {
         offset: offset  // Adjusts based on direction: left uses negative offset
     });
 
+    // Function to toggle tooltip expansion
+    function toggleTooltipExpansion(tooltipEl) {
+        const btn = tooltipEl.querySelector('.popup-link');
+        if (btn) {
+            // Check if THIS tooltip's button is hidden BEFORE hiding all buttons
+            const isHidden = btn.classList.contains('popup-link-hidden');
+
+            // Hide all buttons
+            document.querySelectorAll('.popup-link').forEach(b => {
+                b.classList.add('popup-link-hidden');
+            });
+
+            // Collapse all tooltips
+            document.querySelectorAll('.custom-tooltip-popup').forEach(tp => {
+                tp.classList.remove('expanded');
+            });
+
+            // Toggle this tooltip's button based on previous state
+            if (isHidden) {
+                btn.classList.remove('popup-link-hidden');
+                tooltipEl.classList.add('expanded');
+            } else {
+                btn.classList.add('popup-link-hidden');
+                tooltipEl.classList.remove('expanded');
+            }
+        }
+    }
+
     // Toggle this marker's button on click
     marker.on('click', function(e) {
         L.DomEvent.stopPropagation(e);
 
         const tooltipEl = this.getTooltip() && this.getTooltip().getElement();
         if (tooltipEl) {
-            const btn = tooltipEl.querySelector('.popup-link');
-            if (btn) {
-                // Check if THIS marker's button is hidden BEFORE hiding all buttons
-                const isHidden = btn.classList.contains('popup-link-hidden');
-
-                // Hide all buttons
-                document.querySelectorAll('.popup-link').forEach(btn => {
-                    btn.classList.add('popup-link-hidden');
-                });
-
-                // Collapse all tooltips
-                document.querySelectorAll('.custom-tooltip-popup').forEach(tp => {
-                    tp.classList.remove('expanded');
-                });
-
-                // Toggle this marker's button based on previous state
-                if (isHidden) {
-                    btn.classList.remove('popup-link-hidden');
-                    tooltipEl.classList.add('expanded');
-                } else {
-                    btn.classList.add('popup-link-hidden');
-                    tooltipEl.classList.remove('expanded');
-                }
-            }
+            toggleTooltipExpansion(tooltipEl);
         }
     });
+
+    // Add click handler to tooltip element (marker is already on map at this point)
+    setTimeout(() => {
+        const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
+        if (tooltipEl && !tooltipEl._clickHandlerAdded) {
+            tooltipEl._clickHandlerAdded = true;
+            tooltipEl.addEventListener('click', function(e) {
+                // Don't toggle if clicking on the close button or the directions link
+                if (e.target.closest('.tooltip-close-btn') || e.target.closest('.popup-link')) {
+                    return;
+                }
+                e.stopPropagation();
+                toggleTooltipExpansion(tooltipEl);
+            });
+        }
+    }, 50);
 
     return marker;
 }
@@ -350,89 +638,8 @@ function createMarker(stop, isSelected) {
 function clearMarkers() { markers.forEach(m => map.removeLayer(m)); markers = []; }
 function resetButtons() { document.querySelectorAll('.company-btn').forEach(b => b.classList.remove('active')); }
 
-// Advanced Search: Handles stop names and company names
-document.getElementById('search-bar').addEventListener('keyup', function(e) {
-    const term = e.target.value.toLowerCase();
-
-    // Auto-expand sheet to half when user types (mobile only)
-    if (window.innerWidth <= 768 && term.length > 0 && sheetState === 'peek') {
-        setSheetState('half');
-    }
-
-    let totalVisibleGroups = 0; // Track visible groups
-
-    document.querySelectorAll('.stop-group').forEach(group => {
-        const stopHeader = group.querySelector('.stop-header');
-        const stopName = stopHeader ? stopHeader.innerText.toLowerCase() : '';
-        const btns = group.querySelectorAll('.company-btn');
-
-        // Check if stop name matches
-        const stopMatches = stopName.includes(term);
-
-        let hasVisibleCompany = false;
-
-        btns.forEach(btn => {
-            const companyName = btn.innerText.toLowerCase();
-            // Show button if either stop name or company name matches
-            if (stopMatches || companyName.includes(term)) {
-                btn.style.display = 'block';
-                hasVisibleCompany = true;
-            } else {
-                btn.style.display = 'none';
-            }
-        });
-
-        // Hide entire stop group if no matches, otherwise show it
-        group.style.display = hasVisibleCompany ? 'block' : 'none';
-
-        // Count visible groups
-        if (hasVisibleCompany) {
-            totalVisibleGroups++;
-        }
-
-        // Auto-expand if searching and has matches
-        if(term.length > 0 && hasVisibleCompany) {
-            group.classList.remove('collapsed');
-        }
-    });
-
-    // Show/hide "No results found" message
-    const noResultsMsg = document.getElementById('no-results-message');
-    if (noResultsMsg) {
-        if (term.length > 0 && totalVisibleGroups === 0) {
-            // Show message when search term exists but no results
-            noResultsMsg.style.display = 'block';
-        } else {
-            // Hide message when not searching or when results exist
-            noResultsMsg.style.display = 'none';
-        }
-    }
-});
-
 document.getElementById('show-all').onclick = showAllStops;
 document.getElementById('toggle-all-groups').onclick = toggleAllGroups;
-
-function createNoResultsMessage() {
-    const companyList = document.getElementById('company-list');
-    if (!companyList) return;
-
-    // Check if message already exists
-    if (document.getElementById('no-results-message')) return;
-
-    const noResultsDiv = document.createElement('div');
-    noResultsDiv.id = 'no-results-message';
-    noResultsDiv.className = 'no-results-message';
-    noResultsDiv.style.display = 'none';
-
-    noResultsDiv.innerHTML = `
-        <div class="no-results-icon">🔍</div>
-        <p class="no-results-title">No results found</p>
-        <p class="no-results-subtitle">Try different keywords or check spelling</p>
-    `;
-
-    // Insert at beginning of company list
-    companyList.insertBefore(noResultsDiv, companyList.firstChild);
-}
 
 function createClearSearchButton() {
     const searchContainer = document.querySelector('.search-container');
@@ -463,7 +670,7 @@ function initClearSearchButton() {
 
         clearBtn.addEventListener('click', function() {
             searchBar.value = '';
-            searchBar.dispatchEvent(new Event('keyup')); // Trigger search update
+            renderSearchResults(''); // Hide search dropdown
             this.style.display = 'none';
             searchBar.focus(); // Return focus to search bar
         });
@@ -472,15 +679,25 @@ function initClearSearchButton() {
 
 window.onload = function() {
     initMap();
-    initBottomSheet();
+    initBottomSheet();      // Mobile only
+    initDesktopSidebar();   // Desktop only
+    initSearchDropdown();   // Search results dropdown
     createClearSearchButton();
     initClearSearchButton();
 };
 
-// Re-initialize bottom sheet on window resize
+// Re-initialize on window resize
 window.addEventListener('resize', function() {
-    // Re-initialize bottom sheet if switching to/from mobile
+    const sidebar = document.getElementById('sidebar');
+
     if (window.innerWidth <= 768) {
+        // Mobile: Use bottom sheet, remove desktop collapsed state
         initBottomSheet();
+        if (sidebar) sidebar.classList.remove('collapsed');
+    } else {
+        // Desktop: Restore sidebar collapsed state if needed
+        if (sidebar && desktopSidebarCollapsed) {
+            sidebar.classList.add('collapsed');
+        }
     }
 });

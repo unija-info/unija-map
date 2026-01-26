@@ -15,12 +15,15 @@
     <div class="app-container">
         <div id="map"></div>
 
-        <div class="search-container">
-            <input type="text" id="search-bar" placeholder="Search for bus stops or companies...">
-        </div>
-
+        <!-- Sidebar MUST come first for CSS ~ sibling selectors to work -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
+                <!-- Collapse button - desktop only -->
+                <button id="sidebar-collapse-btn" class="sidebar-collapse-btn" aria-label="Collapse sidebar">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
                 <h2>Bus Stop @ UniSZA KGB</h2>
                 <p class="subtitle">Peta Lokasi Pick Up & Drop Point Bas Ekspres di sekitar UniSZA Kampus Gong Badak</p>
                 <div class="button-group">
@@ -29,6 +32,19 @@
                 </div>
             </div>
             <div id="company-list" class="company-list"></div>
+        </div>
+
+        <!-- Expand button - comes AFTER sidebar for CSS ~ selector -->
+        <button id="sidebar-expand-btn" class="sidebar-expand-btn" aria-label="Expand sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+            </svg>
+        </button>
+
+        <!-- Search container - comes AFTER sidebar for CSS ~ selector -->
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Search for bus stops or companies...">
+            <div id="search-results" class="search-results"></div>
         </div>
 
         <button id="toggle-view" class="mobile-toggle">Show Map</button>

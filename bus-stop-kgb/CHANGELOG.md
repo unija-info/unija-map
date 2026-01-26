@@ -5,6 +5,51 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-26
+
+### Added
+- **Google Maps-style Search Dropdown**:
+  - Search results now appear in a dropdown below the search bar (like Google Maps autocomplete)
+  - Stop results show 📍 icon with stop name and associated companies
+  - Company results show 🚌 icon with company name and stop count
+  - Clicking a stop result zooms to that location
+  - Clicking a company result filters all stops served by that company
+  - Dropdown closes on click outside, Escape key, or after selection
+  - Clear search button (×) in search bar for quick clearing
+
+- **Tooltip Close Button**:
+  - Added × button to top-right of tooltip when a specific stop is focused
+  - Button only appears in "single focus" mode (after clicking search result or sidebar stop)
+  - Button hidden in default view showing all stops
+  - Clicking × zooms out and shows all bus stops (same as "Papar semua Lokasi Bus Stop")
+
+- **Desktop Collapsible Sidebar**:
+  - Sidebar attached to left edge of screen (Google Maps style)
+  - Collapse button (chevron) in sidebar header to minimize
+  - Expand button appears when sidebar is collapsed
+  - Map padding adjusts dynamically based on sidebar state
+  - Smooth CSS transitions for collapse/expand animations
+  - Search bar and expand button repositioning via CSS sibling selectors
+
+### Changed
+- **Search Architecture**:
+  - Search results moved from sidebar filtering to dedicated dropdown
+  - Sidebar now remains static and shows all stops/companies at all times
+  - Independent search functionality that doesn't modify sidebar content
+
+- **HTML Structure**:
+  - Reordered sidebar, expand button, and search container for CSS sibling selectors
+  - Added `#search-results` container inside `.search-container`
+  - Added collapse/expand button elements
+
+### Technical Details
+- Implemented `renderSearchResults()` function for dropdown HTML generation
+- Added `initSearchDropdown()` for event handling (input, click, escape, outside click)
+- Used CSS class `.show-close-btn` to conditionally display tooltip close button
+- `filterByStop()` adds close button class via `setTimeout` after tooltip DOM ready
+- CSS sibling selector (`~`) used to reposition search bar when sidebar collapsed
+- Map padding via `getMapPadding()` returns different values based on sidebar state
+
 ## [2.2.0] - 2026-01-14
 
 ### Added

@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a static web application called "Bus Stop Locator" that displays bus stop locations and associated bus companies on an interactive map. The application is located in the `bus-stop-kgb/` directory and uses vanilla JavaScript with Leaflet.js for mapping functionality.
+A static web application ("Bus Stop @ UniSZA Gong Badak") displaying bus stop locations and express bus operators around UniSZA Kampus Gong Badak, Terengganu, Malaysia on an interactive satellite map. Uses vanilla JavaScript with Leaflet.js - no build process required.
 
 ## Architecture
 
-### Core Files Structure
+### Core Files
 
-- `bus-stop-kgb/index.html` - Main HTML entry point
-- `bus-stop-kgb/script.js` - All application logic (map initialization, filtering, UI interactions)
-- `bus-stop-kgb/style.css` - All styles including responsive mobile layout
-- `bus-stop-kgb/data.json` - Bus stop data source (stops, coordinates, company associations)
+- `index.html` - Main HTML entry point
+- `script.js` - All application logic (map initialization, filtering, UI interactions)
+- `style.css` - All styles including responsive mobile layout
+- `data.json` - Bus stop data source (stops, coordinates, company associations)
 
 ### Data Model
 
@@ -25,7 +25,8 @@ The application uses a single JSON data structure in `data.json`:
       "id": number,
       "name": "string",
       "coords": [latitude, longitude],
-      "companies": ["company1", "company2", ...]
+      "companies": ["company1", "company2", ...],
+      "tooltipPosition": "left" | "right" (optional, defaults to "right")
     }
   ]
 }
@@ -42,8 +43,9 @@ The application uses a single JSON data structure in `data.json`:
    - `map` - Leaflet map instance
    - `markers` - Array of current map markers
    - `busData` - Loaded stop data
-   - `isMapView` - Mobile view toggle state
    - `currentActiveCompany` - Currently selected company filter
+   - `sheetState` - Mobile bottom sheet state: 'peek' (15%), 'half' (50%), or 'full' (90%)
+   - Touch tracking variables: `touchStartY`, `touchCurrentY`, `isDragging`, `sheetElement`
 
 3. **Filtering System**: Three main filtering modes:
    - **Show All Stops**: Displays all stops with markers
@@ -52,63 +54,90 @@ The application uses a single JSON data structure in `data.json`:
 
 4. **UI Components**:
    - Accordion-style sidebar with collapsible stop groups
-   - Search bar filters companies in real-time and auto-expands matching groups
+   - Search bar filters companies/stops in real-time and auto-expands matching groups
+   - Clear search button (× icon) appears when search has input
    - Company buttons that toggle active state
-   - Mobile responsive with toggle between list/map views
+   - Mobile: Bottom sheet with swipe/tap gestures (peek/half/full states) instead of toggle button
+   - Desktop: Floating sidebar card overlay on left side
 
 5. **Marker System**: When filtering by company, creates two markers per stop:
    - Ground dot (white circle with blue border, z-index -100)
    - Standard Leaflet marker with bounce animation on selection
 
+6. **Mobile Bottom Sheet** (< 768px width):
+   - Three height states: peek (15vh), half (50vh), full (90vh)
+   - Swipe up on handle: peek → half → full
+   - Swipe down on handle: full → half → peek
+   - Tap handle: cycles through all three states
+   - Auto-expands to half when user starts typing in search
+   - Uses CSS transitions with cubic-bezier easing for smooth animation
+   - Semi-transparent with backdrop-filter blur for modern iOS/Android look
+
 ## Development Commands
 
-### Running the Application
+### Running Locally
 
-This is a static site with no build process. To run locally:
+Static site with no build process. Use any static file server:
 
 ```bash
-cd bus-stop-kgb
-# Use any static file server, for example:
 python -m http.server 8000
-# Or:
-npx serve
+# Or: npx serve
+# Or: php -S localhost:8000
 ```
 
-Then open browser to the provided localhost URL.
+### Manual Testing Checklist
 
-### Testing
-
-No automated tests are configured. Manual testing should verify:
-- Map loads with correct center point
-- All stops appear when "Show All Stops" is clicked
-- Company filtering shows only relevant stops
-- Search bar filters companies correctly
-- Mobile toggle switches between list and map views
-- Marker animations work on company selection
-- "Get Directions" links open correct Google Maps URLs
+- Map loads centered on UniSZA area with satellite imagery
+- "Show All Stops" displays all markers and fits bounds
+- Company filtering shows only relevant stops, highlights all matching buttons
+- Search dropdown filters both stops and companies
+- Mobile bottom sheet: swipe up/down cycles peek (15%) → half (50%) → full (90%)
+- Desktop sidebar: collapse/expand via chevron button
+- Marker click toggles "Get Directions" button in tooltip
+- Tooltip arrows point correctly based on `tooltipPosition` (left/right)
 
 ## Adding New Bus Stops
 
-To add new stops, edit `bus-stop-kgb/data.json`:
+Edit `data.json`:
 
-1. Get coordinates from Google Maps (right-click location > coordinates)
-2. Add new stop object to the `stops` array with unique `id`
-3. Ensure `coords` are in [latitude, longitude] format
-4. List all bus companies serving that stop in the `companies` array
+```json
+{
+  "id": 6,
+  "name": "New Stop Name",
+  "coords": [5.3950, 103.0830],
+  "companies": ["Operator 1", "Operator 2"],
+  "tooltipPosition": "right"
+}
+```
 
-## Modifying Map Behavior
+- Get coordinates from Google Maps (right-click → coordinates)
+- `tooltipPosition` is optional, defaults to "right"
 
-Key functions to modify in `script.js`:
+## Key Functions in script.js
 
-- `initMap()` - Map initialization, center point, zoom levels, tile layers
-- `filterByStop()` - Behavior when clicking stop headers
-- `filterByCompany()` - Behavior when clicking company buttons
-- `createMarker()` - Marker appearance, popup content, tooltip styling
-- `toggleMobileView()` - Mobile view switching logic
+| Function | Purpose |
+|----------|---------|
+| `initMap()` | Map setup, center point [5.3950, 103.0830], tile layers |
+| `filterByStop(stop)` | Zoom to specific stop, show single marker |
+| `filterByCompany(name)` | Show all stops for a company, highlight buttons |
+| `createMarker(stop, isSelected)` | Creates marker with permanent tooltip |
+| `initBottomSheet()` | Mobile swipe gesture setup |
+| `setSheetState(state)` | Set bottom sheet height ('peek'/'half'/'full') |
+| `initDesktopSidebar()` | Desktop collapse/expand button handlers |
 
 ## Styling Notes
 
-- Mobile breakpoint: 768px (defined in media query)
-- Active company button uses blue theme (#007bff)
-- Marker animations use `margin-top` instead of `transform` to avoid GPS coordinate conflicts
-- Accordion collapse uses `max-height` transition for smooth animation
+- **Mobile breakpoint**: 768px
+- **Primary color**: #1967d2 (blue for buttons, borders, active states)
+- **Marker animation**: Uses `margin-top` instead of `transform` to avoid GPS coordinate conflicts
+- **Bottom sheet states**: CSS classes `.sheet-half`, `.sheet-full` (peek is default)
+- **Tooltip expansion**: `transform: translateY(-20px)` shifts tooltip up when "Get Directions" appears
+- **Tooltip arrows**: Positioned via `.popup-content-wrapper::after`, direction based on `.leaflet-tooltip-left`/`.leaflet-tooltip-right`
+
+## CSS Sibling Selector Pattern
+
+The HTML structure requires sidebar to come before search container for CSS `~` sibling selectors:
+```css
+.sidebar.collapsed ~ .search-container { left: 70px; }
+.sidebar.collapsed ~ .sidebar-expand-btn { opacity: 1; }
+```
