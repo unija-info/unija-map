@@ -5,6 +5,30 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-01-27
+
+### Added
+- **Extended Mobile Bottom Sheet Drag Controls**:
+  - Entire sheet content (sidebar header + bus stop list) now responds to drag gestures
+  - Scroll-aware behavior: dragging down on list scrolls first, then collapses sheet when at top
+  - Dragging up expands sheet first (peek → half → full), then allows list scrolling at full
+  - Header area always moves sheet directly (no scrollable content)
+  - Handle maintains original behavior (tap cycles states, drag moves sheet)
+
+- **List Section Header**:
+  - Added "Senarai Bus Stop" title above the bus stop list
+  - Subtitle: "Sila click/tap pada nama bus stop untuk melihat senarai operator bas"
+  - Provides context and instructions for users
+
+### Technical Details
+- New state variables: `scrollContainer`, `scrollStartTop`, `gestureMode`, `contentTouchStartY`
+- New touch handlers: `handleContentTouchStart/Move/End` (scroll-aware for company list)
+- New touch handlers: `handleHeaderTouchStart/Move/End` (always moves sheet)
+- `gestureMode` flag prevents jittery switching between scroll and sheet movement mid-gesture
+- Added `.list-section-header` CSS class with title/subtitle styling
+
+---
+
 ## [2.4.0] - 2026-01-26
 
 ### Added

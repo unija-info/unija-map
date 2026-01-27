@@ -16,6 +16,12 @@ let sheetElement = null;
 let sheetStartHeight = 0;  // Sheet height when drag started
 let lastTouchY = 0;        // For velocity calculation
 
+// Content area drag state (scroll-aware)
+let scrollContainer = null;      // Reference to .company-list element
+let scrollStartTop = 0;          // Scroll position when drag started
+let gestureMode = null;          // 'scroll' | 'sheet' - determined on first move
+let contentTouchStartY = 0;      // Touch start Y for content area
+
 function initBottomSheet() {
     if (window.innerWidth > 768) return; // Desktop only
 
@@ -35,16 +41,34 @@ function initBottomSheet() {
     // Set initial state
     sheetElement.classList.add('sheet-peek');
 
-    // Attach event listeners
+    // Attach event listeners to handle
     const actualHandle = sheetElement.querySelector('.sheet-handle');
 
-    // Touch events for swipe
+    // Touch events for swipe on handle
     actualHandle.addEventListener('touchstart', handleTouchStart, { passive: false });
     actualHandle.addEventListener('touchmove', handleTouchMove, { passive: false });
     actualHandle.addEventListener('touchend', handleTouchEnd);
 
-    // Click event for tap toggle
+    // Click event for tap toggle (handle only)
     actualHandle.addEventListener('click', handleSheetTap);
+
+    // Get references to header and content areas
+    const headerElement = sheetElement.querySelector('.sidebar-header');
+    scrollContainer = document.getElementById('company-list');
+
+    // Attach touch events to header (always moves sheet, no scroll content)
+    if (headerElement) {
+        headerElement.addEventListener('touchstart', handleHeaderTouchStart, { passive: false });
+        headerElement.addEventListener('touchmove', handleHeaderTouchMove, { passive: false });
+        headerElement.addEventListener('touchend', handleHeaderTouchEnd);
+    }
+
+    // Attach touch events to company list (scroll-aware)
+    if (scrollContainer) {
+        scrollContainer.addEventListener('touchstart', handleContentTouchStart, { passive: true });
+        scrollContainer.addEventListener('touchmove', handleContentTouchMove, { passive: false });
+        scrollContainer.addEventListener('touchend', handleContentTouchEnd);
+    }
 }
 
 function handleTouchStart(e) {
@@ -117,6 +141,140 @@ function handleSheetTap(e) {
         setSheetState('full');
     } else {
         setSheetState('peek');
+    }
+}
+
+// Content area touch handlers (scroll-aware)
+function handleContentTouchStart(e) {
+    contentTouchStartY = e.touches[0].clientY;
+    lastTouchY = contentTouchStartY;
+    gestureMode = null;  // Reset - will be determined on first move
+
+    // Store current scroll position
+    if (scrollContainer) {
+        scrollStartTop = scrollContainer.scrollTop;
+    }
+
+    // Store current sheet height
+    sheetStartHeight = sheetElement.offsetHeight;
+}
+
+function handleContentTouchMove(e) {
+    const currentY = e.touches[0].clientY;
+    const deltaY = contentTouchStartY - currentY;  // Positive = dragging up, Negative = dragging down
+    const isMovingUp = deltaY > 0;
+    const isMovingDown = deltaY < 0;
+
+    // Determine gesture mode on first significant move (if not yet set)
+    if (gestureMode === null && Math.abs(deltaY) > 5) {
+        if (isMovingDown) {
+            // Dragging down: check if we can scroll up first
+            if (scrollContainer && scrollContainer.scrollTop > 0) {
+                gestureMode = 'scroll';  // Let native scroll handle it
+            } else {
+                gestureMode = 'sheet';   // Collapse the sheet
+            }
+        } else if (isMovingUp) {
+            // Dragging up: expand sheet first if not at full
+            if (sheetState !== 'full') {
+                gestureMode = 'sheet';   // Expand the sheet
+            } else {
+                gestureMode = 'scroll';  // Sheet is full, allow scroll
+            }
+        }
+    }
+
+    // Execute based on gesture mode
+    if (gestureMode === 'sheet') {
+        e.preventDefault();  // Prevent scroll
+
+        // Disable CSS transition during drag for instant response
+        sheetElement.style.transition = 'none';
+        isDragging = true;
+
+        // Calculate new height
+        let newHeight = sheetStartHeight + deltaY;
+
+        // Clamp between min (15vh) and max (90vh)
+        const minHeight = window.innerHeight * 0.15;
+        const maxHeight = window.innerHeight * 0.90;
+        newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+
+        // Apply height directly for real-time feedback
+        sheetElement.style.height = newHeight + 'px';
+    }
+    // If gestureMode === 'scroll', do nothing - let native scroll happen
+
+    lastTouchY = currentY;
+}
+
+function handleContentTouchEnd(e) {
+    if (gestureMode === 'sheet' && isDragging) {
+        isDragging = false;
+
+        // Re-enable CSS transition
+        sheetElement.style.transition = '';
+
+        // Determine closest state based on current height
+        const currentHeight = sheetElement.offsetHeight;
+        const vh = window.innerHeight;
+        const heightPercent = (currentHeight / vh) * 100;
+
+        if (heightPercent < 32) {
+            sheetState = 'peek';
+        } else if (heightPercent < 70) {
+            sheetState = 'half';
+        } else {
+            sheetState = 'full';
+        }
+    }
+
+    // Reset gesture mode for next touch
+    gestureMode = null;
+}
+
+// Header area touch handlers (always moves sheet, no scroll content)
+function handleHeaderTouchStart(e) {
+    contentTouchStartY = e.touches[0].clientY;
+    lastTouchY = contentTouchStartY;
+    sheetStartHeight = sheetElement.offsetHeight;
+    isDragging = true;
+    sheetElement.style.transition = 'none';
+}
+
+function handleHeaderTouchMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = contentTouchStartY - currentY;
+
+    let newHeight = sheetStartHeight + deltaY;
+
+    const minHeight = window.innerHeight * 0.15;
+    const maxHeight = window.innerHeight * 0.90;
+    newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+
+    sheetElement.style.height = newHeight + 'px';
+    lastTouchY = currentY;
+}
+
+function handleHeaderTouchEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    sheetElement.style.transition = '';
+
+    const currentHeight = sheetElement.offsetHeight;
+    const vh = window.innerHeight;
+    const heightPercent = (currentHeight / vh) * 100;
+
+    if (heightPercent < 32) {
+        sheetState = 'peek';
+    } else if (heightPercent < 70) {
+        sheetState = 'half';
+    } else {
+        sheetState = 'full';
     }
 }
 
@@ -227,14 +385,15 @@ function renderSearchResults(term) {
         `;
     });
 
-    // Render company results
+    // Render company results with stop names
     matchingCompanies.forEach(company => {
-        const stopCount = busData.filter(s => s.companies.includes(company)).length;
+        const companyStops = busData.filter(s => s.companies.includes(company));
+        const stopsHtml = companyStops.map(s => `<div class="result-stop-item">• ${s.name}</div>`).join('');
         html += `
             <div class="search-result-item company" data-type="company" data-name="${company}">
                 <div class="result-content">
                     <div class="result-title">${company}</div>
-                    <div class="result-subtitle">${stopCount} stop${stopCount > 1 ? 's' : ''}</div>
+                    <div class="result-stops">${stopsHtml}</div>
                 </div>
             </div>
         `;

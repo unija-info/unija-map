@@ -2,7 +2,7 @@
 
 > Peta Lokasi Pick Up & Drop Point Bas Ekspres di sekitar UniSZA Kampus Gong Badak
 
-**Version:** 2.3.0
+**Version:** 2.5.0
 
 An interactive map application showing bus stop locations and express bus operators around Universiti Sultan Zainal Abidin (UniSZA), Kampus Gong Badak, Terengganu, Malaysia.
 
@@ -16,6 +16,9 @@ An interactive map application showing bus stop locations and express bus operat
 - **Responsive Design** - Works on desktop and mobile devices
 - **Collapsible Sidebar** - Minimize sidebar to see more of the map (desktop)
 - **Mobile Bottom Sheet** - Swipe-enabled panel with peek/half/full states (mobile)
+- **Extended Sheet Drag** - Drag on header or list to control sheet position (mobile)
+- **List Section Header** - "Senarai Bus Stop" title with usage instructions
+- **"See on Map" Button** - Quick-access button per stop to zoom to location (mobile)
 
 ## Bus Stops Covered
 
@@ -56,9 +59,11 @@ Then open `http://localhost:8000` in your browser.
 - **Tooltips** - Click markers to show "Get Directions" button; click × to zoom out
 
 ### Mobile
-- **Bottom Sheet** - Swipe up/down to adjust panel height (peek → half → full)
+- **Bottom Sheet** - Swipe up/down on handle, header, or list to adjust panel height (peek → half → full)
+- **Smart List Scrolling** - Drag down on list scrolls first; collapses sheet when at top
 - **Search** - Type in search bar; sheet auto-expands to show results
-- **Map Toggle** - Use "Show Map" / "Show List" button to switch views
+- **"See on Map" Button** - Tap the button below each stop header to zoom to that location
+- **"Papar Semua Operator"** - Expands all accordion groups and fully opens the bottom sheet
 
 ## Technology Stack
 

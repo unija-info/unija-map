@@ -1,5 +1,5 @@
 # Developer Documentation
-## Bus Stop @ UniSZA Gong Badak v2.4
+## Bus Stop @ UniSZA Gong Badak v2.5
 
 This document provides technical details for developers working on the Bus Stop mapping application.
 
@@ -670,6 +670,15 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 
 ## Version History
 
+### v2.5.0 (2026-01-27)
+- Extended mobile bottom sheet drag controls to entire sheet content (header + list)
+- Scroll-aware behavior: drag down scrolls list first, then collapses sheet when at top
+- Expand-first behavior: drag up expands sheet first, then allows scrolling when full
+- Added list section header with "Senarai Bus Stop" title and instruction subtitle
+- New touch handlers: `handleContentTouchStart/Move/End`, `handleHeaderTouchStart/Move/End`
+- New state variables: `scrollContainer`, `scrollStartTop`, `gestureMode`, `contentTouchStartY`
+- Added `.list-section-header` CSS styling
+
 ### v2.4.0 (2026-01-26)
 - Added "See on Map" button per stop on mobile (separate row below header)
 - Button styling: pill shape, Google Sans font, teal colors (#c2eaf2/#014f5a)
@@ -749,6 +758,6 @@ This project is developed for UniSZA internal use.
 
 ---
 
-**Last Updated**: 2026-01-26
-**Version**: 2.4.0
+**Last Updated**: 2026-01-27
+**Version**: 2.5.0
 **Maintained By**: Development Team

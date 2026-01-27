@@ -46,6 +46,7 @@ The application uses a single JSON data structure in `data.json`:
    - `currentActiveCompany` - Currently selected company filter
    - `sheetState` - Mobile bottom sheet state: 'peek' (15%), 'half' (50%), or 'full' (90%)
    - Touch tracking variables: `touchStartY`, `touchCurrentY`, `isDragging`, `sheetElement`
+   - Content drag variables: `scrollContainer`, `scrollStartTop`, `gestureMode`, `contentTouchStartY`
 
 3. **Filtering System**: Three main filtering modes:
    - **Show All Stops**: Displays all stops with markers
@@ -69,9 +70,16 @@ The application uses a single JSON data structure in `data.json`:
    - Swipe up on handle: peek → half → full
    - Swipe down on handle: full → half → peek
    - Tap handle: cycles through all three states
+   - **Extended drag controls**: Header and list content also respond to drag gestures
+   - **Scroll-aware list dragging**: Drag down scrolls list first, then collapses sheet when at top
+   - **Expand-first behavior**: Drag up expands sheet first, then allows list scrolling at full
    - Auto-expands to half when user starts typing in search
    - Uses CSS transitions with cubic-bezier easing for smooth animation
    - Semi-transparent with backdrop-filter blur for modern iOS/Android look
+
+7. **List Section Header**:
+   - Title "Senarai Bus Stop" with subtitle instructions above the bus stop list
+   - Styled with `.list-section-header` class (flex-shrink: 0 to stay fixed)
 
 ## Development Commands
 
@@ -92,6 +100,10 @@ python -m http.server 8000
 - Company filtering shows only relevant stops, highlights all matching buttons
 - Search dropdown filters both stops and companies
 - Mobile bottom sheet: swipe up/down cycles peek (15%) → half (50%) → full (90%)
+- Mobile bottom sheet: drag on header moves sheet up/down
+- Mobile bottom sheet: drag down on list scrolls first, then collapses when at top
+- Mobile bottom sheet: drag up on list expands sheet first, then scrolls when full
+- List section header displays "Senarai Bus Stop" title above bus stop list
 - Desktop sidebar: collapse/expand via chevron button
 - Marker click toggles "Get Directions" button in tooltip
 - Tooltip arrows point correctly based on `tooltipPosition` (left/right)
@@ -121,9 +133,11 @@ Edit `data.json`:
 | `filterByStop(stop)` | Zoom to specific stop, show single marker |
 | `filterByCompany(name)` | Show all stops for a company, highlight buttons |
 | `createMarker(stop, isSelected)` | Creates marker with permanent tooltip |
-| `initBottomSheet()` | Mobile swipe gesture setup |
+| `initBottomSheet()` | Mobile swipe gesture setup for handle, header, and list |
 | `setSheetState(state)` | Set bottom sheet height ('peek'/'half'/'full') |
 | `initDesktopSidebar()` | Desktop collapse/expand button handlers |
+| `handleContentTouchStart/Move/End` | Scroll-aware touch handlers for company list |
+| `handleHeaderTouchStart/Move/End` | Touch handlers for sidebar header (always moves sheet) |
 
 ## Styling Notes
 
