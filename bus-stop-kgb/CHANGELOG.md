@@ -5,6 +5,41 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-01-31
+
+### Added
+- **Info Button on Tooltips**:
+  - New "i" button appears next to "Get Directions" when tooltip expands
+  - Circular blue button with italic serif "i" icon
+  - Opens detailed stop info overlay on sidebar
+
+- **Stop Info Overlay Panel**:
+  - Full-height overlay slides over sidebar content
+  - Shows stop name, image (clickable for fullscreen), directions button, and operator list
+  - Smooth slide-in/out animations
+  - Close button (×) to dismiss overlay
+  - Prevents duplicate opens when same stop info is already displayed
+
+- **Mobile Bottom Sheet Integration**:
+  - Info overlay appears inside bottom sheet on mobile
+  - Bottom sheet automatically expands to full height (90vh) when info button clicked
+  - Overlay positioned below handle (24px offset) so sheet remains controllable
+  - Handle stays visible and functional with overlay open
+
+- **Mobile-Specific Animations**:
+  - Opening: Slides up from bottom (translateY)
+  - Closing: Slides down to bottom
+  - Desktop maintains left-to-right slide animation
+
+### Technical Details
+- New tracking variable: `currentInfoOverlayStopId` prevents duplicate overlay triggers
+- `showStopInfoOverlay(stopId)` function creates and manages overlay
+- Mobile detection: `window.innerWidth <= 768` triggers sheet expansion
+- CSS keyframes: `slideInFromBottom`, `slideOutToBottom` for mobile animations
+- Overlay uses `position: absolute` with `top: 24px` on mobile for handle visibility
+
+---
+
 ## [2.5.0] - 2026-01-27
 
 ### Added

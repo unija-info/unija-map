@@ -3,6 +3,99 @@ let markers = [];
 let busData = [];
 let isMapView = false;
 let currentActiveCompany = null;
+let currentSelectedStopId = null; // Track selected stop to prevent repeat animations
+let currentInfoOverlayStopId = null; // Track info overlay to prevent repeat opens
+
+// Image mapping: stop names to image filenames
+function getStopImageFilename(stopName) {
+    const mapping = {
+        'Bus Stop HoSZA': 'hosza.png',
+        'Bus Stop @ Jasa Pelangi': 'jasa-pelangi.png',
+        'Sani Expres Terminal': 'sani.png',
+        'Terminal Bus Telolet Darul lman': 'perdana.png',
+        'Bus Stop/Wakaf Pintu Depan UniSZA': 'wakaf.png'
+    };
+    return mapping[stopName] || null;
+}
+
+// Open fullscreen image overlay
+function openFullscreenImage(stopName, filename) {
+    const overlay = document.createElement('div');
+    overlay.className = 'fullscreen-overlay';
+    overlay.innerHTML = `
+        <button class="fullscreen-close" aria-label="Close">×</button>
+        <img src="image/bus-stop/${filename}" alt="${stopName}">
+        <p class="fullscreen-caption">${stopName}</p>
+    `;
+    overlay.onclick = (e) => {
+        if (e.target === overlay || e.target.classList.contains('fullscreen-close')) {
+            overlay.remove();
+        }
+    };
+    document.body.appendChild(overlay);
+}
+
+// Show stop info overlay on sidebar
+function showStopInfoOverlay(stopId) {
+    // Skip if same overlay is already open
+    if (currentInfoOverlayStopId === stopId) return;
+
+    const stop = busData.find(s => s.id === stopId);
+    if (!stop) return;
+
+    // Remove existing overlay if any
+    const existingOverlay = document.querySelector('.stop-info-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    currentInfoOverlayStopId = stopId;
+
+    const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${stop.coords[0]},${stop.coords[1]}`;
+    const imageFilename = getStopImageFilename(stop.name);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'stop-info-overlay';
+    overlay.innerHTML = `
+        <div class="info-overlay-header">
+            <h3>${stop.name}</h3>
+            <button class="info-overlay-close">×</button>
+        </div>
+        <div class="info-overlay-content">
+            ${imageFilename
+                ? `<div class="info-overlay-image" onclick="openFullscreenImage('${stop.name}', '${imageFilename}')">
+                     <img src="image/bus-stop/${imageFilename}" alt="${stop.name}">
+                   </div>`
+                : `<div class="info-overlay-image no-image"></div>`
+            }
+            <a href="${googleUrl}" target="_blank" class="info-overlay-directions">
+                Get Directions
+            </a>
+            <div class="info-overlay-companies">
+                <h4>Operator Bas</h4>
+                <ul>
+                    ${stop.companies.map(c => `<li>${c}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+
+    // Close button handler with animation
+    overlay.querySelector('.info-overlay-close').onclick = () => {
+        overlay.classList.add('closing');
+        overlay.addEventListener('animationend', () => {
+            overlay.remove();
+            currentInfoOverlayStopId = null; // Reset so same stop can be opened again
+        });
+    };
+
+    // Append to sidebar
+    document.getElementById('sidebar').appendChild(overlay);
+
+    // On mobile, expand bottom sheet to full height
+    if (window.innerWidth <= 768 && sheetElement) {
+        sheetElement.style.height = '';
+        setSheetState('full');
+    }
+}
 
 // Bottom sheet state management (mobile only)
 let sheetState = 'peek'; // 'peek' (15%), 'half' (50%), 'full' (90%)
@@ -486,11 +579,8 @@ function initMap() {
         position: 'bottomright'
     }).addTo(map);
 
-    // Hide any visible tooltip buttons when clicking on empty map space
+    // Collapse any expanded tooltips when clicking on empty map space
     map.on('click', function() {
-        document.querySelectorAll('.popup-link').forEach(btn => {
-            btn.classList.add('popup-link-hidden');
-        });
         document.querySelectorAll('.custom-tooltip-popup').forEach(tp => {
             tp.classList.remove('expanded');
         });
@@ -524,6 +614,28 @@ function renderGroupedList() {
             }
         };
 
+        // Create image container (appears when expanded)
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'stop-image-container';
+        const imageFilename = getStopImageFilename(stop.name);
+
+        if (imageFilename) {
+            const img = document.createElement('img');
+            img.src = `image/bus-stop/${imageFilename}`;
+            img.alt = stop.name;
+            img.onerror = () => {
+                img.style.display = 'none';
+                imageContainer.classList.add('no-image');
+            };
+            imageContainer.appendChild(img);
+            imageContainer.onclick = (e) => {
+                e.stopPropagation();
+                openFullscreenImage(stop.name, imageFilename);
+            };
+        } else {
+            imageContainer.classList.add('no-image');
+        }
+
         // Create button row (separate from header, mobile only)
         const buttonRow = document.createElement('div');
         buttonRow.className = 'stop-map-btn-row';
@@ -548,6 +660,7 @@ function renderGroupedList() {
         });
 
         groupDiv.appendChild(header);
+        groupDiv.appendChild(imageContainer);
         groupDiv.appendChild(buttonRow);
         groupDiv.appendChild(subList);
         container.appendChild(groupDiv);
@@ -556,6 +669,12 @@ function renderGroupedList() {
 
 // Desktop only: zoom to stop and show marker
 function filterByStop(stop) {
+    // Skip animation if same stop is already selected
+    if (currentSelectedStopId === stop.id) {
+        return;
+    }
+
+    currentSelectedStopId = stop.id;
     resetButtons();
     currentActiveCompany = null;
     clearMarkers();
@@ -578,6 +697,12 @@ function filterByStop(stop) {
 
 // Mobile-specific: zoom to stop and collapse sheet
 function showStopOnMap(stop) {
+    // Skip animation if same stop is already selected
+    if (currentSelectedStopId === stop.id) {
+        return;
+    }
+
+    currentSelectedStopId = stop.id;
     resetButtons();
     currentActiveCompany = null;
     clearMarkers();
@@ -605,6 +730,7 @@ function showStopOnMap(stop) {
 function showAllStops() {
     clearMarkers();
     currentActiveCompany = null;
+    currentSelectedStopId = null; // Reset so any stop can animate again
     const coords = [];
     busData.forEach(stop => {
         markers.push(createMarker(stop, false));
@@ -648,6 +774,7 @@ function toggleAllGroups() {
 
 function filterByCompany(companyName, btn) {
     const isAlreadyActive = (currentActiveCompany === companyName);
+    currentSelectedStopId = null; // Reset stop tracking when filtering by company
 
     if (!isAlreadyActive) {
         resetButtons();
@@ -724,7 +851,10 @@ function createMarker(stop, isSelected) {
         <div class="popup-content-wrapper">
             <button class="tooltip-close-btn" onclick="event.stopPropagation(); showAllStops();">×</button>
             <strong class="popup-stop-name">${stop.name}</strong>
-            <a href="${googleUrl}" target="_blank" class="popup-link popup-link-hidden" onclick="event.stopPropagation();">Get Directions</a>
+            <div class="popup-buttons">
+                <button class="tooltip-info-btn" data-stop-id="${stop.id}">i</button>
+                <a href="${googleUrl}" target="_blank" class="popup-link" onclick="event.stopPropagation();">Get Directions</a>
+            </div>
         </div>
     `;
 
@@ -741,29 +871,16 @@ function createMarker(stop, isSelected) {
 
     // Function to toggle tooltip expansion
     function toggleTooltipExpansion(tooltipEl) {
-        const btn = tooltipEl.querySelector('.popup-link');
-        if (btn) {
-            // Check if THIS tooltip's button is hidden BEFORE hiding all buttons
-            const isHidden = btn.classList.contains('popup-link-hidden');
+        const isExpanded = tooltipEl.classList.contains('expanded');
 
-            // Hide all buttons
-            document.querySelectorAll('.popup-link').forEach(b => {
-                b.classList.add('popup-link-hidden');
-            });
+        // Collapse all tooltips first
+        document.querySelectorAll('.custom-tooltip-popup').forEach(tp => {
+            tp.classList.remove('expanded');
+        });
 
-            // Collapse all tooltips
-            document.querySelectorAll('.custom-tooltip-popup').forEach(tp => {
-                tp.classList.remove('expanded');
-            });
-
-            // Toggle this tooltip's button based on previous state
-            if (isHidden) {
-                btn.classList.remove('popup-link-hidden');
-                tooltipEl.classList.add('expanded');
-            } else {
-                btn.classList.add('popup-link-hidden');
-                tooltipEl.classList.remove('expanded');
-            }
+        // Toggle this tooltip based on previous state
+        if (!isExpanded) {
+            tooltipEl.classList.add('expanded');
         }
     }
 
@@ -783,6 +900,14 @@ function createMarker(stop, isSelected) {
         if (tooltipEl && !tooltipEl._clickHandlerAdded) {
             tooltipEl._clickHandlerAdded = true;
             tooltipEl.addEventListener('click', function(e) {
+                // Handle info button click
+                const infoBtn = e.target.closest('.tooltip-info-btn');
+                if (infoBtn) {
+                    e.stopPropagation();
+                    const stopId = parseInt(infoBtn.dataset.stopId);
+                    showStopInfoOverlay(stopId);
+                    return;
+                }
                 // Don't toggle if clicking on the close button or the directions link
                 if (e.target.closest('.tooltip-close-btn') || e.target.closest('.popup-link')) {
                     return;

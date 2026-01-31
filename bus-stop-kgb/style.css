@@ -417,6 +417,54 @@ body, html {
     padding: 0;
 }
 
+/* Stop Image Container - collapses with accordion */
+.stop-image-container {
+    max-height: 200px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    cursor: pointer;
+    background: #f5f5f5;
+}
+
+.stop-group.collapsed .stop-image-container {
+    max-height: 0;
+}
+
+.stop-image-container img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.stop-image-container:hover img {
+    transform: scale(1.02);
+}
+
+/* Placeholder when no image available */
+.stop-image-container.no-image {
+    height: 120px;
+    max-height: 120px;
+    background: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+}
+
+.stop-image-container.no-image::after {
+    content: '📷 No image available';
+    color: #888;
+    font-size: 14px;
+    font-family: 'Google Sans', sans-serif;
+}
+
+.stop-group.collapsed .stop-image-container.no-image {
+    height: 0;
+    max-height: 0;
+}
+
 .company-btn {
     width: 100%;
     padding: 12px 20px;
@@ -528,7 +576,7 @@ body, html {
 
 .popup-content-wrapper {
     text-align: center;
-    padding: 4px 28px 4px 5px; /* Right padding for close button */
+    padding: 4px 5px 4px 5px; /* Right padding for close button */
     position: relative;
     /* Collapsed height: just enough for title */
     min-width: 200px;
@@ -575,6 +623,51 @@ body, html {
 
 .tooltip-close-btn:active {
     background: rgba(0, 0, 0, 0.12);
+}
+
+/* Popup buttons row - contains info and directions */
+.popup-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 0px;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+}
+
+.custom-tooltip-popup.expanded .popup-buttons {
+    max-height: 60px;
+    opacity: 1;
+    margin-top: 8px;
+    padding-bottom: 4px;
+}
+
+/* Info button in tooltip - next to Get Directions */
+.tooltip-info-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(25, 103, 210, 0.9);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    font-style: italic;
+    font-family: Georgia, serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.tooltip-info-btn:hover {
+    background: rgba(25, 103, 210, 1);
+    transform: scale(1.1);
 }
 
 /* Create custom arrow tip from content wrapper - points left toward marker (for right-side tooltips) */
@@ -632,13 +725,9 @@ body, html {
 }
 
 .popup-link {
-    display: block;
-    position: absolute;
-    bottom: 8px;
-    left: 12px;
-    right: 12px;
+    display: inline-block;
     box-sizing: border-box;
-    padding: 8px 16px;
+    padding: 6px 14px;
     background: #c2eaf2;
     color: #014f5a;
     text-decoration: none;
@@ -646,23 +735,12 @@ body, html {
     border-radius: 24px;
     font-family: 'Google Sans', sans-serif;
     font-weight: 600;
-    font-size: 14px;
-    transition: all 0.3s ease;
+    font-size: 13px;
+    transition: all 0.2s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    z-index: 2;
-    max-height: none;
-    opacity: 1;
-    pointer-events: auto;
+    white-space: nowrap;
 }
 
-.popup-link-hidden {
-    max-height: 0;
-    opacity: 0;
-    margin-top: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    pointer-events: none;
-}
 
 .popup-link:hover {
     background: #a8dfe9;
@@ -697,6 +775,217 @@ body, html {
     margin-left: -4px !important;
     margin-top: -4px !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Fullscreen Image Overlay */
+.fullscreen-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fullscreen-overlay img {
+    max-width: 95%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.fullscreen-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 28px;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.fullscreen-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+}
+
+.fullscreen-caption {
+    color: white;
+    margin-top: 16px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Stop Info Overlay - covers sidebar content */
+.stop-info-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    animation: slideInFromLeft 0.25s ease forwards;
+}
+
+.stop-info-overlay.closing {
+    animation: slideOutToLeft 0.25s ease forwards;
+}
+
+@keyframes slideInFromLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutToLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-100%); opacity: 0; }
+}
+
+.info-overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.info-overlay-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    font-family: 'Google Sans', sans-serif;
+}
+
+.info-overlay-close {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: #5f6368;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.info-overlay-close:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.info-overlay-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.info-overlay-image {
+    width: 100%;
+    height: 180px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.info-overlay-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.info-overlay-image:hover img {
+    transform: scale(1.02);
+}
+
+.info-overlay-image.no-image {
+    background: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+}
+
+.info-overlay-image.no-image::after {
+    content: 'No image available';
+    color: #888;
+    font-size: 14px;
+    font-family: 'Google Sans', sans-serif;
+}
+
+.info-overlay-directions {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    background: #b8ecf4;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    color: #202124;
+    font-weight: 500;
+    font-family: 'Google Sans', sans-serif;
+    margin-bottom: 16px;
+    transition: background 0.2s;
+    box-sizing: border-box;
+}
+
+.info-overlay-directions:hover {
+    background: #a8dfe9;
+}
+
+.info-overlay-companies h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #5f6368;
+    font-weight: 500;
+    font-family: 'Google Sans', sans-serif;
+}
+
+.info-overlay-companies ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-overlay-companies li {
+    padding: 10px 12px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-family: 'Google Sans', sans-serif;
 }
 
 /* Mobile Setup */
@@ -871,7 +1160,7 @@ body, html {
     /* See on map button row - below stop header (mobile only) */
     .stop-map-btn-row {
         display: block;
-        padding: 0 16px 12px 16px;
+        padding: 12px 16px 12px 16px;
         background: white;
     }
 
@@ -902,5 +1191,26 @@ body, html {
 
     .no-results-icon {
         font-size: 40px;
+    }
+
+    /* Info overlay - offset below handle on mobile */
+    .stop-info-overlay {
+        top: 24px; /* Leave space for sheet handle */
+        border-radius: 0; /* No top border radius on mobile */
+        animation: slideInFromBottom 0.25s ease forwards;
+    }
+
+    .stop-info-overlay.closing {
+        animation: slideOutToBottom 0.25s ease forwards;
+    }
+
+    @keyframes slideInFromBottom {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes slideOutToBottom {
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(100%); opacity: 0; }
     }
 }

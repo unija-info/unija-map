@@ -44,6 +44,8 @@ The application uses a single JSON data structure in `data.json`:
    - `markers` - Array of current map markers
    - `busData` - Loaded stop data
    - `currentActiveCompany` - Currently selected company filter
+   - `currentSelectedStopId` - Track selected stop to prevent repeat animations
+   - `currentInfoOverlayStopId` - Track info overlay to prevent duplicate opens
    - `sheetState` - Mobile bottom sheet state: 'peek' (15%), 'half' (50%), or 'full' (90%)
    - Touch tracking variables: `touchStartY`, `touchCurrentY`, `isDragging`, `sheetElement`
    - Content drag variables: `scrollContainer`, `scrollStartTop`, `gestureMode`, `contentTouchStartY`
@@ -81,6 +83,15 @@ The application uses a single JSON data structure in `data.json`:
    - Title "Senarai Bus Stop" with subtitle instructions above the bus stop list
    - Styled with `.list-section-header` class (flex-shrink: 0 to stay fixed)
 
+8. **Stop Info Overlay**:
+   - "i" button in tooltip opens detailed stop info overlay
+   - Overlay slides over sidebar content with stop name, image, directions, operators
+   - Desktop: slides in from left, slides out to left
+   - Mobile: slides up from bottom, slides down to close
+   - Mobile: sheet auto-expands to full (90vh), overlay offset 24px for handle visibility
+   - Clicking image opens fullscreen view
+   - Close button (×) dismisses overlay with animation
+
 ## Development Commands
 
 ### Running Locally
@@ -105,7 +116,13 @@ python -m http.server 8000
 - Mobile bottom sheet: drag up on list expands sheet first, then scrolls when full
 - List section header displays "Senarai Bus Stop" title above bus stop list
 - Desktop sidebar: collapse/expand via chevron button
-- Marker click toggles "Get Directions" button in tooltip
+- Marker click toggles "Get Directions" and "i" buttons in tooltip
+- Click "i" button opens info overlay on sidebar
+- Info overlay shows stop name, image, directions, and operators
+- Click image in overlay opens fullscreen view
+- Click "×" closes overlay with animation
+- Mobile: clicking "i" expands bottom sheet to full and shows overlay
+- Mobile: handle remains visible and usable with overlay open
 - Tooltip arrows point correctly based on `tooltipPosition` (left/right)
 
 ## Adding New Bus Stops
@@ -138,6 +155,9 @@ Edit `data.json`:
 | `initDesktopSidebar()` | Desktop collapse/expand button handlers |
 | `handleContentTouchStart/Move/End` | Scroll-aware touch handlers for company list |
 | `handleHeaderTouchStart/Move/End` | Touch handlers for sidebar header (always moves sheet) |
+| `showStopInfoOverlay(stopId)` | Opens info overlay with stop details on sidebar |
+| `openFullscreenImage(name, file)` | Opens fullscreen image overlay |
+| `getStopImageFilename(stopName)` | Maps stop name to image filename |
 
 ## Styling Notes
 
@@ -147,6 +167,9 @@ Edit `data.json`:
 - **Bottom sheet states**: CSS classes `.sheet-half`, `.sheet-full` (peek is default)
 - **Tooltip expansion**: `transform: translateY(-20px)` shifts tooltip up when "Get Directions" appears
 - **Tooltip arrows**: Positioned via `.popup-content-wrapper::after`, direction based on `.leaflet-tooltip-left`/`.leaflet-tooltip-right`
+- **Info overlay**: `.stop-info-overlay` uses `position: absolute` to cover sidebar
+- **Info overlay animations**: Desktop uses `slideInFromLeft`/`slideOutToLeft`, mobile uses `slideInFromBottom`/`slideOutToBottom`
+- **Mobile info overlay**: `top: 24px` offset leaves handle visible
 
 ## CSS Sibling Selector Pattern
 

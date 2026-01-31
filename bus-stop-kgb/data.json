@@ -29,7 +29,7 @@
 
       {
         "id": 5,
-        "name": "Bus Stop/Wakaf Pintu Depan UniSZA ",
+        "name": "Bus Stop/Wakaf Pintu Depan UniSZA",
         "coords": [5.395689907629097, 103.08346487203097],
         "companies": ["Transmalaya", "Mutiara" , "Musafir" ,  "Alibaba Ekspress"],
         "tooltipPosition": "left"

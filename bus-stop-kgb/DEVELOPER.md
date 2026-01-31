@@ -1,5 +1,5 @@
 # Developer Documentation
-## Bus Stop @ UniSZA Gong Badak v2.5
+## Bus Stop @ UniSZA Gong Badak v2.6
 
 This document provides technical details for developers working on the Bus Stop mapping application.
 
@@ -670,6 +670,19 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 
 ## Version History
 
+### v2.6.0 (2026-01-31)
+- Added "i" info button on tooltips next to "Get Directions"
+- New stop info overlay panel slides over sidebar with stop details
+- Overlay shows: stop name, image (clickable), directions button, operator list
+- Mobile: overlay appears inside bottom sheet, sheet expands to full on open
+- Mobile: overlay offset 24px from top so handle remains visible/usable
+- Mobile animations: slide up from bottom (open), slide down (close)
+- Desktop animations: slide in from left (open), slide out to left (close)
+- New tracking: `currentInfoOverlayStopId` prevents duplicate overlay triggers
+- New function: `showStopInfoOverlay(stopId)` manages overlay lifecycle
+- New CSS: `.stop-info-overlay`, `.info-overlay-header`, `.info-overlay-content`
+- New keyframes: `slideInFromBottom`, `slideOutToBottom` (mobile only)
+
 ### v2.5.0 (2026-01-27)
 - Extended mobile bottom sheet drag controls to entire sheet content (header + list)
 - Scroll-aware behavior: drag down scrolls list first, then collapses sheet when at top
@@ -758,6 +771,6 @@ This project is developed for UniSZA internal use.
 
 ---
 
-**Last Updated**: 2026-01-27
-**Version**: 2.5.0
+**Last Updated**: 2026-01-31
+**Version**: 2.6.0
 **Maintained By**: Development Team
