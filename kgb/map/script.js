@@ -1004,7 +1004,7 @@ function initMap() {
         document.querySelectorAll('.custom-tooltip-popup').forEach(tp => tp.classList.remove('expanded', 'tooltip-visible'));
     });
 
-    fetch('../data/map.json?v=' + Date.now())
+    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/map.json?v=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             mapData = processData(data);
