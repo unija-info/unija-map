@@ -4,6 +4,25 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [1.7] — 2026-04-06
+
+### Changed
+- **KOLEJ KEDIAMAN** markers now render as a **rounded square** (30×30px, `border-radius: 6px`) instead of a circle, to visually distinguish residential colleges from other categories
+- Tooltip hover text changed from marker code (e.g. `K1`) to **full location name** for faster identification without clicking
+- Tooltip expanded state (on click) no longer shows the duplicate location name row — name is already shown in the collapsed hover state
+- Info overlay header now has a **back button** (chevron left) on the far left, alongside the existing `×` close button — both trigger the same close+restore behaviour
+- Removed large empty space below `i` and `Arah` buttons in expanded tooltip — was caused by a now-removed `min-height: 90px` on the expanded wrapper
+- Tooltip popup horizontal padding increased (`5px` → `16px`) and `min-width` raised (`80px` → `120px`) for better readability on short location names
+- `showAllLocations()` now accepts an `animate` flag — initial page load uses `setView` (no animation) while subsequent calls use `flyTo` with animation
+- Initial map load starts at zoom **14** then animates (`flyTo`) to zoom **16.5** over the campus centre, making the intro animation clearly visible
+- Map initialised with `zoomSnap: 0.5` to support half-integer zoom levels
+- Added **debug zoom indicator** (bottom-right corner) showing live zoom level — commented-out-friendly for removal after testing
+
+### Fixed
+- Initial page load was zooming out then in due to `flyToBounds` overriding `setView` — resolved by separating animated vs. non-animated paths in `showAllLocations()`
+
+---
+
 ## [1.6] — 2026-04-05
 
 ### Changed

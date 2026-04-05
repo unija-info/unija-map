@@ -100,11 +100,16 @@ function createMarkerIcon(location) {
     const textColor = getCategoryTextColor(location.locationType);
     const num = location.number || '?';
     const isLong = num.length >= 4;
+    const isKolej = location.locationType === 'KOLEJ KEDIAMAN';
 
-    const w = isLong ? 44 : 32;
-    const h = isLong ? 22 : 32;
-    const borderRadius = isLong ? '11px' : '50%';
-    const fontSize = isLong ? 9 : 11;
+    let w, h, borderRadius, fontSize;
+    if (isKolej) {
+        w = 20; h = 20; borderRadius = '6px'; fontSize = 9;
+    } else if (isLong) {
+        w = 25; h = 25; borderRadius = '11px'; fontSize = 9;
+    } else {
+        w = 25; h = 25; borderRadius = '50%'; fontSize = 11;
+    }
 
     const html = `<div style="
         background: ${bgColor};
@@ -146,9 +151,8 @@ function createMarker(location) {
     const tooltipContent = `
         <div class="popup-content-wrapper">
             <button class="tooltip-close-btn">×</button>
-            <strong class="popup-stop-name">${location.number}</strong>
+            <strong class="popup-stop-name">${location.place}</strong>
             <div class="popup-buttons">
-                <span class="popup-location-fullname">${location.place}${location.shortForm ? ' (' + location.shortForm + ')' : ''}</span>
                 <button class="tooltip-info-btn" data-location-id="${location.id}">i</button>
                 <a href="${googleUrl}" target="_blank" class="popup-link" onclick="event.stopPropagation();">Arah</a>
             </div>
@@ -341,7 +345,7 @@ function renderGroupedList() {
 
 // ===== FILTERING =====
 
-function showAllLocations() {
+function showAllLocations(animate = true) {
     clearMarkers();
     currentActiveCategory = null;
     currentSelectedLocationId = null;
@@ -358,8 +362,13 @@ function showAllLocations() {
         }
     });
 
-    const padding = getMapPadding();
-    if (coords.length > 0) map.flyToBounds(coords, { padding: padding, maxZoom: 17 });
+    if (coords.length > 0) {
+        if (animate) {
+            map.flyTo([5.402700026344124, 103.08008886748964], 16);
+        } else {
+            map.setView([5.402700026344124, 103.08008886748964], 17.5);
+        }
+    }
 
     // Collapse bottom sheet on mobile
     if (window.innerWidth <= 768 && sheetElement) {
@@ -509,6 +518,9 @@ function showLocationInfoOverlay(locationId) {
     overlay.className = 'stop-info-overlay';
     overlay.innerHTML = `
         <div class="info-overlay-header">
+            <button class="info-overlay-back">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
             <span class="info-overlay-number-badge" style="background:${bgColor}; color:${textColor};">${location.number}</span>
             <h3>${location.place}</h3>
             <button class="info-overlay-close">×</button>
@@ -519,14 +531,17 @@ function showLocationInfoOverlay(locationId) {
         </div>
     `;
 
-    overlay.querySelector('.info-overlay-close').onclick = () => {
+    function closeOverlay() {
         overlay.classList.add('closing');
         overlay.addEventListener('animationend', () => {
             overlay.remove();
             currentInfoOverlayLocationId = null;
             showAllLocations();
         });
-    };
+    }
+
+    overlay.querySelector('.info-overlay-close').onclick = closeOverlay;
+    overlay.querySelector('.info-overlay-back').onclick = closeOverlay;
 
     document.getElementById('sidebar').appendChild(overlay);
 
@@ -983,7 +998,15 @@ function initClearSearchButton() {
 // ===== MAP INIT =====
 
 function initMap() {
-    map = L.map('map', { maxZoom: 25, zoomControl: false }).setView([5.3950, 103.0830], 14);
+    map = L.map('map', { maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView([5.400403569715876, 103.07990647727662], 14);
+
+    // DEBUG: zoom level indicator
+    const zoomDebug = document.createElement('div');
+    zoomDebug.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:4px 8px;border-radius:4px;font-size:13px;z-index:9999;pointer-events:none;';
+    zoomDebug.textContent = 'Zoom: ' + map.getZoom();
+    document.body.appendChild(zoomDebug);
+    map.on('zoomend', () => { zoomDebug.textContent = 'Zoom: ' + map.getZoom(); });
+    // END DEBUG
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',

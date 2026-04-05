@@ -563,9 +563,9 @@ body, html {
 
 .popup-content-wrapper {
     text-align: center;
-    padding: 4px 5px 4px 5px;
+    padding: 4px 16px;
     position: relative;
-    min-width: 80px;
+    min-width: 120px;
     overflow: visible;
     transition: min-height 0.3s ease, margin-top 0.3s ease;
     background: white;
@@ -702,9 +702,8 @@ body, html {
 
 /* Expanded state when buttons are visible */
 .custom-tooltip-popup.expanded .popup-content-wrapper {
-    min-height: 90px;
     transform: translateY(-20px);
-    transition: transform 0.3s ease, min-height 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
 .popup-stop-name {
@@ -820,6 +819,26 @@ body, html {
     font-family: 'Google Sans', sans-serif;
     flex: 1;
     line-height: 1.3;
+}
+
+.info-overlay-back {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background 0.2s;
+}
+
+.info-overlay-back:hover {
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .info-overlay-close {
