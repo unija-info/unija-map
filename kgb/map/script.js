@@ -1016,12 +1016,11 @@ function initMap() {
 
 // ===== EVENT WIRING =====
 
-document.getElementById('show-all').onclick = showAllLocations;
-document.getElementById('toggle-all-groups').onclick = toggleAllGroups;
-
 // ===== INIT =====
 
 window.onload = function() {
+    document.getElementById('show-all').onclick = showAllLocations;
+    document.getElementById('toggle-all-groups').onclick = toggleAllGroups;
     initMap();
     initBottomSheet();
     initDesktopSidebar();
