@@ -156,7 +156,7 @@
     "place": "Blok Abu Bakar",
     "googleMapLink": "https://maps.google.com/?q=5.399963742496294,103.0790087915256",
     "locationType": "BLOK AKADEMIK & KELAS",
-    "shortForm": "T",
+    "shortForm": "",
     "details": ""
   },
   {
@@ -777,7 +777,7 @@
   },
   {
     "number": "C1",
-    "place": "Laman Selera",
+    "place": "Laman Selera / Cafe Alumni",
     "googleMapLink": "https://maps.google.com/?q=5.397451555252221,103.07787618685718",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
@@ -819,6 +819,14 @@
     "number": "C6",
     "place": "CU@ UniSZA (TUMPU)",
     "googleMapLink": "https://maps.google.com/?q=5.408747548865256,103.07978895461028",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "",
+    "place": "MUIZ HOT CHICKEN",
+    "googleMapLink": "https://maps.google.com/?q=5.409078103188084,103.0808781380698",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
     "details": ""
