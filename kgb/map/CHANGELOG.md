@@ -4,6 +4,30 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [1.6] — 2026-04-05
+
+### Changed
+- Category bar color (left border on accordion header) widened from `4px` to `6px` for better visual prominence
+
+---
+
+## [1.5] — 2026-04-05
+
+### Changed
+- Accordion is now single-select: clicking a category header collapses all other open groups before expanding the selected one
+- If the clicked group was already open, it collapses (toggle behavior preserved)
+
+---
+
+## [1.4] — 2026-04-05
+
+### Fixed
+- Page was blank on Vercel deployment — `kgb/map.html` (an empty file) was shadowing `kgb/map/index.html` on Vercel's Linux server, causing `/kgb/map` to serve the empty file instead of the directory
+- Deleted `kgb/map.html`
+- Moved `document.getElementById('show-all')` and `toggle-all-groups` event wiring inside `window.onload` to prevent potential null-reference crash if script executes before DOM is ready
+
+---
+
 ## [1.3] — 2026-04-05
 
 ### Changed

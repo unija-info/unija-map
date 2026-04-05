@@ -12,10 +12,11 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 - **Interactive satellite map** powered by Leaflet.js with ArcGIS World Imagery
 - **Color-coded markers** by location category (10 categories)
-- **Accordion sidebar** — grouped location list, collapsible by category
+- **Accordion sidebar** — single-select grouped list; selecting a category collapses all others
 - **Category filtering** — click a category to show only its markers on the map
 - **Location focus** — click any location to zoom in on it (all other markers hidden)
-- **Info overlay** — detailed panel with location name, category, short form, notes, and Google Maps link
+- **Marker tooltips** — hidden by default, revealed on hover; click to expand with full name, directions, and info button
+- **Info overlay** — detailed panel with location name, category, short form, notes, and Google Maps link; closing restores full map view
 - **Real-time search** — search by location name, number code, short form, or details
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
 

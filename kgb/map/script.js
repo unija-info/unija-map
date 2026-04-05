@@ -263,10 +263,14 @@ function renderGroupedList() {
         const header = document.createElement('button');
         header.className = 'stop-header';
         header.style.borderLeftColor = bgColor;
-        header.style.borderLeftWidth = '4px';
+        header.style.borderLeftWidth = '10px';
         header.innerHTML = `<span>${categoryName}</span>`;
         header.onclick = () => {
-            groupDiv.classList.toggle('collapsed');
+            const isCollapsed = groupDiv.classList.contains('collapsed');
+            // Collapse all other groups first
+            document.querySelectorAll('.stop-group').forEach(g => g.classList.add('collapsed'));
+            // Toggle this group
+            if (isCollapsed) groupDiv.classList.remove('collapsed');
             if (window.innerWidth > 768) {
                 filterByCategory(categoryName);
             }
