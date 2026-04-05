@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Peta Kampus UniSZA Gong Badak</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/media/favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/media/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/media/favicon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/media/favicon/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Peta UniSZA KGB" />
+    <link rel="manifest" href="/media/favicon/site.webmanifest" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="map"></div>
+
+        <!-- Sidebar MUST come first for CSS ~ sibling selectors to work -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <!-- Collapse button - desktop only -->
+                <button id="sidebar-collapse-btn" class="sidebar-collapse-btn" aria-label="Collapse sidebar">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <h2>Peta Kampus UniSZA KGB</h2>
+                <p class="subtitle">Peta Interaktif Lokasi-Lokasi di UniSZA Kampus Gong Badak.</p>
+                <div class="button-group">
+                    <button id="show-all" class="btn-reset">📍 Papar semua Lokasi</button>
+                    <button id="toggle-all-groups" class="btn-toggle-groups">📋 Papar Semua Kategori</button>
+                </div>
+            </div>
+            <div class="list-section-header">
+                <h3>Senarai Lokasi</h3>
+                <p>Klik/tap pada nama kategori untuk lihat senarai lokasi di bawah.</p>
+            </div>
+            <div id="company-list" class="company-list"></div>
+        </div>
+
+        <!-- Expand button - comes AFTER sidebar for CSS ~ selector -->
+        <button id="sidebar-expand-btn" class="sidebar-expand-btn" aria-label="Expand sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+            </svg>
+        </button>
+
+        <!-- Search container - comes AFTER sidebar for CSS ~ selector -->
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Cari lokasi, kategori, kod...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+
+        <button id="toggle-view" class="mobile-toggle">Tunjuk Peta</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+
+<!-- VERCEL WEB ANALYTICS SCRIPT -->
+<script>
+  window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
+</script>
+<script src="/_vercel/insights/script.js" defer></script>
+<!-- END VERCEL SCRIPT -->
+
+</body>
+</html>
