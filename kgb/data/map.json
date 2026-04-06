@@ -713,7 +713,7 @@
   },
   {
     "number": "S6",
-    "place": "Dewan Badminton",
+    "place": "Dewan Arena",
     "googleMapLink": "https://maps.google.com/?q=5.404246032156645,103.08054502320279",
     "locationType": "SUKAN & REKREASI",
     "shortForm": "",
@@ -873,6 +873,14 @@
   },
   {
     "number": "I4",
+    "place": "SURAU FRIT (BLOK ZAINAB)",
+    "googleMapLink": "",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "I5",
     "place": "SURAU KHANSA'",
     "googleMapLink": "https://maps.google.com/?q=5.403037020008431,103.07834520293117",
     "locationType": "IBADAH",
@@ -880,7 +888,7 @@
     "details": ""
   },
   {
-    "number": "I5",
+    "number": "I6",
     "place": "SURAU TARIQ",
     "googleMapLink": "https://maps.google.com/?q=5.404240019193609,103.07841508934193",
     "locationType": "IBADAH",
