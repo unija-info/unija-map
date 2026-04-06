@@ -5,6 +5,27 @@ let mapData = [];
 let currentActiveCategory = null;
 let currentSelectedLocationId = null;
 let currentInfoOverlayLocationId = null;
+let currentHighlightedMarker = null;
+
+// ===== MAP TEXT LABELS DATA =====
+// fontSize: max font size in px | minZoom: hide below this zoom level
+const mapLabels = [
+    { coords: [5.405672070610966, 103.08435741479786], text: 'Tasik UniSZA', fontSize: 13, minZoom: 15 },
+    { coords: [5.4027246673160985, 103.07766728429158], text: 'Padang<br>New Zealand', fontSize: 13, minZoom: 15 },
+];
+const mapLabelRefs = [];
+
+function setMarkerHighlight(marker) {
+    if (currentHighlightedMarker) {
+        const el = currentHighlightedMarker.getElement();
+        if (el) el.classList.remove('marker-highlighted');
+    }
+    currentHighlightedMarker = marker || null;
+    if (marker) {
+        const el = marker.getElement();
+        if (el) el.classList.add('marker-highlighted');
+    }
+}
 
 // ===== CATEGORY COLOR SYSTEM =====
 const CATEGORY_COLORS = {
@@ -152,9 +173,10 @@ function createMarker(location) {
         <div class="popup-content-wrapper">
             <button class="tooltip-close-btn">×</button>
             <strong class="popup-stop-name">${location.place}</strong>
+            <span class="popup-category" style="background:${getCategoryColor(location.locationType)}">${location.locationType}</span>
             <div class="popup-buttons">
                 <button class="tooltip-info-btn" data-location-id="${location.id}">i</button>
-                <a href="${googleUrl}" target="_blank" class="popup-link" onclick="event.stopPropagation();">Arah</a>
+                <a href="${googleUrl}" target="_blank" class="popup-link" onclick="event.stopPropagation();"><span class="material-symbols-outlined">directions</span>Arah</a>
             </div>
         </div>
     `;
@@ -195,19 +217,30 @@ function createMarker(location) {
             });
             marker._tooltipSticky = true;
             tooltipEl.classList.add('tooltip-visible', 'expanded');
+            setMarkerHighlight(marker);
         }
 
         function closeSticky() {
             marker._tooltipSticky = false;
             tooltipEl.classList.remove('tooltip-visible', 'expanded');
+            setMarkerHighlight(null);
         }
 
         marker.on('click', function(e) {
             L.DomEvent.stopPropagation(e);
-            if (marker._tooltipSticky) {
-                closeSticky();
+            if (window.innerWidth <= 768) {
+                const _zoom = Math.max(map.getZoom(), 17);
+                const _targetPx = map.project(location.coords, _zoom);
+                const _offsetCenter = map.unproject(_targetPx.subtract([0, -window.innerHeight * 0.15]), _zoom);
+                map.flyTo(_offsetCenter, _zoom, { duration: 0.6 });
+                setMarkerHighlight(marker);
+                showLocationInfoOverlay(location.id);
             } else {
-                openSticky();
+                if (marker._tooltipSticky) {
+                    closeSticky();
+                } else {
+                    openSticky();
+                }
             }
         });
 
@@ -347,6 +380,7 @@ function renderGroupedList() {
 
 function showAllLocations(animate = true) {
     clearMarkers();
+    setMarkerHighlight(null);
     currentActiveCategory = null;
     currentSelectedLocationId = null;
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
@@ -363,10 +397,13 @@ function showAllLocations(animate = true) {
     });
 
     if (coords.length > 0) {
+        const isMobile = window.innerWidth <= 768;
+        const mobileCenter = [5.4030603222603855, 103.07978857810325];
+        const desktopCenter = [5.402700026344124, 103.08008886748964];
         if (animate) {
-            map.flyTo([5.402700026344124, 103.08008886748964], 16);
+            map.flyTo(isMobile ? mobileCenter : desktopCenter, isMobile ? 15 : 16);
         } else {
-            map.setView([5.402700026344124, 103.08008886748964], 17.5);
+            map.setView(isMobile ? mobileCenter : desktopCenter, isMobile ? 15 : 17.5);
         }
     }
 
@@ -511,7 +548,7 @@ function showLocationInfoOverlay(locationId) {
     }
 
     const directionsHtml = location.googleMapLink
-        ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions">🗺️ Buka di Google Maps</a>`
+        ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions"><span class="material-symbols-outlined">directions</span>Buka di Google Maps</a>`
         : '';
 
     const overlay = document.createElement('div');
@@ -545,10 +582,10 @@ function showLocationInfoOverlay(locationId) {
 
     document.getElementById('sidebar').appendChild(overlay);
 
-    // On mobile, expand bottom sheet to full height
+    // On mobile, expand bottom sheet to half height
     if (window.innerWidth <= 768 && sheetElement) {
         sheetElement.style.height = '';
-        setSheetState('full');
+        setSheetState('half');
     }
 }
 
@@ -836,6 +873,24 @@ function renderSearchResults(term) {
         (loc.locationType || '').toLowerCase().includes(lowerTerm)
     );
 
+    // Search map text labels (lakes, fields, etc.)
+    const matchingLabels = mapLabels.filter(({ text }) =>
+        text.replace(/<br>/gi, ' ').toLowerCase().includes(lowerTerm)
+    );
+
+    // Render map label results
+    matchingLabels.forEach((label) => {
+        const displayText = label.text.replace(/<br>/gi, ' ');
+        html += `
+            <div class="search-result-item maplabel" data-type="maplabel" data-index="${mapLabels.indexOf(label)}">
+                <div class="result-content">
+                    <div class="result-title">${displayText}</div>
+                    <div class="result-subtitle">Kawasan / Tapak</div>
+                </div>
+            </div>
+        `;
+    });
+
     // Search categories
     const allCategories = [...new Set(mapData.map(loc => loc.locationType).filter(Boolean))];
     const matchingCategories = allCategories.filter(cat =>
@@ -910,6 +965,17 @@ function initSearchDropdown() {
         } else if (type === 'category') {
             const catName = item.dataset.name;
             filterByCategory(catName);
+        } else if (type === 'maplabel') {
+            const label = mapLabels[parseInt(item.dataset.index)];
+            if (label) {
+                const basePadding = getMapPadding();
+                const padding = window.innerWidth <= 768 ? [150, 150] : [100, 100, 100, basePadding[3] || 100];
+                map.flyToBounds([label.coords], { padding, maxZoom: 19, duration: 1.2 });
+                if (window.innerWidth <= 768 && sheetElement) {
+                    sheetElement.style.height = '';
+                    setSheetState('peek');
+                }
+            }
         }
 
         searchBar.value = '';
@@ -998,7 +1064,11 @@ function initClearSearchButton() {
 // ===== MAP INIT =====
 
 function initMap() {
-    map = L.map('map', { maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView([5.400403569715876, 103.07990647727662], 14);
+    const isMobileInit = window.innerWidth <= 768;
+    map = L.map('map', { maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView(
+        isMobileInit ? [5.4030603222603855, 103.07978857810325] : [5.400403569715876, 103.07990647727662],
+        isMobileInit ? 16 : 14
+    );
 
     // DEBUG: zoom level indicator
     const zoomDebug = document.createElement('div');
@@ -1022,9 +1092,49 @@ function initMap() {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+    // ===== MAP TEXT LABELS =====
+    mapLabels.forEach(({ coords, text, fontSize, minZoom }) => {
+        const marker = L.marker(coords, {
+            icon: L.divIcon({
+                className: '',
+                html: `<div class="map-text-label">${text}</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+            }),
+            interactive: false,
+            zIndexOffset: -1000,
+        }).addTo(map);
+        mapLabelRefs.push({ marker, fontSize: fontSize || 13, minZoom: minZoom || 16 });
+    });
+
+    function updateMapTextLabels() {
+        const zoom = map.getZoom();
+        mapLabelRefs.forEach(({ marker, fontSize, minZoom }) => {
+            const el = marker.getElement();
+            if (!el) return;
+            const label = el.querySelector('.map-text-label');
+            if (!label) return;
+            if (zoom < minZoom) {
+                label.style.opacity = '0';
+                label.style.pointerEvents = 'none';
+            } else {
+                // Scale font from 60% at minZoom up to 100% at minZoom+3
+                const t = (zoom - minZoom) / 3;
+                const scale = 0.6 + 0.4 * Math.min(t, 1);
+                label.style.fontSize = (fontSize * scale).toFixed(1) + 'px';
+                label.style.opacity = '1';
+            }
+        });
+    }
+
+    map.on('zoomend', updateMapTextLabels);
+    updateMapTextLabels();
+    // ===== END MAP TEXT LABELS =====
+
     map.on('click', function() {
         markers.forEach(m => { m._tooltipSticky = false; });
         document.querySelectorAll('.custom-tooltip-popup').forEach(tp => tp.classList.remove('expanded', 'tooltip-visible'));
+        setMarkerHighlight(null);
     });
 
     fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/map.json?v=${Date.now()}`)
