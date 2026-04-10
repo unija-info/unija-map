@@ -4,6 +4,22 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [1.9] — 2026-04-11
+
+### Added
+- **`flyToMarker(coords, duration?)`** — shared helper that pans and zooms to a location with a bottom-sheet-aware vertical offset, so the marker appears above the sheet instead of behind it; used by both marker tap and list select for consistent positioning
+- **`minZoom: 14`** on `L.map()` — prevents zooming out past the full-campus view
+
+### Changed
+- **Mobile tooltips now appear above the marker** (`direction: 'top'`) with a downward-pointing CSS arrow; desktop remains `direction: 'right'` with a left-pointing arrow; `tooltipAnchor` in `createMarkerIcon()` is set per-breakpoint accordingly
+- **Bottom sheet collapses to `peek` when tapping the map** (empty area); marker taps are unaffected (`stopPropagation` already in place)
+- **Back (`←`) and close (`×`) buttons in the info overlay now have different behaviors**: `←` dismisses the panel only, keeping the selected marker on the map; `×` resets everything and restores all locations
+- **Info overlay cross-fades when switching locations**: if an overlay is already open, content is updated in place with a 120 ms opacity transition instead of remove + slide-in — the sidebar is never visible during the switch; the slide-in animation is preserved for the first open
+- **"Papar semua Lokasi" zoom corrected**: `flyTo` now uses mobile `16` / desktop `14` to match the initial page-load zoom (was mobile `15.5` / desktop `16`)
+- `showLocationOnMap()` now calls `flyToMarker()` instead of `flyToBounds` — both map tap and list select now produce the same screen position for the selected marker
+
+---
+
 ## [1.8] — 2026-04-06
 
 ### Added

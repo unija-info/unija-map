@@ -156,7 +156,7 @@ function createMarkerIcon(location) {
         className: '',
         iconSize: [w, h],
         iconAnchor: [w / 2, h / 2],
-        tooltipAnchor: [w / 2 + 2, -h / 2],
+        tooltipAnchor: window.innerWidth <= 768 ? [0, -h / 2 - 2] : [w / 2 + 2, -h / 2],
     });
 }
 
@@ -181,11 +181,12 @@ function createMarker(location) {
         </div>
     `;
 
+    const isMobile = window.innerWidth <= 768;
     marker.bindTooltip(tooltipContent, {
         permanent: true,
-        direction: 'right',
+        direction: isMobile ? 'top' : 'right',
         className: 'custom-tooltip-popup',
-        offset: [location.number.length >= 4 ? 24 : 18, 0],
+        offset: isMobile ? [0, -5] : [location.number.length >= 4 ? 24 : 18, 0],
     });
 
     // Wait for tooltip element to be in DOM
@@ -229,10 +230,7 @@ function createMarker(location) {
         marker.on('click', function(e) {
             L.DomEvent.stopPropagation(e);
             if (window.innerWidth <= 768) {
-                const _zoom = Math.max(map.getZoom(), 17);
-                const _targetPx = map.project(location.coords, _zoom);
-                const _offsetCenter = map.unproject(_targetPx.subtract([0, -window.innerHeight * 0.15]), _zoom);
-                map.flyTo(_offsetCenter, _zoom, { duration: 0.6 });
+                flyToMarker(location.coords, 0.6);
                 setMarkerHighlight(marker);
                 showLocationInfoOverlay(location.id);
             } else {
@@ -378,6 +376,13 @@ function renderGroupedList() {
 
 // ===== FILTERING =====
 
+function flyToMarker(coords, duration = 0.8) {
+    const zoom = Math.max(map.getZoom(), 17);
+    const targetPx = map.project(coords, zoom);
+    const offsetCenter = map.unproject(targetPx.subtract([0, -window.innerHeight * 0.15]), zoom);
+    map.flyTo(offsetCenter, zoom, { duration });
+}
+
 function showAllLocations(animate = true) {
     clearMarkers();
     setMarkerHighlight(null);
@@ -401,7 +406,7 @@ function showAllLocations(animate = true) {
         const mobileCenter = [5.4030603222603855, 103.07978857810325];
         const desktopCenter = [5.402700026344124, 103.08008886748964];
         if (animate) {
-            map.flyTo(isMobile ? mobileCenter : desktopCenter, isMobile ? 15 : 16);
+            map.flyTo(isMobile ? mobileCenter : desktopCenter, isMobile ? 15.5 : 16);
         } else {
             map.setView(isMobile ? mobileCenter : desktopCenter, isMobile ? 15 : 17.5);
         }
@@ -488,7 +493,7 @@ function showLocationOnMap(location) {
     const m = createMarker(location);
     if (m) markers.push(m);
 
-    map.flyToBounds([location.coords], { padding: [150, 150], maxZoom: 19, duration: 1.2 });
+    flyToMarker(location.coords);
 
     if (sheetElement) {
         sheetElement.style.height = '';
@@ -503,9 +508,6 @@ function showLocationInfoOverlay(locationId) {
 
     const location = mapData.find(l => l.id === locationId);
     if (!location) return;
-
-    const existingOverlay = document.querySelector('.stop-info-overlay');
-    if (existingOverlay) existingOverlay.remove();
 
     currentInfoOverlayLocationId = locationId;
 
@@ -551,9 +553,7 @@ function showLocationInfoOverlay(locationId) {
         ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions"><span class="material-symbols-outlined">directions</span>Buka di Google Maps</a>`
         : '';
 
-    const overlay = document.createElement('div');
-    overlay.className = 'stop-info-overlay';
-    overlay.innerHTML = `
+    const innerHTMLString = `
         <div class="info-overlay-header">
             <button class="info-overlay-back">
                 <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
@@ -568,34 +568,52 @@ function showLocationInfoOverlay(locationId) {
         </div>
     `;
 
-    // × — fully reset: close overlay + show all locations
-    function closeOverlay() {
-        overlay.classList.add('closing');
-        overlay.addEventListener('animationend', () => {
-            overlay.remove();
-            currentInfoOverlayLocationId = null;
-            showAllLocations();
-        });
+    function wireButtons(overlayEl) {
+        // × — fully reset: close overlay + show all locations
+        function closeOverlay() {
+            overlayEl.classList.add('closing');
+            overlayEl.addEventListener('animationend', () => {
+                overlayEl.remove();
+                currentInfoOverlayLocationId = null;
+                showAllLocations();
+            });
+        }
+        // ← — dismiss only: close overlay, keep current map state
+        function dismissOverlay() {
+            overlayEl.classList.add('closing');
+            overlayEl.addEventListener('animationend', () => {
+                overlayEl.remove();
+                currentInfoOverlayLocationId = null;
+            });
+        }
+        overlayEl.querySelector('.info-overlay-close').onclick = closeOverlay;
+        overlayEl.querySelector('.info-overlay-back').onclick = dismissOverlay;
     }
 
-    // ← — dismiss only: close overlay, keep current map state (single marker stays)
-    function dismissOverlay() {
-        overlay.classList.add('closing');
-        overlay.addEventListener('animationend', () => {
-            overlay.remove();
-            currentInfoOverlayLocationId = null;
-        });
-    }
+    const existingOverlay = document.querySelector('.stop-info-overlay');
 
-    overlay.querySelector('.info-overlay-close').onclick = closeOverlay;
-    overlay.querySelector('.info-overlay-back').onclick = dismissOverlay;
+    if (existingOverlay) {
+        // Update in place: cross-fade so sidebar never shows through
+        existingOverlay.style.transition = 'opacity 0.12s ease';
+        existingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            existingOverlay.innerHTML = innerHTMLString;
+            wireButtons(existingOverlay);
+            existingOverlay.style.opacity = '1';
+        }, 120);
+    } else {
+        // First open: use slide-in animation
+        const overlay = document.createElement('div');
+        overlay.className = 'stop-info-overlay';
+        overlay.innerHTML = innerHTMLString;
+        wireButtons(overlay);
+        document.getElementById('sidebar').appendChild(overlay);
 
-    document.getElementById('sidebar').appendChild(overlay);
-
-    // On mobile, expand bottom sheet to half height
-    if (window.innerWidth <= 768 && sheetElement) {
-        sheetElement.style.height = '';
-        setSheetState('half');
+        // On mobile, expand bottom sheet to half height
+        if (window.innerWidth <= 768 && sheetElement) {
+            sheetElement.style.height = '';
+            setSheetState('half');
+        }
     }
 }
 
@@ -1075,7 +1093,7 @@ function initClearSearchButton() {
 
 function initMap() {
     const isMobileInit = window.innerWidth <= 768;
-    map = L.map('map', { maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView(
+    map = L.map('map', { minZoom: 15, maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView(
         isMobileInit ? [5.4030603222603855, 103.07978857810325] : [5.400403569715876, 103.07990647727662],
         isMobileInit ? 16 : 14
     );

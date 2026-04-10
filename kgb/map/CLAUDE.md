@@ -119,6 +119,8 @@ The tooltip has two visual states:
 
 Click a marker to toggle sticky/expanded. Click `×` or the map background to close. Opening a new sticky tooltip auto-closes the previous one.
 
+**Mobile tooltip direction**: On mobile (`≤768px`), tooltips appear **above** the marker (`direction: 'top'`) with a downward-pointing arrow. On desktop, tooltips appear to the right (`direction: 'right'`). The `tooltipAnchor` in `createMarkerIcon()` is also set per-breakpoint accordingly.
+
 ### 6. Sidebar List (Accordion)
 
 Categories rendered in `DESIRED_ORDER` (defined in `script.js`). Each group:
@@ -148,12 +150,16 @@ Contains:
 - Detail rows: Kategori, Singkatan, Info, and a "no coordinates" warning if applicable
 - "🗺️ Buka di Google Maps" link
 
+**Back (`←`) behavior**: animates out, removes overlay, keeps current map state (selected marker stays visible).
+
 **Close (`×`) behavior**: animates out, removes overlay, then calls `showAllLocations()` to restore all markers and zoom to campus bounds.
+
+**Switching locations**: if an overlay is already open, the panel updates **in place** via a 120ms cross-fade (fade out → swap content → fade in). The sidebar is never exposed. The slide-in animation only plays on first open.
 
 **Animations**:
 - Desktop: `slideInFromLeft` / `slideOutToLeft`
 - Mobile: `slideInFromBottom` / `slideOutToBottom` with `top: 24px` offset (leaves handle visible)
-- Mobile: auto-expands sheet to `full` state when overlay opens
+- Mobile: auto-expands sheet to `half` state when overlay opens
 
 ### 9. Mobile Bottom Sheet
 
@@ -167,6 +173,8 @@ Drag zones and behavior:
 Tap the handle to cycle peek → half → full.
 
 Sheet auto-collapses to `peek` when a location or category is selected from the list.
+
+**Tapping the map** (empty area) also collapses the sheet to `peek`.
 
 ### 10. Desktop Sidebar
 
@@ -199,8 +207,9 @@ Real-time search filters both locations and categories. Results appear as dropdo
 | `showAllLocations()` | Clears markers, re-renders all, fits bounds |
 | `filterByCategory(name)` | Shows only one category's markers; toggles on repeat click |
 | `filterByLocation(loc)` | Clears to single marker, zooms in (desktop) |
-| `showLocationOnMap(loc)` | Clears to single marker, zooms in, collapses sheet (mobile) |
-| `showLocationInfoOverlay(id)` | Renders text-only info panel in sidebar; close button calls `showAllLocations()` |
+| `flyToMarker(coords, duration?)` | Pans/zooms to a location with bottom-sheet-aware offset (mobile); reused by both marker tap and list select for consistent positioning |
+| `showLocationOnMap(loc)` | Clears to single marker, calls `flyToMarker()`, collapses sheet (mobile) |
+| `showLocationInfoOverlay(id)` | Renders text-only info panel; cross-fades if already open; back button dismisses, close button resets all |
 | `initBottomSheet()` | Sets up mobile swipe gesture handlers |
 | `setSheetState(state)` | Sets sheet to `'peek'`/`'half'`/`'full'` with CSS transition |
 | `initDesktopSidebar()` | Wires collapse/expand button handlers |
@@ -256,7 +265,14 @@ Data is fetched from `../data/map.json` (relative path), so it works immediately
 - [ ] Mobile bottom sheet: swipe up/down on handle cycles peek → half → full
 - [ ] Mobile: tapping handle cycles through sheet states
 - [ ] Mobile: drag down on list scrolls first, then collapses sheet when at top
-- [ ] Mobile: selecting a location collapses sheet to peek, shows info overlay at full
+- [ ] Mobile: selecting a location collapses sheet to peek, shows info overlay at half
+- [ ] Mobile: tapping empty map area collapses sheet to peek
+- [ ] Mobile: tooltips appear above marker with downward arrow; desktop tooltips appear to the right
+- [ ] Mobile: tapping marker and selecting from list both position the marker at the same screen position
+- [ ] Info overlay: `←` dismisses panel only, selected marker stays on map
+- [ ] Info overlay: `×` dismisses panel and resets to all locations
+- [ ] Info overlay: switching between locations cross-fades content (no sidebar flicker)
+- [ ] Map cannot zoom out past level 14
 - [ ] Desktop sidebar: collapse/expand via chevron button
 - [ ] Desktop: search bar repositions when sidebar is collapsed
 - [ ] Closing info overlay (`×`) calls `showAllLocations()` — all markers restored
@@ -316,3 +332,12 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.3 — Info Overlay Close Restores All Markers
 - `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
 - Closing the details pane zooms the map back to the full campus view with all markers
+
+### v1.4 — Mobile UX Improvements
+- **Bottom sheet collapses on map tap**: tapping empty map area on mobile collapses sheet to `peek`; marker taps are unaffected (stopPropagation)
+- **Back vs close buttons differentiated**: `←` dismisses the info overlay only (keeps selected marker); `×` resets to all locations
+- **Mobile tooltips appear above marker**: `direction: 'top'` with downward-pointing CSS arrow on mobile; desktop remains `direction: 'right'`; `tooltipAnchor` set per-breakpoint in `createMarkerIcon()`
+- **Consistent marker focus position**: extracted `flyToMarker(coords)` helper used by both marker tap and list select — same bottom-sheet-aware offset calculation for both paths
+- **Info overlay cross-fade on location switch**: switching between locations while overlay is open cross-fades in place (120ms) instead of remove + slide-in; sidebar never exposed during transition
+- **`minZoom: 14`** added to `L.map()` options to prevent zooming out past campus view
+- **"Papar semua Lokasi" zoom fixed**: `flyTo` now uses mobile `16`, desktop `14` to match initial load zoom
