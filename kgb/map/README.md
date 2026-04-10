@@ -18,7 +18,8 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 - **Marker tooltips** — hidden by default; hover reveals the location name, click expands with directions and info button
 - **Info overlay** — detailed panel with location name, category, short form, notes, and Google Maps link; back (`←`) or close (`×`) button restores full map view
 - **Animated intro** — map flies in from a wide view to campus zoom on first load
-- **Real-time search** — search by location name, number code, short form, or details
+- **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
+- **Real-time search** — search by location name, number code, short form, details, or area label
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
 
 ---

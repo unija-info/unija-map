@@ -4,6 +4,19 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [1.8] — 2026-04-06
+
+### Added
+- **Map text labels** — static area/landmark labels rendered directly on the map (e.g. "Tasik UniSZA", "Padang New Zealand") using `L.marker` with `L.divIcon`; defined in a global `mapLabels` array for easy addition of new entries
+- Labels are zoom-responsive: hidden below `minZoom`, font scales from 60% → 100% of `fontSize` over 3 zoom levels above the threshold
+- Labels support multi-line text using `<br>` in the `text` field (e.g. `'Padang<br>New Zealand'`); both lines center-aligned
+- **Search includes map labels** — the search dropdown now finds kawasan/tapak labels; clicking a result flies to the coordinate with the same `flyToBounds` zoom behaviour as location markers (collapses mobile sheet to peek)
+
+### Changed
+- `mapLabels` and `mapLabelRefs` moved to global scope (were local to `initMap`) to allow search and other functions to access label data
+
+---
+
 ## [1.7] — 2026-04-06
 
 ### Changed
