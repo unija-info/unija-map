@@ -531,6 +531,7 @@ function showLocationInfoOverlay(locationId) {
         </div>
     `;
 
+    // × — fully reset: close overlay + show all locations
     function closeOverlay() {
         overlay.classList.add('closing');
         overlay.addEventListener('animationend', () => {
@@ -540,8 +541,17 @@ function showLocationInfoOverlay(locationId) {
         });
     }
 
+    // ← — dismiss only: close overlay, keep current map state (single marker stays)
+    function dismissOverlay() {
+        overlay.classList.add('closing');
+        overlay.addEventListener('animationend', () => {
+            overlay.remove();
+            currentInfoOverlayLocationId = null;
+        });
+    }
+
     overlay.querySelector('.info-overlay-close').onclick = closeOverlay;
-    overlay.querySelector('.info-overlay-back').onclick = closeOverlay;
+    overlay.querySelector('.info-overlay-back').onclick = dismissOverlay;
 
     document.getElementById('sidebar').appendChild(overlay);
 
@@ -1025,6 +1035,10 @@ function initMap() {
     map.on('click', function() {
         markers.forEach(m => { m._tooltipSticky = false; });
         document.querySelectorAll('.custom-tooltip-popup').forEach(tp => tp.classList.remove('expanded', 'tooltip-visible'));
+        if (window.innerWidth <= 768 && sheetElement && sheetState !== 'peek') {
+            sheetElement.style.height = '';
+            setSheetState('peek');
+        }
     });
 
     fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/map.json?v=${Date.now()}`)
