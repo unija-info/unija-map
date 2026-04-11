@@ -309,6 +309,7 @@ function renderGroupedList() {
             if (window.innerWidth > 768) {
                 filterByCategory(categoryName);
             }
+            updateToggleButtonLabel();
         };
 
         // Mobile "See on map" button row
@@ -932,6 +933,7 @@ function renderSearchResults(term) {
                 <div class="result-content">
                     <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                     <div class="result-subtitle">${loc.locationType || ''}</div>
+                    ${loc.details ? `<div class="result-detail">${loc.details}</div>` : ''}
                 </div>
             </div>
         `;
@@ -1034,20 +1036,26 @@ function initSearchDropdown() {
 
 function toggleAllGroups() {
     const allGroups = document.querySelectorAll('.stop-group');
-    const toggleBtn = document.getElementById('toggle-all-groups');
     const hasCollapsed = Array.from(allGroups).some(g => g.classList.contains('collapsed'));
 
     if (hasCollapsed) {
         allGroups.forEach(g => g.classList.remove('collapsed'));
-        toggleBtn.textContent = '📋 Tutup Semua Senarai';
         if (window.innerWidth <= 768 && sheetElement) {
             sheetElement.style.height = '';
             setSheetState('full');
         }
     } else {
         allGroups.forEach(g => g.classList.add('collapsed'));
-        toggleBtn.textContent = '📋 Papar Semua Kategori';
     }
+    updateToggleButtonLabel();
+}
+
+function updateToggleButtonLabel() {
+    const allGroups = document.querySelectorAll('.stop-group');
+    const toggleBtn = document.getElementById('toggle-all-groups');
+    if (!toggleBtn) return;
+    const hasCollapsed = Array.from(allGroups).some(g => g.classList.contains('collapsed'));
+    toggleBtn.textContent = hasCollapsed ? '📋 Papar Semua Kategori' : '📋 Tutup Semua Senarai';
 }
 
 // ===== UTILITIES =====
@@ -1180,6 +1188,53 @@ function initMap() {
             console.error('Failed to load map data:', err);
             document.getElementById('company-list').innerHTML =
                 '<p style="padding:20px;color:#DC143C;">Gagal memuatkan data peta. Sila muat semula halaman.</p>';
+        });
+
+    loadCampusBoundary();
+}
+
+// ===== CAMPUS BOUNDARY =====
+
+function loadCampusBoundary() {
+    // Query Overpass API for the university landuse polygon around UniSZA KGB campus
+    // Way 1120569731 = Universiti Sultan Zainal Abidin (UniSZA) KGB — fetched by exact OSM ID
+    const query = `[out:json][timeout:15];
+way(1120569731);
+out geom;`;
+
+    const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
+
+    const style = {
+        color: '#1967d2',
+        weight: 2.5,
+        opacity: 100,
+        fillColor: '#1967d2',
+        fillOpacity: 0.06,
+        interactive: false,
+    };
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const elements = data.elements || [];
+
+            elements.forEach(el => {
+                if (el.type === 'way' && el.geometry) {
+                    const coords = el.geometry.map(pt => [pt.lat, pt.lon]);
+                    L.polygon(coords, style).addTo(map);
+                } else if (el.type === 'relation' && el.members) {
+                    el.members.forEach(member => {
+                        if (member.type === 'way' && member.role === 'outer' && member.geometry) {
+                            const coords = member.geometry.map(pt => [pt.lat, pt.lon]);
+                            L.polygon(coords, style).addTo(map);
+                        }
+                    });
+                }
+            });
+        })
+        .catch(err => {
+            // Boundary is decorative — fail silently
+            console.warn('Campus boundary fetch failed:', err);
         });
 }
 

@@ -91,6 +91,7 @@ Unknown categories fall back to `#778899` (grey). Colors are applied to markers,
 - **Default zoom**: 16
 - **Base layer**: ArcGIS World Imagery (satellite)
 - **Overlay layer**: CartoDB Positron labels (place names)
+- **Campus boundary**: fetched from Overpass API (OSM Way 1120569731) via `loadCampusBoundary()` on init; rendered as non-interactive `L.polygon()` in `#1967d2`
 - **Zoom control**: bottom-right
 
 ### 4. Marker System
@@ -185,10 +186,14 @@ Sheet auto-collapses to `peek` when a location or category is selected from the 
 
 ### 11. Search Dropdown
 
-Real-time search filters both locations and categories. Results appear as dropdown below the search input. Clicking a result:
+Real-time search filters both locations and categories. Results appear as dropdown below the search input. Each location result shows three lines: place name + number, category (`.result-subtitle`), and `details` if non-empty (`.result-detail`, truncated with ellipsis). Clicking a result:
 - Locations with coords: calls `filterByLocation()` (desktop) or `showLocationOnMap()` (mobile) + `showLocationInfoOverlay()`
 - Locations without coords: calls `showLocationInfoOverlay()` only
 - Categories: calls `filterByCategory()`
+
+### 12. Toggle Button Label Sync
+
+The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-groups`) label is managed by `updateToggleButtonLabel()`, which reads the actual DOM state (checks if any `.stop-group` has `.collapsed`) and sets the correct text. Called by both `toggleAllGroups()` and the category header `onclick` to stay in sync whenever accordion state changes.
 
 ---
 
@@ -215,6 +220,8 @@ Real-time search filters both locations and categories. Results appear as dropdo
 | `initDesktopSidebar()` | Wires collapse/expand button handlers |
 | `clearMarkers()` | Removes all markers from map and empties `markers` array |
 | `getMapPadding()` | Returns `[top, right, bottom, left]` padding array accounting for sidebar width |
+| `loadCampusBoundary()` | Fetches UniSZA campus boundary from Overpass API (Way 1120569731); renders as non-interactive `L.polygon()`; fails silently |
+| `updateToggleButtonLabel()` | Reads DOM state of all `.stop-group` elements and sets `#toggle-all-groups` button text to match; called after any accordion state change |
 
 ---
 
@@ -230,6 +237,8 @@ Real-time search filters both locations and categories. Results appear as dropdo
 - **Info overlay**: `position: absolute` covers sidebar; animations use `@keyframes slideInFromLeft` etc.
 - **Mobile info overlay**: `top: 24px` offset leaves handle bar visible
 - **No-coords items**: `.no-coords` class — `opacity: 0.55; cursor: default`
+- **Search result detail line**: `.result-detail` — 11px, `#80868b`, `text-overflow: ellipsis`; shown only when `loc.details` is non-empty
+- **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`
 
 ---
 
@@ -261,7 +270,12 @@ Data is fetched from `../data/map.json` (relative path), so it works immediately
 - [ ] Info overlay shows: number badge, place name, category, shortForm, details, Google Maps link
 - [ ] No-coords locations appear in sidebar (dimmed) but don't crash on click
 - [ ] Search dropdown filters both locations and categories in real-time
+- [ ] Search results show `details` as a third line when non-empty (truncated with ellipsis)
 - [ ] Clicking search result: zooms to location (if has coords) + opens info overlay
+- [ ] Campus boundary polygon appears within ~1–3s of page load (Overpass API latency)
+- [ ] Campus boundary does not respond to clicks (non-interactive)
+- [ ] "📋 Papar Semua Kategori" expands all groups; button changes to "Tutup Semua Senarai"
+- [ ] Clicking a category header after "Papar Semua" correctly resets button to "📋 Papar Semua Kategori"
 - [ ] Mobile bottom sheet: swipe up/down on handle cycles peek → half → full
 - [ ] Mobile: tapping handle cycles through sheet states
 - [ ] Mobile: drag down on list scrolls first, then collapses sheet when at top

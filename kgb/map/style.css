@@ -146,6 +146,15 @@ body, html {
     color: #5f6368;
 }
 
+.result-detail {
+    font-size: 11px;
+    color: #80868b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .search-results .no-results {
     padding: 24px 16px;
     text-align: center;

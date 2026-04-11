@@ -4,6 +4,17 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.0] — 2026-04-11
+
+### Added
+- **Campus boundary polygon** — `loadCampusBoundary()` fetches UniSZA's campus boundary (OSM Way ID 1120569731) from the Overpass API at page load and renders it as a non-interactive `L.polygon()` overlay; styled with the site's primary blue (`#1967d2`), 2.5px stroke at 80% opacity, 7% fill opacity; fails silently if Overpass is unavailable
+- **Search results now show `details`** — a third `.result-detail` line appears below the category subtitle in each location search result when the location has a non-empty `details` field; styled at 11px / `#80868b`, truncated with ellipsis
+
+### Fixed
+- **Toggle button label desync** — clicking a category header after "Papar Semua Kategori" left the button stuck on "Tutup Semua Senarai" even though all other groups had collapsed; extracted `updateToggleButtonLabel()` helper that reads actual DOM state and sets correct label; called at the end of both the category header `onclick` and `toggleAllGroups()`
+
+---
+
 ## [1.9] — 2026-04-11
 
 ### Added
