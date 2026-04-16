@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **unija-map** — Interactive navigation maps for Universiti Sultan Zainal Abidin (UniSZA), Kampus Gong Badak, Terengganu, Malaysia. A community project by [unija.info](https://unija.info). Content is primarily in Malay (Bahasa Melayu).
 
-Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools, no frameworks (except Leaflet.js in `kgb/bus-stop/`). Deployed on Vercel; Vercel Analytics script present on all pages.
+Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools, no frameworks (except Leaflet.js in `kgb/map/` and `kgb/bus-stop/`). Deployed on Vercel; Vercel Analytics script present on all pages.
 
 ## Architecture
 

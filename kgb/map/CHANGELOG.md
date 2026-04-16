@@ -4,6 +4,21 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.3] — 2026-04-16
+
+### Added
+- **Zoom-based marker tiers** — non-priority categories render as 12×12px colored dots at low zoom; transition to full markers when zoom ≥ `ZOOM_FULL_DESKTOP` (17.5) / `ZOOM_FULL_MOBILE` (17)
+- `ZOOM_FULL_DESKTOP = 17.5`, `ZOOM_FULL_MOBILE = 17` — configurable thresholds at top of `script.js`
+- `PRIORITY_CATEGORIES` — 3 categories always shown as full markers regardless of zoom: `PENTADBIRAN & PTJ`, `BLOK AKADEMIK & KELAS`, `BLOK FAKULTI & PUSAT PENGAJIAN`
+- `shouldShowFullMarker(location)` — returns `true` when: priority category, zoom ≥ threshold, `currentSelectedLocationId` matches, active category filter matches, or `currentHighlightedMarker` matches
+- `updateMarkerModes()` — iterates `markers[]`, calls `marker.setIcon()` in-place on `zoomend`; re-applies `.marker-highlighted` after icon swap (Leaflet replaces the DOM element on `setIcon`)
+- `marker._location` — location data stored on each marker object, required by `updateMarkerModes()` to re-evaluate mode after zoom changes
+- **Hover upgrade** — `mouseover` on a dot temporarily upgrades it to full icon; `mouseout` reverts to dot if not selected/highlighted
+- **Highlight revert** — `setMarkerHighlight()` now reverts the previous marker's icon when switching selection; sets `currentHighlightedMarker` to new value first so `shouldShowFullMarker` evaluates the old marker without bias
+- **Location count in sidebar subtitle** — `<span id="location-count">` populated with `mapData.length` after JSON loads; displays as `Peta Interaktif N Lokasi di UniSZA Kampus Gong Badak.`
+
+---
+
 ## [2.2] — 2026-04-16
 
 ### Added

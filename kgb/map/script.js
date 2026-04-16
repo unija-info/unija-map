@@ -7,6 +7,15 @@ let currentSelectedLocationId = null;
 let currentInfoOverlayLocationId = null;
 let currentHighlightedMarker = null;
 
+// ===== ZOOM-BASED MARKER TIERS =====
+const ZOOM_FULL_DESKTOP   = 17.5;
+const ZOOM_FULL_MOBILE    = 17;
+const PRIORITY_CATEGORIES = [
+    'PENTADBIRAN & PTJ',
+    'BLOK AKADEMIK & KELAS',
+    'BLOK FAKULTI & PUSAT PENGAJIAN',
+];
+
 // ===== MAP TEXT LABELS DATA =====
 // fontSize: max font size in px | minZoom: hide below this zoom level
 const mapLabels = [
@@ -16,11 +25,21 @@ const mapLabels = [
 const mapLabelRefs = [];
 
 function setMarkerHighlight(marker) {
-    if (currentHighlightedMarker) {
-        const el = currentHighlightedMarker.getElement();
-        if (el) el.classList.remove('marker-highlighted');
-    }
+    const prev = currentHighlightedMarker;
     currentHighlightedMarker = marker || null;
+
+    // Revert previous marker — update currentHighlightedMarker first so
+    // shouldShowFullMarker evaluates the old marker without highlight bias
+    if (prev) {
+        const el = prev.getElement();
+        if (el) el.classList.remove('marker-highlighted');
+        const loc = prev._location;
+        if (loc) {
+            const mode = shouldShowFullMarker(loc) ? 'full' : 'dot';
+            prev.setIcon(createMarkerIcon(loc, mode));
+        }
+    }
+
     if (marker) {
         const el = marker.getElement();
         if (el) el.classList.add('marker-highlighted');
@@ -116,8 +135,29 @@ function processData(rawData) {
 
 // ===== MARKER CREATION =====
 
-function createMarkerIcon(location) {
+function createMarkerIcon(location, mode = 'full') {
     const bgColor = getCategoryColor(location.locationType);
+
+    if (mode === 'dot') {
+        const w = 12, h = 12;
+        const html = `<div style="
+            background: ${bgColor};
+            width: ${w}px;
+            height: ${h}px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            cursor: pointer;
+        "></div>`;
+        return L.divIcon({
+            html: html,
+            className: '',
+            iconSize: [w, h],
+            iconAnchor: [w / 2, h / 2],
+            tooltipAnchor: window.innerWidth <= 768 ? [0, -8] : [8, 0],
+        });
+    }
+
     const textColor = getCategoryTextColor(location.locationType);
     const num = location.number || '?';
     const isLong = num.length >= 4;
@@ -165,8 +205,10 @@ function createMarker(location) {
 
     const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${location.coords[0]},${location.coords[1]}`;
 
-    const icon = createMarkerIcon(location);
+    const mode = shouldShowFullMarker(location) ? 'full' : 'dot';
+    const icon = createMarkerIcon(location, mode);
     const marker = L.marker(location.coords, { icon: icon });
+    marker._location = location;
     marker.addTo(map);
 
     const tooltipContent = `
@@ -194,10 +236,20 @@ function createMarker(location) {
         const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
         if (!tooltipEl) return;
 
-        // --- Hover: show/hide via class (marker hover) ---
-        marker.on('mouseover', () => tooltipEl.classList.add('tooltip-visible'));
+        // --- Hover: show/hide tooltip; temporarily upgrade dot → full ---
+        marker.on('mouseover', () => {
+            tooltipEl.classList.add('tooltip-visible');
+            if (!shouldShowFullMarker(location)) {
+                marker.setIcon(createMarkerIcon(location, 'full'));
+            }
+        });
         marker.on('mouseout', () => {
-            if (!marker._tooltipSticky) tooltipEl.classList.remove('tooltip-visible');
+            if (!marker._tooltipSticky) {
+                tooltipEl.classList.remove('tooltip-visible');
+                if (!shouldShowFullMarker(location)) {
+                    marker.setIcon(createMarkerIcon(location, 'dot'));
+                }
+            }
         });
 
         // --- Hover: keep visible when mouse moves onto tooltip itself ---
@@ -377,8 +429,34 @@ function renderGroupedList() {
 
 // ===== FILTERING =====
 
+function shouldShowFullMarker(location) {
+    if (PRIORITY_CATEGORIES.includes(location.locationType)) return true;
+    const threshold = window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
+    if (map.getZoom() >= threshold) return true;
+    if (currentSelectedLocationId !== null && location.id === currentSelectedLocationId) return true;
+    if (currentActiveCategory !== null && location.locationType === currentActiveCategory) return true;
+    if (currentHighlightedMarker && currentHighlightedMarker._location &&
+        currentHighlightedMarker._location.id === location.id) return true;
+    return false;
+}
+
+function updateMarkerModes() {
+    markers.forEach(marker => {
+        const loc = marker._location;
+        if (!loc) return;
+        const mode = shouldShowFullMarker(loc) ? 'full' : 'dot';
+        marker.setIcon(createMarkerIcon(loc, mode));
+        // setIcon() replaces the DOM element — re-apply highlight class if needed
+        if (marker === currentHighlightedMarker) {
+            const el = marker.getElement();
+            if (el) el.classList.add('marker-highlighted');
+        }
+    });
+}
+
 function flyToMarker(coords, duration = 0.8) {
-    const zoom = Math.max(map.getZoom(), 17);
+    const zoomThreshold = window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
+    const zoom = Math.max(map.getZoom(), zoomThreshold);
     const targetPx = map.project(coords, zoom);
     const offsetCenter = map.unproject(targetPx.subtract([0, -window.innerHeight * 0.15]), zoom);
     map.flyTo(offsetCenter, zoom, { duration });
@@ -404,10 +482,10 @@ function showAllLocations(animate = true) {
 
     if (coords.length > 0) {
         const isMobile = window.innerWidth <= 768;
-        const mobileCenter = [5.4030603222603855, 103.07978857810325];
+        const mobileCenter = [5.40105971093413, 103.07981725897017];
         const desktopCenter = [5.402700026344124, 103.08008886748964];
         if (animate) {
-            map.flyTo(isMobile ? mobileCenter : desktopCenter, isMobile ? 15.5 : 16);
+            map.flyTo(isMobile ? mobileCenter : desktopCenter, isMobile ? 15.5 : 16.3);
         } else {
             map.setView(isMobile ? mobileCenter : desktopCenter, isMobile ? 15 : 17.5);
         }
@@ -1163,7 +1241,10 @@ function initMap() {
         });
     }
 
-    map.on('zoomend', updateMapTextLabels);
+    map.on('zoomend', function() {
+        updateMapTextLabels();
+        updateMarkerModes();
+    });
     updateMapTextLabels();
     // ===== END MAP TEXT LABELS =====
 
@@ -1181,6 +1262,8 @@ function initMap() {
         .then(res => res.json())
         .then(data => {
             mapData = processData(data);
+            const countEl = document.getElementById('location-count');
+            if (countEl) countEl.textContent = mapData.length;
             renderGroupedList();
             showAllLocations();
         })

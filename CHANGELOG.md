@@ -5,6 +5,16 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-16 — Zoom-Based Marker Tiers (`kgb/map/`)
+
+- Priority categories (PENTADBIRAN, AKADEMIK, FAKULTI) always show full markers; other categories show as small colored dots at low zoom, upgrading to full at zoom ≥ 17.5 (desktop) / 17 (mobile)
+- Hovering a dot temporarily upgrades it to full; selecting a location keeps its marker full until deselected
+- Location count in sidebar subtitle now fetched live from data (`mapData.length`)
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.3
+
+---
+
 ## 2026-04-16 — Version Info Bar & Campus Boundary Path Fix (`kgb/map/`)
 
 - `kgb/map/` now shows app version (parsed from CHANGELOG.md) and last data update date (GitHub Commits API) in a sidebar info bar above the nav footer

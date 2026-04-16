@@ -58,11 +58,12 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
 | Variable | Type | Purpose |
 |---|---|---|
 | `map` | Leaflet Map | Map instance |
-| `markers` | Array | Currently rendered Leaflet markers |
+| `markers` | Array | Currently rendered Leaflet markers (each has `._location` and `._tooltipSticky`) |
 | `mapData` | Array | Processed location data (from `processData()`) |
 | `currentActiveCategory` | string\|null | Category currently filtered/highlighted |
 | `currentSelectedLocationId` | number\|null | `id` of currently selected single location |
 | `currentInfoOverlayLocationId` | number\|null | `id` of location whose info overlay is open |
+| `currentHighlightedMarker` | L.Marker\|null | Marker with `.marker-highlighted` class; kept as full icon regardless of zoom |
 | `sheetState` | string | Mobile bottom sheet state: `'peek'`/`'half'`/`'full'` |
 
 ### 2. Category Color System
@@ -96,15 +97,43 @@ Unknown categories fall back to `#778899` (grey). Colors are applied to markers,
 
 ### 4. Marker System
 
-Each location gets an `L.divIcon` colored circle/pill:
-- **Circle** (32×32px, border-radius 50%) — for number codes 1–3 characters (`P1`, `A5`, `K3`)
-- **Pill** (44×22px, border-radius 11px) — for 4+ character codes (`USM`, `UKS`, etc.)
+`createMarkerIcon(location, mode)` returns an `L.divIcon` in one of two modes:
+
+**`mode = 'full'`** (default) — full colored marker:
+- **Circle** (25×25px, border-radius 50%) — for codes 1–3 chars (`P1`, `A5`, `K3`)
+- **Pill** (25×25px, border-radius 11px) — for 4+ char codes (`USM`, `UKS`, etc.)
+- **Square** (20×20px, border-radius 6px) — for `KOLEJ KEDIAMAN` category
+
+**`mode = 'dot'`** — small colored dot for low-zoom non-priority markers:
+- 12×12px circle, category background color, `2px solid white` border
+
+`createMarker(location)` stores `marker._location = location` so `updateMarkerModes()` can re-evaluate the icon on zoom changes.
 
 Markers use `permanent: true` tooltip but are **hidden by default via CSS** (`opacity: 0; pointer-events: none`). They become visible via:
-- **Hover** — `mouseover` on marker or `mouseenter` on tooltip element adds `.tooltip-visible`
+- **Hover** — `mouseover` on marker (or `mouseenter` on tooltip element) adds `.tooltip-visible`; if currently a dot, icon is temporarily upgraded to full on hover and reverted on `mouseout`
 - **Click (sticky)** — adds `.tooltip-visible` + `.expanded`, persists until closed
 
 This solves the problem of non-permanent tooltips disappearing when the mouse moves from marker to tooltip content.
+
+### 4a. Zoom-Based Marker Tiers
+
+Constants (top of `script.js`):
+```js
+const ZOOM_FULL_DESKTOP   = 17.5;
+const ZOOM_FULL_MOBILE    = 17;
+const PRIORITY_CATEGORIES = ['PENTADBIRAN & PTJ', 'BLOK AKADEMIK & KELAS', 'BLOK FAKULTI & PUSAT PENGAJIAN'];
+```
+
+`shouldShowFullMarker(location)` returns `true` (use full icon) when any condition holds:
+1. Location is in `PRIORITY_CATEGORIES`
+2. `map.getZoom() >= threshold` (17.5 desktop / 17 mobile)
+3. `location.id === currentSelectedLocationId`
+4. `location.locationType === currentActiveCategory`
+5. `currentHighlightedMarker._location.id === location.id`
+
+`updateMarkerModes()` — called on `zoomend`, iterates `markers[]`, calls `marker.setIcon()` in-place. After `setIcon()`, re-applies `.marker-highlighted` class if this is the highlighted marker (Leaflet replaces the DOM element on `setIcon`, losing the class).
+
+`setMarkerHighlight(marker)` — sets `currentHighlightedMarker` to the new marker **first**, then reverts the old marker's icon. This order ensures `shouldShowFullMarker` evaluates the old marker without the highlight condition, correctly reverting a previously-selected dot to dot mode.
 
 ### 5. Tooltip Interaction
 
@@ -206,8 +235,11 @@ The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-group
 | `customSort(a, b)` | Alphanumeric sort: letter-prefixed codes (P1, A1) before pure numbers; handles dormitory block codes (A, B...Q) |
 | `getCategoryColor(lt)` | Returns hex bg color for a `locationType` string |
 | `getCategoryTextColor(lt)` | Returns text color (`'white'`/`'black'`) for a `locationType` string |
-| `createMarkerIcon(location)` | Returns `L.divIcon` — circle for short codes, pill for long codes |
-| `createMarker(location)` | Creates marker + permanent-but-hidden tooltip; wires hover and click handlers |
+| `createMarkerIcon(location, mode)` | Returns `L.divIcon`; `mode='full'` → circle/pill/square; `mode='dot'` → 12px colored dot |
+| `createMarker(location)` | Creates marker (mode from `shouldShowFullMarker`), stores `._location`, wires hover/click handlers |
+| `shouldShowFullMarker(location)` | Returns `true` if location should use full icon (priority category, zoom ≥ threshold, selected, filtered, or highlighted) |
+| `updateMarkerModes()` | Called on `zoomend`; updates all marker icons in-place via `setIcon()`; re-applies `.marker-highlighted` class |
+| `setMarkerHighlight(marker)` | Sets highlighted marker; reverts old marker's icon before switching |
 | `renderGroupedList()` | Builds 10-category accordion in `#company-list` |
 | `showAllLocations()` | Clears markers, re-renders all, fits bounds |
 | `filterByCategory(name)` | Shows only one category's markers; toggles on repeat click |
@@ -238,8 +270,10 @@ The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-group
 - **Mobile info overlay**: `top: 24px` offset leaves handle bar visible
 - **No-coords items**: `.no-coords` class — `opacity: 0.55; cursor: default`
 - **Search result detail line**: `.result-detail` — 11px, `#80868b`, `text-overflow: ellipsis`; shown only when `loc.details` is non-empty
-- **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`
+- **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`; fetched from `/kgb/data/campus-boundary.json` (absolute path — relative path breaks on Vercel `cleanUrls`)
+- **Dot marker**: 12×12px, `border-radius: 50%`, category bg color, `2px solid white` border, `box-shadow: 0 1px 3px rgba(0,0,0,0.4)`
 - **Sidebar nav footer**: `.sidebar-nav-footer` at bottom of sidebar — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text
+- **Version/update bar**: `#map-data-info` above nav footer — 11px, `#80868b`, `border-top: 1px solid #e8eaed`; spans `#map-version` and `#map-kemaskini` populated by `fetchMapDataInfo()`
 
 ---
 

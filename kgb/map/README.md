@@ -12,14 +12,17 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 - **Interactive satellite map** powered by Leaflet.js with ArcGIS World Imagery
 - **Color-coded markers** by location category (10 categories); KOLEJ KEDIAMAN uses a distinct rounded-square shape
+- **Zoom-adaptive markers** — priority categories (PENTADBIRAN, AKADEMIK, FAKULTI) always show full markers; other categories appear as small colored dots at low zoom, upgrading to full markers as you zoom in (threshold: 17.5 desktop / 17 mobile)
+- **Hover upgrade** — hovering a dot temporarily expands it to full size; clicking keeps it full until another location is selected
 - **Accordion sidebar** — single-select grouped list; selecting a category collapses all others
 - **Category filtering** — click a category to show only its markers on the map
 - **Location focus** — click any location to zoom in on it (all other markers hidden)
-- **Marker tooltips** — hidden by default; hover reveals the location name, click expands with directions and info button
+- **Marker tooltips** — hidden by default; hover reveals the location code, click expands with full name, directions and info button
 - **Info overlay** — detailed panel with location name, category, short form, notes, and Google Maps link; back (`←`) or close (`×`) button restores full map view
 - **Animated intro** — map flies in from a wide view to campus zoom on first load
 - **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
 - **Real-time search** — search by location name, number code, short form, details, or area label
+- **Version & update info** — sidebar shows current app version and last data update date (fetched from GitHub)
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
 
 ---
