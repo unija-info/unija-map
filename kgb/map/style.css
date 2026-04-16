@@ -1233,6 +1233,19 @@ body, html {
     z-index: 999 !important;
 }
 
+/* Map data version/update info */
+#map-data-info {
+    padding: 8px 16px 4px;
+    font-size: 11px;
+    color: #80868b;
+    border-top: 1px solid #e8eaed;
+    flex-shrink: 0;
+    line-height: 1.5;
+}
+.map-data-sep {
+    margin: 0 4px;
+}
+
 /* Sidebar navigation footer */
 .sidebar-nav-footer {
     padding: 12px 16px;

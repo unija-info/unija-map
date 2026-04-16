@@ -4,6 +4,19 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.2] — 2026-04-16
+
+### Added
+- **Version & update info bar** — `#map-data-info` block above `.sidebar-nav-footer` shows app version and last data update; populated at page load by `fetchMapDataInfo()`
+- `fetchMapDataInfo()` — async function, two parallel fetches via `Promise.allSettled`:
+  - Fetches `kgb/map/CHANGELOG.md` from GitHub raw URL, parses top `## [X.Y]` line → displays `Versi: X.Y`
+  - Fetches GitHub Commits API (`path=kgb/data/kgb-map.json`) → formats commit date as `Kemaskini: Khamis DD/MM/YYYY (N hari lalu)` with Malay day names and relative time string
+- `formatTarikhMalay(date)` helper — formats `Date` as `Hari DD/MM/YYYY` (Malay day names: Ahad–Sabtu)
+- `timeAgoMalay(date)` helper — returns `N hari lalu` / `N jam N minit lalu` / `N minit lalu`
+- Styled at 11px / `#80868b`; both spans show `—` as loading placeholder; errors fail silently
+
+---
+
 ## [2.1] — 2026-04-16
 
 ### Added
@@ -12,6 +25,7 @@ All notable changes to `kgb/map/` are documented here.
 ### Fixed
 - **Campus boundary local cache** — `loadCampusBoundary()` now fetches `../data/campus-boundary.json` (committed to repo) instead of querying `overpass-api.de`; eliminates 504 Gateway Timeout failures; polygon loads reliably on every page load
 - `kgb/data/campus-boundary.json` — 45 hardcoded lat/lon pairs for OSM Way 1120569731
+- **Campus boundary Vercel path fix** — changed fetch path from `../data/campus-boundary.json` to `/kgb/data/campus-boundary.json` (absolute); Vercel's `cleanUrls: true` serves the page at `/kgb/map` (no trailing slash), causing `../` to resolve relative to `/kgb/` → `/data/` instead of `/kgb/data/`; absolute path eliminates the ambiguity
 
 ---
 

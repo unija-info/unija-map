@@ -5,6 +5,15 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-16 — Version Info Bar & Campus Boundary Path Fix (`kgb/map/`)
+
+- `kgb/map/` now shows app version (parsed from CHANGELOG.md) and last data update date (GitHub Commits API) in a sidebar info bar above the nav footer
+- Fixed campus boundary fetch failing on Vercel: path changed from relative `../data/` to absolute `/kgb/data/campus-boundary.json` (Vercel `cleanUrls` drops the trailing slash, breaking relative resolution)
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.1–v2.2
+
+---
+
 ## 2026-04-16 — Navigation Linking & Landing Page Restructure
 
 - Root `index.html` restructured into campus-group layout (Gong Badak, Besut, Kota) with sub-cards per campus

@@ -1217,6 +1217,59 @@ function loadCampusBoundary() {
         });
 }
 
+// ===== VERSION & UPDATE INFO =====
+
+async function fetchMapDataInfo() {
+    const HARI = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
+
+    function formatTarikhMalay(date) {
+        const day  = HARI[date.getDay()];
+        const dd   = String(date.getDate()).padStart(2, '0');
+        const mm   = String(date.getMonth() + 1).padStart(2, '0');
+        const yyyy = date.getFullYear();
+        return `${day} ${dd}/${mm}/${yyyy}`;
+    }
+
+    function timeAgoMalay(date) {
+        const diffMs   = Date.now() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHrs  = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        if (diffDays >= 1) return `${diffDays} hari lalu`;
+        if (diffHrs  >= 1) {
+            const remMins = diffMins % 60;
+            return remMins > 0
+                ? `${diffHrs} jam ${remMins} minit lalu`
+                : `${diffHrs} jam lalu`;
+        }
+        return `${diffMins} minit lalu`;
+    }
+
+    const [versionResult, commitResult] = await Promise.allSettled([
+        fetch(`https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/map/CHANGELOG.md?v=${Date.now()}`)
+            .then(r => r.text())
+            .then(text => {
+                const m = text.match(/^## \[([^\]]+)\]/m);
+                return m ? m[1] : null;
+            }),
+        fetch(`https://api.github.com/repos/unija-info/unija-map/commits?path=kgb/data/kgb-map.json&per_page=1`)
+            .then(r => r.json())
+            .then(commits => commits.length > 0 ? new Date(commits[0].commit.committer.date) : null)
+    ]);
+
+    const versionEl   = document.getElementById('map-version');
+    const kemaskiniEl = document.getElementById('map-kemaskini');
+
+    if (versionEl && versionResult.status === 'fulfilled' && versionResult.value) {
+        versionEl.textContent = `Versi: ${versionResult.value}`;
+    }
+
+    if (kemaskiniEl && commitResult.status === 'fulfilled' && commitResult.value) {
+        const date = commitResult.value;
+        kemaskiniEl.textContent = `Kemaskini: ${formatTarikhMalay(date)} (${timeAgoMalay(date)})`;
+    }
+}
+
 // ===== EVENT WIRING =====
 
 // ===== INIT =====
@@ -1230,6 +1283,7 @@ window.onload = function() {
     initSearchDropdown();
     createClearSearchButton();
     initClearSearchButton();
+    fetchMapDataInfo();
 };
 
 window.addEventListener('resize', function() {
