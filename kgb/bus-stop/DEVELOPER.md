@@ -39,11 +39,11 @@ The application is built using vanilla JavaScript with the following technologie
 ## File Structure
 
 ```
-bus-stop-kgb/
+kgb/bus-stop/
 ├── index.html          # Main HTML structure
 ├── style.css           # Complete styling and animations
 ├── script.js           # Application logic and event handlers
-├── data.json           # Bus stop and company data
+├── (data at kgb/data/bus-stop.json)
 ├── CHANGELOG.md        # Version history
 ├── DEVELOPER.md        # This file
 └── CLAUDE.md           # AI conversation history
@@ -87,7 +87,7 @@ function initMap() {
 ### 2. Data Loading ([script.js:34-40](script.js#L34-L40))
 
 ```javascript
-fetch('data.json')
+fetch('../data/bus-stop.json')
     .then(res => res.json())
     .then(data => {
         busData = data.stops;
@@ -401,7 +401,7 @@ marker.on('click', function(e) {
 
 ## Data Structure
 
-### data.json Format
+### bus-stop.json Format (`kgb/data/bus-stop.json`)
 
 ```json
 {
@@ -425,7 +425,7 @@ marker.on('click', function(e) {
 - `companies` (array): List of bus operators serving this stop
 
 **Adding New Stops**:
-1. Open `data.json`
+1. Open `kgb/data/bus-stop.json`
 2. Add new object to `stops` array
 3. Provide name, coordinates, and company list
 4. Save and refresh browser
@@ -572,7 +572,7 @@ document.getElementById('toggle-view').onclick = toggleMobileView;
 
 #### Add New Data Field
 1. Update `data.json` structure
-2. Modify `renderGroupedList()` to display new field
+2. Update `kgb/data/bus-stop.json` structure and modify `renderGroupedList()` to display new field
 3. Update search logic if field should be searchable
 4. Add CSS styling for new elements
 

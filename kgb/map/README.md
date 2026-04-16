@@ -53,7 +53,7 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 ## Data Source
 
-Location data is loaded from [`kgb/data/map.json`](../data/map.json) — the same data file used by the main `kgb/` directory page.
+Location data is loaded from [`kgb/data/kgb-map.json`](../data/kgb-map.json) — the same data file used by the main `kgb/` directory page.
 
 Each entry follows this schema:
 
@@ -68,7 +68,7 @@ Each entry follows this schema:
 }
 ```
 
-To update locations, edit `kgb/data/map.json`. No rebuild required — the page fetches the file at runtime.
+To update locations, edit `kgb/data/kgb-map.json`. No rebuild required — the page fetches the file at runtime.
 
 ---
 

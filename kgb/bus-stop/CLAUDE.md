@@ -13,11 +13,11 @@ A static web application ("Bus Stop @ UniSZA Gong Badak") displaying bus stop lo
 - `index.html` - Main HTML entry point
 - `script.js` - All application logic (map initialization, filtering, UI interactions)
 - `style.css` - All styles including responsive mobile layout
-- `data.json` - Bus stop data source (stops, coordinates, company associations)
+- `../data/bus-stop.json` - Bus stop data source (stops, coordinates, company associations)
 
 ### Data Model
 
-The application uses a single JSON data structure in `data.json`:
+The application uses a single JSON data structure in `kgb/data/bus-stop.json`:
 ```json
 {
   "stops": [
@@ -127,7 +127,7 @@ python -m http.server 8000
 
 ## Adding New Bus Stops
 
-Edit `data.json`:
+Edit `kgb/data/bus-stop.json`:
 
 ```json
 {

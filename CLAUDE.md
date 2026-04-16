@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **unija-map** — Interactive navigation maps for Universiti Sultan Zainal Abidin (UniSZA), Kampus Gong Badak, Terengganu, Malaysia. A community project by [unija.info](https://unija.info). Content is primarily in Malay (Bahasa Melayu).
 
-Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools, no frameworks (except Leaflet.js in `bus-stop-kgb/`). Deployed on Vercel; Vercel Analytics script present on all pages.
+Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools, no frameworks (except Leaflet.js in `kgb/bus-stop/`). Deployed on Vercel; Vercel Analytics script present on all pages.
 
 ## Architecture
 
@@ -16,21 +16,20 @@ style.css               ← Landing page styles
 
 kgb/                    ← Campus map: UniSZA Gong Badak location directory
   index.html            ← Map image + searchable/filterable location list
-  script.js             ← Fetches map.json from GitHub raw URL (cache-busted), renders list
+  script.js             ← Fetches kgb-map.json from GitHub raw URL (cache-busted), renders list
   style.css
-  data/map.json         ← Location data (single source of truth — edit this to update locations)
+  data/kgb-map.json         ← Location data (single source of truth — edit this to update locations)
   file/                 ← Map image assets (PDF + PNG)
   beta/                 ← Beta mirror of kgb/ for testing new features (same structure)
   info.html             ← Project info & documentation page
   feedback.html         ← Feedback form page
-
-bus-stop-kgb/           ← Interactive Leaflet.js bus stop map (self-contained sub-project)
-  index.html
-  script.js
-  style.css
-  data.json             ← Bus stop data (single source of truth)
-  image/bus-stop/       ← Stop photos for info overlay
-  CLAUDE.md             ← Detailed architecture for this sub-project (read this before editing)
+  bus-stop/             ← Interactive Leaflet.js bus stop map (self-contained sub-project)
+    index.html
+    script.js
+    style.css
+    (data at kgb/data/bus-stop.json)
+    image/bus-stop/     ← Stop photos for info overlay
+    CLAUDE.md           ← Detailed architecture for this sub-project (read this before editing)
 ```
 
 ## Development
@@ -42,13 +41,13 @@ python -m http.server 8000
 # Or: npx serve
 ```
 
-`kgb/script.js` fetches `map.json` from `raw.githubusercontent.com` (not locally), so the `kgb/` map always reflects what is pushed to GitHub `main`. Local edits to `kgb/data/map.json` require pushing before they appear in the app.
+`kgb/script.js` fetches `kgb-map.json` from `raw.githubusercontent.com` (not locally), so the `kgb/` map always reflects what is pushed to GitHub `main`. Local edits to `kgb/data/kgb-map.json` require pushing before they appear in the app.
 
-`bus-stop-kgb/` reads `data.json` locally, so it works immediately with a local server.
+`kgb/bus-stop/` reads `data.json` locally, so it works immediately with a local server.
 
 ## Data Models
 
-### `kgb/data/map.json` — Campus location array
+### `kgb/data/kgb-map.json` — Campus location array
 
 ```json
 [
@@ -67,9 +66,9 @@ python -m http.server 8000
 
 Category filter order is hardcoded in `script.js` (`desiredOrder` array). Add new categories there to control button order.
 
-### `bus-stop-kgb/data.json` — Bus stop array
+### `kgb/data/bus-stop.json` — Bus stop array
 
-See `bus-stop-kgb/CLAUDE.md` for full schema and architecture details.
+See `kgb/bus-stop/CLAUDE.md` for full schema and architecture details.
 
 ## Key Patterns
 

@@ -1,38 +1,40 @@
 {
-    "stops": [
-      {
-        "id": 1,
-        "name": "Bus Stop HoSZA",
-        "coords": [5.402487838725914, 103.08527875687102],
-        "companies": ["Moraza", "Adik Beradik", "Mayang Sari" , "SP Bumi"]
-      },
-      {
-        "id": 2,
-        "name": "Bus Stop @ Jasa Pelangi",
-        "coords": [5.399690900845477, 103.0847977126564],
-        "companies": ["Adam Express", "Prisma" , "Kesatuan Ekspress", "Ayu Expres" , "Adik Beradik (Arah Selatan) "]
-      },
-      {
-        "id": 3,
-        "name": "Sani Expres Terminal",
-        "coords": [5.398445045454431, 103.084856072749],
-        "companies": ["Sani Ekspress"]
-      },
+  "stops": [
+    {
+      "id": 1,
+      "name": "Bus Stop HoSZA",
+      "description": "Perjalanan menghala ke Utara/Kota Bharu.",
+      "coords": [5.402487838725914, 103.08527875687102],
+      "companies": ["Moraza", "Adik Beradik", "Mayang Sari" , "SP Bumi", "TRA Ekspres", "Jasa Pelangi", "Mutiara  Ekspress"]
+    },
+    {
+      "id": 2,
+      "name": "Bus Stop @ Jasa Pelangi",
+      "coords": [5.399690900845477, 103.0847977126564],
+      "companies": ["Adam Express", "Prisma" , "Kesatuan Ekspress", "Ayu Expres" , "Adik Beradik (Arah Selatan)"]
+    },
+    {
+      "id": 3,
+      "name": "Sani Expres Terminal",
+      "coords": [5.398445045454431, 103.084856072749],
+      "companies": ["Sani Ekspress"]
+    },
 
-      {
-        "id": 4,
-        "name": "Terminal Bus Telolet Darul lman",
-        "coords": [5.395964594252881, 103.08372323790428],
-        "companies": ["Darul Iman"],
-        "tooltipPosition": "right"
-      },
+    {
+      "id": 4,
+      "name": "Terminal Bus Telolet Darul lman",
+      "coords": [5.395964594252881, 103.08372323790428],
+      "companies": ["Darul Iman"],
+      "tooltipPosition": "right"
+    },
 
-      {
-        "id": 5,
-        "name": "Bus Stop/Wakaf Pintu Depan UniSZA",
-        "coords": [5.395689907629097, 103.08346487203097],
-        "companies": ["Transmalaya", "Mutiara" , "Musafir" ,  "Alibaba Ekspress"],
-        "tooltipPosition": "left"
-      }
-    ]
-  }
+    {
+      "id": 5,
+      "name": "Bus Stop/Wakaf Pintu Depan UniSZA",
+      "description": "Perjalanan menghala ke Selatan.",
+      "coords": [5.395689907629097, 103.08346487203097],
+      "companies": ["Transmalaya", "Mutiara" , "Musafir" ,  "Alibaba Ekspress"],
+      "tooltipPosition": "left"
+    }
+  ]
+}

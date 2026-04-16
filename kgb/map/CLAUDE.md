@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with the `kgb/map/` sub-
 
 ## Project Overview
 
-**Peta Kampus UniSZA KGB** — an interactive Leaflet.js campus map for UniSZA Kampus Gong Badak. Displays ~110 campus locations (buildings, facilities, accommodation blocks, etc.) as colored markers on a satellite map. Data is sourced from `kgb/data/map.json`, the same file used by `kgb/index.html`.
+**Peta Kampus UniSZA KGB** — an interactive Leaflet.js campus map for UniSZA Kampus Gong Badak. Displays ~110 campus locations (buildings, facilities, accommodation blocks, etc.) as colored markers on a satellite map. Data is sourced from `kgb/data/kgb-map.json`, the same file used by `kgb/index.html`.
 
 This project is a structural adaptation of `bus-stop-kgb/` — same layout, same mobile/desktop UX patterns, but tailored for campus locations instead of bus stops.
 
@@ -21,14 +21,14 @@ kgb/map/
   style.css     ← All styles
   CLAUDE.md     ← This file
 
-kgb/data/map.json   ← Data source (NOT inside kgb/map/)
+kgb/data/kgb-map.json   ← Data source (NOT inside kgb/map/)
 ```
 
 ---
 
 ## Data Model
 
-Data is fetched from `../data/map.json` (relative path from `kgb/map/`):
+Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
 
 ```json
 [
@@ -251,7 +251,7 @@ python -m http.server 8000
 # Open: http://localhost:8000/kgb/map/
 ```
 
-Data is fetched from `../data/map.json` (relative path), so it works immediately on a local server without needing to push to GitHub.
+Data is fetched from `../data/kgb-map.json` (relative path), so it works immediately on a local server without needing to push to GitHub.
 
 ---
 
@@ -295,7 +295,7 @@ Data is fetched from `../data/map.json` (relative path), so it works immediately
 
 ## Adding New Locations
 
-Edit `kgb/data/map.json` (not `kgb/map/` — data lives one level up):
+Edit `kgb/data/kgb-map.json` (not `kgb/map/` — data lives one level up):
 
 ```json
 {
@@ -319,7 +319,7 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.0 — Initial Release
 - Created `kgb/map/` sub-project: `index.html`, `script.js`, `style.css`
 - Adapted from `bus-stop-kgb/` architecture for campus locations
-- Data source: `../data/map.json` (fetched via relative path, cache-busted with `Date.now()`)
+- Data source: `../data/kgb-map.json` (fetched via relative path, cache-busted with `Date.now()`)
 - 10 category color system with `CATEGORY_COLORS` lookup and CSS custom properties
 - `parseCoords()` to extract lat/lng from `googleMapLink` URL (`?q=lat,lng`)
 - `processData()` assigns unique `id` (array index) to handle duplicate `number` values across categories

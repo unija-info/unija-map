@@ -56,7 +56,10 @@ function showStopInfoOverlay(stopId) {
     overlay.className = 'stop-info-overlay';
     overlay.innerHTML = `
         <div class="info-overlay-header">
-            <h3>${stop.name}</h3>
+            <div class="info-overlay-header-text">
+                <h3>${stop.name}</h3>
+                ${stop.description ? `<p class="info-overlay-description">${stop.description}</p>` : ''}
+            </div>
             <button class="info-overlay-close">×</button>
         </div>
         <div class="info-overlay-content">
@@ -586,7 +589,7 @@ function initMap() {
         });
     });
 
-    fetch('data.json')
+    fetch('../data/bus-stop.json')
         .then(res => res.json())
         .then(data => {
             busData = data.stops;
@@ -660,6 +663,14 @@ function renderGroupedList() {
         });
 
         groupDiv.appendChild(header);
+
+        if (stop.description) {
+            const desc = document.createElement('p');
+            desc.className = 'stop-description';
+            desc.textContent = stop.description;
+            groupDiv.appendChild(desc);
+        }
+
         groupDiv.appendChild(imageContainer);
         groupDiv.appendChild(buttonRow);
         groupDiv.appendChild(subList);

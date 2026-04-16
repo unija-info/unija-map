@@ -81,11 +81,11 @@ Then open `http://localhost:8000` in your browser.
 ## Project Structure
 
 ```
-bus-stop-kgb/
+kgb/bus-stop/
 ├── index.html          # Main HTML entry point
 ├── script.js           # Application logic
 ├── style.css           # Styles and responsive layout
-├── data.json           # Bus stop data
+├── (data at kgb/data/bus-stop.json)
 ├── CHANGELOG.md        # Version history
 ├── README.md           # This file
 ├── DEVELOPER.md        # Development guide
@@ -94,7 +94,7 @@ bus-stop-kgb/
 
 ## Adding New Bus Stops
 
-Edit `data.json` to add new stops:
+Edit `kgb/data/bus-stop.json` to add new stops:
 
 ```json
 {

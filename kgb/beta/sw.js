@@ -7,7 +7,7 @@ const APP_SHELL_FILES = [
     '/kgb/feedback.html',
     '/kgb/style.css',
     '/kgb/script.js',
-    '/kgb/data/map.json',
+    '/kgb/data/kgb-map.json',
     // Ikon & Manifest
     '/media/favicon/favicon.ico',
     '/media/favicon/favicon.svg',

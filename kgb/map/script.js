@@ -1177,7 +1177,7 @@ function initMap() {
         }
     });
 
-    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/map.json?v=${Date.now()}`)
+    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map.json?v=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             mapData = processData(data);
