@@ -1207,7 +1207,7 @@ function loadCampusBoundary() {
         interactive: false,
     };
 
-    fetch('../data/campus-boundary.json')
+    fetch('/kgb/data/campus-boundary.json')
         .then(res => res.json())
         .then(coords => {
             L.polygon(coords, style).addTo(map);

@@ -589,7 +589,7 @@ function initMap() {
         });
     });
 
-    fetch('../data/bus-stop.json')
+    fetch('/kgb/data/bus-stop.json')
         .then(res => res.json())
         .then(data => {
             busData = data.stops;
