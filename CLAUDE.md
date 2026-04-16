@@ -11,26 +11,41 @@ Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools, no frameworks (exc
 ## Architecture
 
 ```
-index.html              ← Landing page: campus selector (links to sub-maps)
-style.css               ← Landing page styles
+index.html              ← Root landing page: campus-group layout linking to all sub-maps
+style.css               ← Landing page styles (campus-group cards)
 
-kgb/                    ← Campus map: UniSZA Gong Badak location directory
-  index.html            ← Map image + searchable/filterable location list
+kgb/                    ← UniSZA Gong Badak hub
+  index.html            ← Hub: static map image + "Peta Interaktif" cards + searchable directory
   script.js             ← Fetches kgb-map.json from GitHub raw URL (cache-busted), renders list
   style.css
-  data/kgb-map.json         ← Location data (single source of truth — edit this to update locations)
+  data/
+    kgb-map.json        ← Campus location data (single source of truth — edit to update locations)
+    bus-stop.json       ← Bus stop data (single source of truth for kgb/bus-stop/)
+    campus-boundary.json← UniSZA KGB campus polygon coords (OSM Way 1120569731, cached locally)
+    code.gs             ← Google Apps Script: syncs kgb-map.json from Google Sheet to GitHub
   file/                 ← Map image assets (PDF + PNG)
   beta/                 ← Beta mirror of kgb/ for testing new features (same structure)
   info.html             ← Project info & documentation page
   feedback.html         ← Feedback form page
+  map/                  ← Interactive Leaflet.js campus location map (self-contained sub-project)
+    index.html
+    script.js
+    style.css
+    CLAUDE.md           ← Detailed architecture for this sub-project (read this before editing)
   bus-stop/             ← Interactive Leaflet.js bus stop map (self-contained sub-project)
     index.html
     script.js
     style.css
-    (data at kgb/data/bus-stop.json)
     image/bus-stop/     ← Stop photos for info overlay
     CLAUDE.md           ← Detailed architecture for this sub-project (read this before editing)
 ```
+
+### Inter-page Navigation
+
+All three Gong Badak pages are linked together:
+- `kgb/index.html` — "Peta Interaktif" section with cards linking to `/kgb/map/` and `/kgb/bus-stop/`
+- `kgb/map/` sidebar — `.sidebar-nav-footer` at bottom links to `/kgb/bus-stop/` and `/` (root)
+- `kgb/bus-stop/` sidebar — `.sidebar-nav-footer` at bottom links to `/kgb/map/` and `/` (root)
 
 ## Development
 
@@ -43,7 +58,7 @@ python -m http.server 8000
 
 `kgb/script.js` fetches `kgb-map.json` from `raw.githubusercontent.com` (not locally), so the `kgb/` map always reflects what is pushed to GitHub `main`. Local edits to `kgb/data/kgb-map.json` require pushing before they appear in the app.
 
-`kgb/bus-stop/` reads `data.json` locally, so it works immediately with a local server.
+`kgb/bus-stop/` reads `../data/bus-stop.json` locally, so it works immediately with a local server.
 
 ## Data Models
 

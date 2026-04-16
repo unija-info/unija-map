@@ -1196,14 +1196,8 @@ function initMap() {
 // ===== CAMPUS BOUNDARY =====
 
 function loadCampusBoundary() {
-    // Query Overpass API for the university landuse polygon around UniSZA KGB campus
-    // Way 1120569731 = Universiti Sultan Zainal Abidin (UniSZA) KGB — fetched by exact OSM ID
-    const query = `[out:json][timeout:15];
-way(1120569731);
-out geom;`;
-
-    const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
-
+    // Coordinates sourced from OSM Way 1120569731 (UniSZA KGB campus) and stored locally
+    // to avoid dependency on the unreliable Overpass API.
     const style = {
         color: '#1967d2',
         weight: 2.5,
@@ -1213,27 +1207,12 @@ out geom;`;
         interactive: false,
     };
 
-    fetch(url)
+    fetch('../data/campus-boundary.json')
         .then(res => res.json())
-        .then(data => {
-            const elements = data.elements || [];
-
-            elements.forEach(el => {
-                if (el.type === 'way' && el.geometry) {
-                    const coords = el.geometry.map(pt => [pt.lat, pt.lon]);
-                    L.polygon(coords, style).addTo(map);
-                } else if (el.type === 'relation' && el.members) {
-                    el.members.forEach(member => {
-                        if (member.type === 'way' && member.role === 'outer' && member.geometry) {
-                            const coords = member.geometry.map(pt => [pt.lat, pt.lon]);
-                            L.polygon(coords, style).addTo(map);
-                        }
-                    });
-                }
-            });
+        .then(coords => {
+            L.polygon(coords, style).addTo(map);
         })
         .catch(err => {
-            // Boundary is decorative — fail silently
             console.warn('Campus boundary fetch failed:', err);
         });
 }

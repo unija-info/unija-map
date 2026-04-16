@@ -1,0 +1,54 @@
+# CHANGELOG — unija-map
+
+High-level project history. For technical detail see:
+[`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) · [`kgb/bus-stop/CHANGELOG.md`](kgb/bus-stop/CHANGELOG.md)
+
+---
+
+## 2026-04-16 — Navigation Linking & Landing Page Restructure
+
+- Root `index.html` restructured into campus-group layout (Gong Badak, Besut, Kota) with sub-cards per campus
+- `kgb/index.html` now acts as a hub with "Peta Interaktif" cards linking to both interactive maps
+- Sidebar footer added to `kgb/map/` and `kgb/bus-stop/` with cross-links between maps and back to root
+
+---
+
+## 2026-04-15 — File Reorganisation, Description Field & Campus Boundary Fix
+
+- `bus-stop-kgb/` moved to `kgb/bus-stop/`; data files consolidated under `kgb/data/` and renamed (`map.json` → `kgb-map.json`, `data.json` → `bus-stop.json`)
+- Campus boundary polygon switched from live Overpass API query to a local cached file (`kgb/data/campus-boundary.json`), fixing 504 timeout errors
+- Optional `description` field on bus stops now shown in the sidebar and info overlay when present
+
+---
+
+## 2026-04-05 to 2026-04-11 — `kgb/map/` Interactive Campus Map
+
+New sub-project launched. Highlights across v1.0–v2.0:
+- Interactive Leaflet.js map of ~110 campus locations with 10-category color system
+- Accordion sidebar, text-only info overlay, real-time search, mobile bottom sheet
+- Zoom-responsive area labels (Tasik UniSZA, Padang New Zealand, etc.)
+- KOLEJ KEDIAMAN rendered as rounded squares; full location name on tooltip hover
+- Campus boundary polygon overlay
+
+→ Full version history: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md)
+
+---
+
+## 2026-01-14 to 2026-01-31 — `kgb/bus-stop/` Bus Stop Map
+
+Bus stop map built up from v1.0 to v2.6. Highlights:
+- Interactive Leaflet.js map of express bus pick-up/drop-off points around UniSZA KGB
+- Expandable tooltips, accordion sidebar, company filtering, real-time search dropdown
+- Mobile bottom sheet with swipe gestures and scroll-aware drag behavior
+- Stop info overlay with photo, directions, and operator list
+
+→ Full version history: [`kgb/bus-stop/CHANGELOG.md`](kgb/bus-stop/CHANGELOG.md)
+
+---
+
+## 2025-10-23 to 2025-11-04 — Initial Setup
+
+- Repository created; `index.html` root landing page
+- `kgb/index.html` — static campus map image with searchable, filterable location directory
+- Google Sheet → Apps Script → GitHub API data sync pipeline established
+- `vercel.json`, `info.html`, `feedback.html`, map image assets added

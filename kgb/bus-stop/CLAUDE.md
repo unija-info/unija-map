@@ -26,7 +26,8 @@ The application uses a single JSON data structure in `kgb/data/bus-stop.json`:
       "name": "string",
       "coords": [latitude, longitude],
       "companies": ["company1", "company2", ...],
-      "tooltipPosition": "left" | "right" (optional, defaults to "right")
+      "tooltipPosition": "left" | "right",  // optional, defaults to "right"
+      "description": "string"               // optional; shown in sidebar + info overlay when present
     }
   ]
 }
@@ -86,11 +87,23 @@ The application uses a single JSON data structure in `kgb/data/bus-stop.json`:
 8. **Stop Info Overlay**:
    - "i" button in tooltip opens detailed stop info overlay
    - Overlay slides over sidebar content with stop name, image, directions, operators
+   - `description` field (if present) shown below stop name in `.info-overlay-header-text` wrapper
    - Desktop: slides in from left, slides out to left
    - Mobile: slides up from bottom, slides down to close
    - Mobile: sheet auto-expands to full (90vh), overlay offset 24px for handle visibility
    - Clicking image opens fullscreen view
    - Close button (×) dismisses overlay with animation
+
+9. **Description Field**:
+   - Optional `description` field on each stop in `bus-stop.json`
+   - Shown in the **sidebar** (below stop group header, hidden when group is collapsed): `.stop-description` class
+   - Shown in the **info overlay** (below stop name, inside `.info-overlay-header-text`): `.info-overlay-description` class
+   - Stops without `description` show nothing extra — no empty elements rendered
+
+10. **Sidebar Nav Footer**:
+    - `.sidebar-nav-footer` fixed at the bottom of the sidebar (after `#company-list`)
+    - Links to `/kgb/map/` (Peta Kampus UniSZA KGB) and `/` (Menu Utama)
+    - 12px muted text with `border-top: 1px solid #e8eaed`
 
 ## Development Commands
 
@@ -135,12 +148,14 @@ Edit `kgb/data/bus-stop.json`:
   "name": "New Stop Name",
   "coords": [5.3950, 103.0830],
   "companies": ["Operator 1", "Operator 2"],
-  "tooltipPosition": "right"
+  "tooltipPosition": "right",
+  "description": "Optional direction note, e.g. Perjalanan menghala ke Utara/Kota Bharu."
 }
 ```
 
 - Get coordinates from Google Maps (right-click → coordinates)
 - `tooltipPosition` is optional, defaults to "right"
+- `description` is optional — omit entirely for stops with no direction note
 
 ## Key Functions in script.js
 
@@ -170,6 +185,9 @@ Edit `kgb/data/bus-stop.json`:
 - **Info overlay**: `.stop-info-overlay` uses `position: absolute` to cover sidebar
 - **Info overlay animations**: Desktop uses `slideInFromLeft`/`slideOutToLeft`, mobile uses `slideInFromBottom`/`slideOutToBottom`
 - **Mobile info overlay**: `top: 24px` offset leaves handle visible
+- **Description (sidebar)**: `.stop-description` — 12px, `#5f6368`, `padding: 0 20px 10px`; hidden via `.stop-group.collapsed .stop-description { display: none }`
+- **Description (overlay)**: `.info-overlay-description` inside `.info-overlay-header-text` wrapper (flex column) — 12px, `#5f6368`; `.info-overlay-header` uses `display: flex; justify-content: space-between` so the wrapper keeps name+description left-aligned while the × button stays right
+- **Sidebar nav footer**: `.sidebar-nav-footer` — 12px, `#80868b`, `border-top: 1px solid #e8eaed`, `flex-shrink: 0`
 
 ## CSS Sibling Selector Pattern
 

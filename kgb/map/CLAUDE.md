@@ -6,7 +6,7 @@ This file provides guidance to Claude Code when working with the `kgb/map/` sub-
 
 **Peta Kampus UniSZA KGB** — an interactive Leaflet.js campus map for UniSZA Kampus Gong Badak. Displays ~110 campus locations (buildings, facilities, accommodation blocks, etc.) as colored markers on a satellite map. Data is sourced from `kgb/data/kgb-map.json`, the same file used by `kgb/index.html`.
 
-This project is a structural adaptation of `bus-stop-kgb/` — same layout, same mobile/desktop UX patterns, but tailored for campus locations instead of bus stops.
+This project is a structural adaptation of `kgb/bus-stop/` — same layout, same mobile/desktop UX patterns, but tailored for campus locations instead of bus stops.
 
 Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools. Uses Leaflet.js 1.9.4 via CDN.
 
@@ -91,7 +91,7 @@ Unknown categories fall back to `#778899` (grey). Colors are applied to markers,
 - **Default zoom**: 16
 - **Base layer**: ArcGIS World Imagery (satellite)
 - **Overlay layer**: CartoDB Positron labels (place names)
-- **Campus boundary**: fetched from Overpass API (OSM Way 1120569731) via `loadCampusBoundary()` on init; rendered as non-interactive `L.polygon()` in `#1967d2`
+- **Campus boundary**: fetched from `../data/campus-boundary.json` (local cached coords for OSM Way 1120569731) via `loadCampusBoundary()` on init; rendered as non-interactive `L.polygon()` in `#1967d2`
 - **Zoom control**: bottom-right
 
 ### 4. Marker System
@@ -220,7 +220,7 @@ The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-group
 | `initDesktopSidebar()` | Wires collapse/expand button handlers |
 | `clearMarkers()` | Removes all markers from map and empties `markers` array |
 | `getMapPadding()` | Returns `[top, right, bottom, left]` padding array accounting for sidebar width |
-| `loadCampusBoundary()` | Fetches UniSZA campus boundary from Overpass API (Way 1120569731); renders as non-interactive `L.polygon()`; fails silently |
+| `loadCampusBoundary()` | Fetches `../data/campus-boundary.json` (local cached polygon); renders as non-interactive `L.polygon()`; fails silently |
 | `updateToggleButtonLabel()` | Reads DOM state of all `.stop-group` elements and sets `#toggle-all-groups` button text to match; called after any accordion state change |
 
 ---
@@ -239,6 +239,7 @@ The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-group
 - **No-coords items**: `.no-coords` class — `opacity: 0.55; cursor: default`
 - **Search result detail line**: `.result-detail` — 11px, `#80868b`, `text-overflow: ellipsis`; shown only when `loc.details` is non-empty
 - **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`
+- **Sidebar nav footer**: `.sidebar-nav-footer` at bottom of sidebar — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text
 
 ---
 
@@ -272,7 +273,7 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 - [ ] Search dropdown filters both locations and categories in real-time
 - [ ] Search results show `details` as a third line when non-empty (truncated with ellipsis)
 - [ ] Clicking search result: zooms to location (if has coords) + opens info overlay
-- [ ] Campus boundary polygon appears within ~1–3s of page load (Overpass API latency)
+- [ ] Campus boundary polygon appears on page load (fetched from local `campus-boundary.json`)
 - [ ] Campus boundary does not respond to clicks (non-interactive)
 - [ ] "📋 Papar Semua Kategori" expands all groups; button changes to "Tutup Semua Senarai"
 - [ ] Clicking a category header after "Papar Semua" correctly resets button to "📋 Papar Semua Kategori"
@@ -346,6 +347,11 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.3 — Info Overlay Close Restores All Markers
 - `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
 - Closing the details pane zooms the map back to the full campus view with all markers
+
+### v1.5 — Navigation & Campus Boundary Fix
+- **Sidebar nav footer**: added `.sidebar-nav-footer` at bottom of sidebar with links to `/kgb/bus-stop/` (Peta Bus Stop) and `/` (Kembali ke menu utama)
+- **Campus boundary local cache**: `loadCampusBoundary()` now fetches `../data/campus-boundary.json` instead of querying Overpass API — eliminates 504 timeout failures; polygon loads reliably on every page load
+- `kgb/data/campus-boundary.json` contains 45 hardcoded lat/lon pairs for OSM Way 1120569731
 
 ### v1.4 — Mobile UX Improvements
 - **Bottom sheet collapses on map tap**: tapping empty map area on mobile collapses sheet to `peek`; marker taps are unaffected (stopPropagation)

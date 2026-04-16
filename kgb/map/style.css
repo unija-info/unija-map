@@ -1232,3 +1232,19 @@ body, html {
                 box-shadow 0.15s ease !important;
     z-index: 999 !important;
 }
+
+/* Sidebar navigation footer */
+.sidebar-nav-footer {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #80868b;
+    border-top: 1px solid #e8eaed;
+    flex-shrink: 0;
+}
+.sidebar-nav-footer a {
+    color: #1967d2;
+    text-decoration: none;
+}
+.sidebar-nav-footer a:hover {
+    text-decoration: underline;
+}

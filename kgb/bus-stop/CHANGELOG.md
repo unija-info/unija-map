@@ -5,6 +5,20 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-04-16
+
+### Added
+- **Description field in UI** — optional `description` field on stops in `bus-stop.json` now displayed in two places:
+  - Sidebar: `.stop-description` below the stop group header; hidden when group is collapsed via `.stop-group.collapsed .stop-description { display: none }`
+  - Info overlay: `.info-overlay-description` below the stop name inside `.info-overlay-header-text` wrapper (flex column), keeping it left-aligned while the `×` button stays right
+- **Sidebar nav footer** — `.sidebar-nav-footer` at the bottom of the sidebar links to `/kgb/map/` (Peta Kampus UniSZA KGB) and `/` (Menu Utama); styled with `border-top: 1px solid #e8eaed`, 12px muted text
+
+### Changed
+- **Project relocated** — moved from `bus-stop-kgb/` to `kgb/bus-stop/` (git history preserved via `git mv`)
+- **Data file relocated** — `data.json` moved to `kgb/data/bus-stop.json`; fetch URL in `script.js` updated from `'data.json'` to `'../data/bus-stop.json'`
+
+---
+
 ## [2.6.0] - 2026-01-31
 
 ### Added

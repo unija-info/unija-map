@@ -434,3 +434,56 @@ footer a { color: var(--primary-color); }
         display: none; /* Sembunyikan pemisah '|' pada skrin kecil */
     }
 }
+
+/* ===== Interactive Maps Cards ===== */
+#interactive-maps {
+    max-width: 1200px;
+    margin: 24px auto;
+}
+#interactive-maps h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #202124;
+}
+.map-cards {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.map-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    flex: 1;
+    min-width: 200px;
+    background: white;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+.map-card:hover {
+    border-color: #1967d2;
+    box-shadow: 0 1px 6px rgba(32, 33, 36, 0.12);
+}
+.map-card-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.map-card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.map-card-text strong {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #202124;
+}
+.map-card-text span {
+    font-size: 0.78rem;
+    color: #5f6368;
+}

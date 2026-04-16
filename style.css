@@ -22,35 +22,67 @@ body {
 }
 .main-header img { height: 50px; margin-bottom: 10px; }
 main {
-    text-align: center;
-    padding: 40px 20px;
+    padding: 32px 20px;
     flex: 1;
 }
-.campus-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-    max-width: 900px;
-    margin: 40px auto 0;
+.campus-list {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+.campus-group-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #80868b;
+    margin: 0 0 10px 4px;
+}
+.campus-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 .campus-card {
-    background-color: var(--card-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 25px;
-    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 12px;
     text-decoration: none;
-    color: #333;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
+    color: inherit;
+    flex: 1;
+    min-width: 200px;
+    background: white;
+    transition: box-shadow 0.15s, border-color 0.15s;
 }
-.campus-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+.campus-card:not(.disabled):hover {
+    border-color: #1967d2;
+    box-shadow: 0 1px 6px rgba(32, 33, 36, 0.12);
 }
-.campus-card h3 { color: var(--primary-color); margin-top: 0; }
-.campus-card.disabled { opacity: 0.5; cursor: not-allowed; }
-.campus-card.disabled:hover { transform: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.campus-card-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+}
+.campus-card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+.campus-card-text strong {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #202124;
+}
+.campus-card-text span {
+    font-size: 0.78rem;
+    color: #5f6368;
+}
+.campus-card.disabled { opacity: 0.45; cursor: not-allowed; }
 .main-footer {
     text-align: center;
     padding: 20px;

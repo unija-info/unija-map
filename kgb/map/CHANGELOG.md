@@ -4,6 +4,17 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.1] — 2026-04-16
+
+### Added
+- **Sidebar nav footer** — `.sidebar-nav-footer` at the bottom of the sidebar links to `/kgb/bus-stop/` (Peta Bus Stop) and `/` (Kembali ke menu utama); styled with `border-top: 1px solid #e8eaed`, 12px muted text
+
+### Fixed
+- **Campus boundary local cache** — `loadCampusBoundary()` now fetches `../data/campus-boundary.json` (committed to repo) instead of querying `overpass-api.de`; eliminates 504 Gateway Timeout failures; polygon loads reliably on every page load
+- `kgb/data/campus-boundary.json` — 45 hardcoded lat/lon pairs for OSM Way 1120569731
+
+---
+
 ## [2.0] — 2026-04-11
 
 ### Added

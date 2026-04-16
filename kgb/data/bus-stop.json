@@ -31,7 +31,7 @@
     {
       "id": 5,
       "name": "Bus Stop/Wakaf Pintu Depan UniSZA",
-      "description": "Perjalanan menghala ke Selatan.",
+      "description": "Perjalanan menghala ke Selatan/Lembah Klang.",
       "coords": [5.395689907629097, 103.08346487203097],
       "companies": ["Transmalaya", "Mutiara" , "Musafir" ,  "Alibaba Ekspress"],
       "tooltipPosition": "left"
