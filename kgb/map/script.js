@@ -1264,6 +1264,8 @@ function initMap() {
             mapData = processData(data);
             const countEl = document.getElementById('location-count');
             if (countEl) countEl.textContent = mapData.length;
+            const menuCountEl = document.getElementById('menu-location-count');
+            if (menuCountEl) menuCountEl.textContent = mapData.length;
             renderGroupedList();
             showAllLocations();
         })
@@ -1343,14 +1345,45 @@ async function fetchMapDataInfo() {
     const versionEl   = document.getElementById('map-version');
     const kemaskiniEl = document.getElementById('map-kemaskini');
 
-    if (versionEl && versionResult.status === 'fulfilled' && versionResult.value) {
-        versionEl.textContent = `Versi: ${versionResult.value}`;
+    if (versionResult.status === 'fulfilled' && versionResult.value) {
+        const versiText = `Versi: ${versionResult.value}`;
+        if (versionEl) versionEl.textContent = versiText;
+        const menuVersionEl = document.getElementById('menu-version');
+        if (menuVersionEl) menuVersionEl.textContent = versiText;
     }
 
-    if (kemaskiniEl && commitResult.status === 'fulfilled' && commitResult.value) {
+    if (commitResult.status === 'fulfilled' && commitResult.value) {
         const date = commitResult.value;
-        kemaskiniEl.textContent = `Kemaskini: ${formatTarikhMalay(date)} (${timeAgoMalay(date)})`;
+        const kemaskiniText = `Kemaskini: ${formatTarikhMalay(date)} (${timeAgoMalay(date)})`;
+        if (kemaskiniEl) kemaskiniEl.textContent = kemaskiniText;
+        const menuKemaskiniEl = document.getElementById('menu-kemaskini');
+        if (menuKemaskiniEl) menuKemaskiniEl.textContent = kemaskiniText;
     }
+}
+
+// ===== INFO MENU PANEL =====
+
+function openInfoMenu() {
+    const panel = document.getElementById('info-menu-panel');
+    // On desktop, align popup with the search bar's current left position
+    if (window.innerWidth > 768) {
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = sidebar && sidebar.classList.contains('collapsed');
+        panel.style.left = isCollapsed ? '70px' : '420px';
+    } else {
+        panel.style.left = '';
+    }
+    panel.classList.add('open');
+    document.getElementById('info-menu-backdrop').classList.add('open');
+    if (window.innerWidth <= 768) {
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeInfoMenu() {
+    document.getElementById('info-menu-panel').classList.remove('open');
+    document.getElementById('info-menu-backdrop').classList.remove('open');
+    document.body.style.overflow = '';
 }
 
 // ===== EVENT WIRING =====
@@ -1360,6 +1393,9 @@ async function fetchMapDataInfo() {
 window.onload = function() {
     document.getElementById('show-all').onclick = showAllLocations;
     document.getElementById('toggle-all-groups').onclick = toggleAllGroups;
+    document.getElementById('info-menu-btn').addEventListener('click', openInfoMenu);
+    document.getElementById('info-menu-close').addEventListener('click', closeInfoMenu);
+    document.getElementById('info-menu-backdrop').addEventListener('click', closeInfoMenu);
     initMap();
     initBottomSheet();
     initDesktopSidebar();

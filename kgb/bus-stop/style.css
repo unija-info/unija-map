@@ -1239,6 +1239,15 @@ body, html {
         from { transform: translateY(0); opacity: 1; }
         to { transform: translateY(100%); opacity: 0; }
     }
+
+    /* Footer hidden at peek/half — only visible when sheet is fully expanded */
+    .sidebar-nav-footer {
+        display: none;
+    }
+
+    .sidebar.sheet-full .sidebar-nav-footer {
+        display: block;
+    }
 }
 
 /* Sidebar navigation footer */

@@ -5,6 +5,16 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-19 — Info Menu Panel & Documentation Update
+
+- `kgb/map/`: hamburger button in search bar opens a right-slide info panel (full-screen on mobile, 380px popup on desktop) containing campus hero image, nav links, feedback buttons, and version info; sidebar title/subtitle and version bar moved exclusively to the panel; "Senarai Lokasi" header reordered above action buttons on mobile
+- `kgb/info.html`: updated features list (satellite map, bus stop map, mobile bottom sheet, campus boundary, 360° VT, live location count), clarified tech stack, fixed `lang` attribute, updated copyright year
+- `feedback/kgb/report.html`: iframe height overridden to 2060px (inline style) to match shorter bug report form
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.4
+
+---
+
 ## 2026-04-16 — Zoom-Based Marker Tiers (`kgb/map/`)
 
 - Priority categories (PENTADBIRAN, AKADEMIK, FAKULTI) always show full markers; other categories show as small colored dots at low zoom, upgrading to full at zoom ≥ 17.5 (desktop) / 17 (mobile)

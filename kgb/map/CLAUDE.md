@@ -224,6 +224,27 @@ Real-time search filters both locations and categories. Results appear as dropdo
 
 The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-groups`) label is managed by `updateToggleButtonLabel()`, which reads the actual DOM state (checks if any `.stop-group` has `.collapsed`) and sets the correct text. Called by both `toggleAllGroups()` and the category header `onclick` to stay in sync whenever accordion state changes.
 
+### 13. Info Menu Panel
+
+A hamburger icon button (`#info-menu-btn`) is positioned at the right of the search bar (`position: absolute; right: 10px; z-index: 12` — must be above the search input's `z-index: 11`). Clicking it opens `#info-menu-panel`.
+
+**Mobile** (≤768px): panel slides in from the right (`transform: translateX(100%)` → `.open { translateX(0) }`), covers the full screen (`100vw × 100vh`, `z-index: 2001`). `body.style.overflow = 'hidden'` prevents background scroll. `#info-menu-backdrop` (semi-transparent, `z-index: 2000`) appears behind it; clicking the backdrop closes the panel.
+
+**Desktop** (>768px): panel is a 380px popup card (`top: 68px`, `border-radius: 12px`, `box-shadow`), positioned next to the search bar. Uses `opacity`/`translateY` fade-drop animation instead of a slide. Backdrop is transparent (no scroll lock needed).
+
+**Panel content:**
+1. **Hero** — `#info-menu-hero`: aerial campus image (`unisza-kgb-aerial.jpg`), `object-fit: cover`, `height: 220px`. Text overlay (`Peta Kampus UniSZA KGB` + `#menu-location-count` subtitle) sits at the bottom via `position: absolute` + linear-gradient. Close button (`#info-menu-close`) is `position: absolute; top: 12px; right: 12px` with frosted-glass background.
+2. **Nav** — pill buttons for Peta Bus Stop, 360° Virtual Tour, Menu Utama. `.info-menu-nav { flex-direction: column; align-items: flex-start }` prevents buttons from stretching full width.
+3. **Feedback** — thank-you text + "⭐ Beri Rating" and "🐛 Laporkan Masalah" pill buttons (placeholder `href="#"` links).
+4. **Version** — `#menu-version` and `#menu-kemaskini` spans (11px, `#80868b`), populated by `fetchMapDataInfo()`.
+
+`openInfoMenu()` sets `panel.style.left` dynamically on desktop based on whether the sidebar is collapsed (70px) or expanded (420px). `closeInfoMenu()` removes `.open` from both panel and backdrop and restores `body.style.overflow`.
+
+**Sidebar changes driven by panel:**
+- `#map-data-info` and `.sidebar-nav-footer`: globally `display: none` — superseded by panel
+- Mobile: `.sidebar-header h2` and `.sidebar-header .subtitle` hidden — content moved to panel hero
+- Mobile: CSS `order` property reorders bottom-sheet content so "Senarai Lokasi" header appears above action buttons (`.list-section-header { order: 1 }`, `.sidebar-header { order: 2 }`, `.company-list { order: 3 }`)
+
 ---
 
 ## Key Functions in script.js
@@ -254,6 +275,8 @@ The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-group
 | `getMapPadding()` | Returns `[top, right, bottom, left]` padding array accounting for sidebar width |
 | `loadCampusBoundary()` | Fetches `../data/campus-boundary.json` (local cached polygon); renders as non-interactive `L.polygon()`; fails silently |
 | `updateToggleButtonLabel()` | Reads DOM state of all `.stop-group` elements and sets `#toggle-all-groups` button text to match; called after any accordion state change |
+| `openInfoMenu()` | Adds `.open` to `#info-menu-panel` and `#info-menu-backdrop`; sets `panel.style.left` on desktop based on sidebar collapse state; locks body scroll on mobile only |
+| `closeInfoMenu()` | Removes `.open` from panel and backdrop; restores `body.style.overflow` |
 
 ---
 
@@ -273,7 +296,15 @@ The "📋 Papar Semua Kategori / Tutup Semua Senarai" button (`#toggle-all-group
 - **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`; fetched from `/kgb/data/campus-boundary.json` (absolute path — relative path breaks on Vercel `cleanUrls`)
 - **Dot marker**: 12×12px, `border-radius: 50%`, category bg color, `2px solid white` border, `box-shadow: 0 1px 3px rgba(0,0,0,0.4)`
 - **Sidebar nav footer**: `.sidebar-nav-footer` at bottom of sidebar — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text
-- **Version/update bar**: `#map-data-info` above nav footer — 11px, `#80868b`, `border-top: 1px solid #e8eaed`; spans `#map-version` and `#map-kemaskini` populated by `fetchMapDataInfo()`
+- **Version/update bar**: `#map-data-info` — globally `display: none`; superseded by info menu panel
+- **Sidebar nav footer**: `.sidebar-nav-footer` — globally `display: none`; superseded by info menu panel
+- **Hamburger button**: `#info-menu-btn` — `position: absolute; right: 10px; z-index: 12`; z-index must exceed search input's `z-index: 11`
+- **Info menu panel (mobile)**: `position: fixed; top: 0; right: 0; width: 100%; height: 100vh; z-index: 2001; transform: translateX(100%)`; `.open { translateX(0) }`
+- **Info menu panel (desktop, `min-width: 769px`)**: `width: 380px; top: 68px; border-radius: 12px; opacity/translateY fade-drop animation`; `left` set dynamically via JS in `openInfoMenu()`
+- **Info menu hero**: `height: 220px; overflow: hidden`; image `object-fit: cover`; text overlay `position: absolute; bottom: 0` with `linear-gradient(to top, rgba(0,0,0,0.72), transparent)`
+- **Info menu close button**: `position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); border-radius: 50%; color: white`
+- **Mobile bottom sheet reorder**: `.list-section-header { order: 1 }`, `.sidebar-header { order: 2 }`, `.company-list { order: 3 }` via CSS flex `order`
+- **Mobile title/subtitle hidden**: `.sidebar-header h2, .sidebar-header .subtitle { display: none }` inside `@media (max-width: 768px)`
 
 ---
 
@@ -381,6 +412,14 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.3 — Info Overlay Close Restores All Markers
 - `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
 - Closing the details pane zooms the map back to the full campus view with all markers
+
+### v2.4 — Info Menu Panel
+- **Hamburger button** (`#info-menu-btn`) added to right of search bar; `z-index: 12` to appear above search input
+- **Info menu panel** (`#info-menu-panel`): full-screen right-slide on mobile, 380px popup card on desktop
+- Panel sections: hero image with gradient text overlay, nav pill buttons (Bus Stop / 360° VT / Menu Utama), feedback pill buttons, version/kemaskini
+- `openInfoMenu()` / `closeInfoMenu()` functions; backdrop click closes panel
+- `#map-data-info` and `.sidebar-nav-footer` globally hidden (display: none) — superseded by panel
+- Mobile: sidebar title/subtitle hidden; CSS `order` reorders sheet: "Senarai Lokasi" header → action buttons → accordion list
 
 ### v1.5 — Navigation & Campus Boundary Fix
 - **Sidebar nav footer**: added `.sidebar-nav-footer` at bottom of sidebar with links to `/kgb/bus-stop/` (Peta Bus Stop) and `/` (Kembali ke menu utama)

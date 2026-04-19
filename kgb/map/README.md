@@ -22,7 +22,7 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 - **Animated intro** — map flies in from a wide view to campus zoom on first load
 - **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
 - **Real-time search** — search by location name, number code, short form, details, or area label
-- **Version & update info** — sidebar shows current app version and last data update date (fetched from GitHub)
+- **Info menu panel** — hamburger button in the search bar opens a panel (full-screen slide-in on mobile, popup card on desktop) with campus hero image, navigation links, feedback buttons, and version/update info
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
 
 ---

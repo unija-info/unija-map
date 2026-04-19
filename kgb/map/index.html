@@ -78,9 +78,62 @@
         <div class="search-container">
             <input type="text" id="search-bar" placeholder="Cari lokasi, kategori, kod...">
             <div id="search-results" class="search-results"></div>
+            <button id="info-menu-btn" aria-label="Buka menu info">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="2" y="4.5" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+                    <rect x="2" y="9.1" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+                    <rect x="2" y="13.7" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+                </svg>
+            </button>
         </div>
 
         <button id="toggle-view" class="mobile-toggle">Tunjuk Peta</button>
+    </div>
+
+    <!-- Info Menu Backdrop -->
+    <div id="info-menu-backdrop"></div>
+
+    <!-- Info Menu Panel (slides in from right) -->
+    <div id="info-menu-panel">
+
+        <!-- Hero: aerial image + text overlay + close button -->
+        <div class="info-menu-hero">
+            <img src="/media/image/unisza-kgb-aerial.jpg" class="info-menu-hero-img" alt="UniSZA Kampus Gong Badak aerial view">
+            <button id="info-menu-close" aria-label="Tutup">×</button>
+            <div class="info-menu-hero-text">
+                <h2 class="info-menu-title">Peta Kampus UniSZA KGB</h2>
+                <p class="info-menu-subtitle">Peta Interaktif <span id="menu-location-count">—</span> Lokasi di UniSZA Kampus Gong Badak.</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Nav links -->
+        <div class="info-menu-section info-menu-section-meta">
+            <div class="info-menu-nav">
+                <span class="info-menu-nav-label">Lihat Juga:</span>
+                <div class="info-menu-nav-row">
+                    <a href="/kgb/bus-stop/" class="info-menu-nav-btn">Peta Bus Stop</a>
+                    <a href="https://www.unisza.edu.my/vt360/kgb/" class="info-menu-nav-btn" target="_blank" rel="noopener">360° Virtual Tour</a>
+                </div>
+                <a href="/" class="info-menu-nav-btn">Menu Utama</a>
+            </div>
+        </div>
+
+        <!-- Section 3: Feedback -->
+        <div class="info-menu-section info-menu-section-feedback">
+            <p class="info-menu-feedback-text">Terima kasih kerana menggunakan Peta Navigasi UniSZA Kampus Gong Badak. Maklum balas anda amat kami hargai untuk membantu kami menambah baik aplikasi ini pada masa akan datang.</p>
+            <div class="info-menu-actions">
+                <a href="/feedback/kgb/rating.html" class="info-menu-action-btn">⭐ Beri Rating</a>
+                <a href="/feedback/kgb/report.html" class="info-menu-action-btn">🐛 Laporkan Masalah</a>
+            </div>
+        </div>
+
+        <!-- Section 4: Version & update info -->
+        <div class="info-menu-section info-menu-section-version">
+            <span id="menu-version">Versi: —</span>
+            <span class="info-menu-sep">·</span>
+            <span id="menu-kemaskini">Kemaskini: —</span>
+        </div>
+
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

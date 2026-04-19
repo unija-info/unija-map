@@ -4,6 +4,26 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.4] — 2026-04-19
+
+### Added
+- **Info menu panel** — hamburger icon button (`#info-menu-btn`) in the right of the search bar; opens `#info-menu-panel` which slides in from the right on mobile (full-screen, `z-index: 2001`) and appears as a 380px popup card on desktop (aligned to the search bar)
+- **Panel hero section** — aerial campus photo (`unisza-kgb-aerial.jpg`) with `object-fit: cover`, linear-gradient overlay, and text (`Peta Kampus UniSZA KGB` + live location count subtitle) at the bottom; frosted-glass close button (`×`, `position: absolute`) at top-right of image
+- **Panel nav section** — "Lihat Juga:" with pill-shaped buttons: Peta Bus Stop, 360° Virtual Tour (links to `unisza.edu.my/vt360/kgb/`), Menu Utama; `align-items: flex-start` keeps "Menu Utama" from stretching full width
+- **Panel feedback section** — thank-you text + "⭐ Beri Rating" and "🐛 Laporkan Masalah" pill buttons (placeholder links)
+- **Panel version section** — `#menu-version` and `#menu-kemaskini` spans; populated by `fetchMapDataInfo()` in parallel with sidebar spans
+- **`openInfoMenu()`** — adds `.open` to panel and backdrop; on desktop dynamically sets `panel.style.left` based on sidebar collapse state (420px collapsed / 70px expanded); suppresses `body` scroll only on mobile
+- **`closeInfoMenu()`** — removes `.open` from panel and backdrop; restores `body.style.overflow`
+- Backdrop click calls `closeInfoMenu()`
+- `#menu-location-count` span populated alongside `#location-count` in the data fetch block
+
+### Changed
+- **`#map-data-info` and `.sidebar-nav-footer` globally hidden** — version/update info and nav links are now exclusively in the info menu panel
+- **Mobile: sidebar title and subtitle hidden** (`.sidebar-header h2, .sidebar-header .subtitle { display: none }`) — content moved to panel hero
+- **Mobile: "Senarai Lokasi" header reordered above action buttons** — CSS `order` property: `.list-section-header { order: 1 }`, `.sidebar-header { order: 2 }`, `.company-list { order: 3 }`
+
+---
+
 ## [2.3] — 2026-04-16
 
 ### Added
