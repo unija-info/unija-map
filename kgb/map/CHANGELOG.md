@@ -4,6 +4,16 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.5] — 2026-04-22
+
+### Added
+- **Location images in info overlay** — a photo of the selected campus location now appears at the top of the info panel; images hosted on GitHub under `kgb/data/kgb-map/images/{folder}/{number}.jpg`
+- **`CATEGORY_SLUG` constant** — maps each `locationType` string to its image subfolder slug (e.g. `'PENTADBIRAN & PTJ'` → `'pentadbiran'`); unknown types fall back to `'lain'`
+- **`onerror` placeholder** — if no image file exists for a location, the `<img>` is hidden and a sibling `.info-overlay-image-placeholder` div (grey card, `hide_image` icon + "Tiada Gambar" text) is shown instead; no external placeholder file required
+- Image URL is derived entirely by convention from existing `locationType` and `number` fields — no schema changes to `kgb-map.json` or the Google Sheet
+
+---
+
 ## [2.4] — 2026-04-19
 
 ### Added

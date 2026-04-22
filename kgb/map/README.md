@@ -18,7 +18,7 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 - **Category filtering** — click a category to show only its markers on the map
 - **Location focus** — click any location to zoom in on it (all other markers hidden)
 - **Marker tooltips** — hidden by default; hover reveals the location code, click expands with full name, directions and info button
-- **Info overlay** — detailed panel with location name, category, short form, notes, and Google Maps link; back (`←`) or close (`×`) button restores full map view
+- **Info overlay** — detailed panel with location photo (or placeholder if unavailable), location name, category, short form, notes, and Google Maps link; back (`←`) or close (`×`) button restores full map view
 - **Animated intro** — map flies in from a wide view to campus zoom on first load
 - **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
 - **Real-time search** — search by location name, number code, short form, details, or area label
@@ -86,6 +86,28 @@ Google Sheet  →  Apps Script (code.gs)  →  GitHub API  →  kgb-map.json  �
 4. The live map reflects the change within seconds
 
 Direct edits to `kgb-map.json` will be overwritten on the next sync from the sheet.
+
+### Location images
+
+Photos are stored in `kgb/data/kgb-map/images/` organized by category subfolder:
+
+```
+kgb/data/kgb-map/images/
+  pentadbiran/        ← P1.jpg, P2.jpg, ...
+  akademik/
+  fakulti/
+  kolej-kediaman/
+  aktiviti/
+  sukan/
+  cafe/
+  kesihatan/
+  ibadah/
+  fasiliti/
+```
+
+Image URL pattern: `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/{folder}/{number}.jpg`
+
+Upload images named exactly `{number}.jpg` (e.g. `P1.jpg`). Locations with no image file automatically show a "Tiada Gambar" placeholder — no data changes required.
 
 ---
 

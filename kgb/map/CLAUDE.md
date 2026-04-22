@@ -86,6 +86,25 @@ const CATEGORY_COLORS = {
 
 Unknown categories fall back to `#778899` (grey). Colors are applied to markers, list badges, and info overlay header.
 
+`CATEGORY_SLUG` — parallel lookup mapping each `locationType` to its image subfolder slug:
+
+```javascript
+const CATEGORY_SLUG = {
+    'PENTADBIRAN & PTJ':              'pentadbiran',
+    'BLOK AKADEMIK & KELAS':          'akademik',
+    'BLOK FAKULTI & PUSAT PENGAJIAN': 'fakulti',
+    'KOLEJ KEDIAMAN':                 'kolej-kediaman',
+    'PUSAT AKTIVITI':                 'aktiviti',
+    'SUKAN & REKREASI':               'sukan',
+    'CAFE & MAKANAN':                 'cafe',
+    'KESIHATAN':                      'kesihatan',
+    'IBADAH':                         'ibadah',
+    'FASILITI & KEMUDAHAN':           'fasiliti',
+};
+```
+
+Unknown types fall back to `'lain'` via `??` operator. Used by `showLocationInfoOverlay()` to build the image URL: `kgb/data/kgb-map/images/{folder}/{number}.jpg`.
+
 ### 3. Map Setup
 
 - **Center**: `[5.3950, 103.0830]` (UniSZA Gong Badak area)
@@ -173,9 +192,19 @@ Both `filterByLocation` and `showLocationOnMap` call `clearMarkers()` first, the
 
 ### 8. Info Overlay
 
-Slides over the sidebar content (`.stop-info-overlay`). Text-only — no images.
+Slides over the sidebar content (`.stop-info-overlay`). Shows a location photo at the top of the content area, followed by detail rows.
+
+**Image block** — built in `showLocationInfoOverlay()` before the `innerHTMLString` is assembled:
+```js
+const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
+const imgUrl = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}.jpg`;
+```
+`CATEGORY_SLUG` maps each `locationType` to a subfolder slug (e.g. `'PENTADBIRAN & PTJ'` → `'pentadbiran'`). The `<img>` hides itself via `onerror` and reveals a sibling `.info-overlay-image-placeholder` div (grey card, `hide_image` icon, "Tiada Gambar" text). No external placeholder file is required — uses the `material-symbols-outlined` font already loaded on the page.
+
+**Image file convention:** `kgb/data/kgb-map/images/{folder}/{number}.jpg` on the `main` branch.
 
 Contains:
+- Location photo (or "Tiada Gambar" placeholder)
 - Colored `number` badge + place name heading
 - Detail rows: Kategori, Singkatan, Info, and a "no coordinates" warning if applicable
 - "🗺️ Buka di Google Maps" link
@@ -267,7 +296,7 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 | `filterByLocation(loc)` | Clears to single marker, zooms in (desktop) |
 | `flyToMarker(coords, duration?)` | Pans/zooms to a location with bottom-sheet-aware offset (mobile); reused by both marker tap and list select for consistent positioning |
 | `showLocationOnMap(loc)` | Clears to single marker, calls `flyToMarker()`, collapses sheet (mobile) |
-| `showLocationInfoOverlay(id)` | Renders text-only info panel; cross-fades if already open; back button dismisses, close button resets all |
+| `showLocationInfoOverlay(id)` | Renders info panel with location photo (or placeholder) + detail rows; cross-fades if already open; back button dismisses, close button resets all |
 | `initBottomSheet()` | Sets up mobile swipe gesture handlers |
 | `setSheetState(state)` | Sets sheet to `'peek'`/`'half'`/`'full'` with CSS transition |
 | `initDesktopSidebar()` | Wires collapse/expand button handlers |
@@ -304,6 +333,8 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 - **Info menu close button**: `position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); border-radius: 50%; color: white`
 - **Mobile bottom sheet reorder**: `.list-section-header { order: 1 }`, `.sidebar-header { order: 2 }`, `.company-list { order: 3 }` via CSS flex `order`
 - **Mobile title/subtitle hidden**: `.sidebar-header h2, .sidebar-header .subtitle { display: none }` inside `@media (max-width: 768px)`
+- **Info overlay image**: `.info-overlay-image-wrap` — `width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px`; `.info-overlay-image` — `width: 100%; max-height: 200px; object-fit: cover`
+- **Info overlay image placeholder**: `.info-overlay-image-placeholder` — `display: none` by default; `onerror` sets it to `display: flex`; `height: 110px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #bdc1c6; background: #f5f5f5`; icon `font-size: 36px`
 
 ---
 
@@ -332,7 +363,9 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 - [ ] Clicking same category header again restores all markers
 - [ ] `📍 Papar semua Lokasi` restores all markers and fits campus bounds
 - [ ] `i` button in tooltip opens info overlay; `×` closes it and restores all markers
-- [ ] Info overlay shows: number badge, place name, category, shortForm, details, Google Maps link
+- [ ] Info overlay shows: location photo (or "Tiada Gambar" placeholder), number badge, place name, category, shortForm, details, Google Maps link
+- [ ] Locations without an uploaded image show the grey placeholder card with `hide_image` icon
+- [ ] Switching between locations while overlay is open updates the image correctly (cross-fade still works)
 - [ ] No-coords locations appear in sidebar (dimmed) but don't crash on click
 - [ ] Search dropdown filters both locations and categories in real-time
 - [ ] Search results show `details` as a third line when non-empty (truncated with ellipsis)
@@ -407,6 +440,12 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.3 — Info Overlay Close Restores All Markers
 - `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
 - Closing the details pane zooms the map back to the full campus view with all markers
+
+### v2.5 — Location Images in Info Overlay
+- `CATEGORY_SLUG` constant maps each `locationType` to its image subfolder slug
+- `showLocationInfoOverlay()` builds image URL by convention (`kgb/data/kgb-map/images/{folder}/{number}.jpg`) from existing fields — no schema changes
+- `<img>` with `onerror` fallback: hides image and shows sibling `.info-overlay-image-placeholder` div when the file is missing
+- CSS: `.info-overlay-image-wrap`, `.info-overlay-image`, `.info-overlay-image-placeholder`, `.info-overlay-image-placeholder .material-symbols-outlined`
 
 ### v2.4 — Info Menu Panel
 - **Hamburger button** (`#info-menu-btn`) added to right of search bar; `z-index: 12` to appear above search input

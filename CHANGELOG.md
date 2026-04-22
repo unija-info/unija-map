@@ -5,6 +5,17 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-22 — Location Images in Info Overlay (`kgb/map/`)
+
+- Info overlay now shows a photo of the selected campus location at the top of the panel
+- Images hosted in `kgb/data/kgb-map/images/{folder}/{number}.jpg`; URL derived by convention from existing `locationType` and `number` fields — no schema changes
+- Locations without an uploaded image show a styled placeholder (grey card, `hide_image` icon, "Tiada Gambar" text)
+- `CATEGORY_SLUG` constant maps each `locationType` to its image subfolder
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.5
+
+---
+
 ## 2026-04-19 — Info Menu Panel & Documentation Update
 
 - `kgb/map/`: hamburger button in search bar opens a right-slide info panel (full-screen on mobile, 380px popup on desktop) containing campus hero image, nav links, feedback buttons, and version info; sidebar title/subtitle and version bar moved exclusively to the panel; "Senarai Lokasi" header reordered above action buttons on mobile
