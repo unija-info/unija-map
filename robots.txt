@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://unija-map.vercel.app/sitemap.xml
