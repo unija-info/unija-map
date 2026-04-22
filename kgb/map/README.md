@@ -54,6 +54,19 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 ---
 
+## SEO
+
+`index.html` includes:
+- `<meta name="description">` for Google search snippets
+- `<link rel="canonical" href="https://unija-map.vercel.app/kgb/map/">`
+- Open Graph tags (Facebook, WhatsApp previews)
+- Twitter Card tags
+- Favicon + Web App Manifest
+
+Site-wide: `robots.txt` and `sitemap.xml` at the repo root cover all four pages.
+
+---
+
 ## Data Source
 
 Location data is loaded from [`kgb/data/kgb-map.json`](../data/kgb-map.json) — the same data file used by the main `kgb/` directory page.

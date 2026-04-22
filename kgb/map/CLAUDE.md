@@ -26,6 +26,23 @@ kgb/data/kgb-map.json   ← Data source (NOT inside kgb/map/)
 
 ---
 
+## SEO — `<head>` Meta Tags
+
+`index.html` includes a full SEO meta block:
+
+- **`<meta name="description">`** — standard description for Google search snippets
+- **`<link rel="canonical">`** — `https://unija-map.vercel.app/kgb/map/`
+- **Open Graph** (`og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `og:locale`) — for Facebook, WhatsApp link previews
+- **Twitter Card** (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`) — for Twitter/X previews
+- **`apple-mobile-web-app-title`** — `"Peta UniSZA KGB"` (shown when page is saved to iOS home screen)
+- Favicon + Web App Manifest (`/media/favicon/`)
+
+**Site-wide:** `robots.txt` and `sitemap.xml` live at the repo root. The sitemap lists `/`, `/kgb/`, `/kgb/map/`, and `/kgb/bus-stop/`.
+
+When editing OG tags: keep `og:url` pointing to `https://unija-map.vercel.app/kgb/map/` (with trailing slash). The OG image (`image1.png`) is served from GitHub raw content.
+
+---
+
 ## Data Model
 
 Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
@@ -434,3 +451,12 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 - **Info overlay cross-fade on location switch**: switching between locations while overlay is open cross-fades in place (120ms) instead of remove + slide-in; sidebar never exposed during transition
 - **`minZoom: 14`** added to `L.map()` options to prevent zooming out past campus view
 - **"Papar semua Lokasi" zoom fixed**: `flyTo` now uses mobile `16`, desktop `14` to match initial load zoom
+
+### v2.5 — SEO Improvements
+- **`<meta name="description">`** added to `index.html`
+- **`<link rel="canonical">`** added pointing to `https://unija-map.vercel.app/kgb/map/`
+- **OG title typo fixed** — removed stray `>` from `og:title`
+- **`og:url`** corrected from `/kgb` to `/kgb/map/`
+- **`apple-mobile-web-app-title`** changed from `"MyWebSite"` to `"Peta UniSZA KGB"`
+- **`robots.txt`** created at repo root (allows all crawlers, references sitemap)
+- **`sitemap.xml`** created at repo root (lists 4 pages with priority weights)

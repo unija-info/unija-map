@@ -4,6 +4,21 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.5] — 2026-04-22
+
+### Added
+- **`<meta name="description">`** — standard description tag for Google search snippets: `"Peta interaktif UniSZA Kampus Gong Badak — cari, tapis, dan dapatkan arah ke ~110 lokasi di dalam kampus melalui Google Maps."`
+- **`<link rel="canonical">`** pointing to `https://unija-map.vercel.app/kgb/map/`
+- **`robots.txt`** at repo root — allows all crawlers, points to sitemap
+- **`sitemap.xml`** at repo root — lists `/`, `/kgb/`, `/kgb/map/`, `/kgb/bus-stop/` with `changefreq` and `priority`
+
+### Fixed
+- **OG title typo** — removed stray `>` character at the start of `og:title` (`content=">Cari..."` → `content="Cari..."`)
+- **`og:url`** corrected from `/kgb` to `/kgb/map/`
+- **`apple-mobile-web-app-title`** changed from `"MyWebSite"` to `"Peta UniSZA KGB"`
+
+---
+
 ## [2.4] — 2026-04-19
 
 ### Added
