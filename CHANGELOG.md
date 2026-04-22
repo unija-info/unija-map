@@ -5,16 +5,6 @@ High-level project history. For technical detail see:
 
 ---
 
-## 2026-04-22 — SEO Improvements (`kgb/map/` + site-wide)
-
-- `kgb/map/`: added `<meta name="description">` and `<link rel="canonical">`; fixed OG title typo (stray `>`); corrected `og:url` from `/kgb` to `/kgb/map/`; fixed `apple-mobile-web-app-title` from `"MyWebSite"` to `"Peta UniSZA KGB"`
-- `robots.txt`: created at repo root — allows all crawlers, references sitemap
-- `sitemap.xml`: created at repo root — lists all four indexable pages (`/`, `/kgb/`, `/kgb/map/`, `/kgb/bus-stop/`) with priority weights
-
-→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.5
-
----
-
 ## 2026-04-19 — Info Menu Panel & Documentation Update
 
 - `kgb/map/`: hamburger button in search bar opens a right-slide info panel (full-screen on mobile, 380px popup on desktop) containing campus hero image, nav links, feedback buttons, and version info; sidebar title/subtitle and version bar moved exclusively to the panel; "Senarai Lokasi" header reordered above action buttons on mobile
