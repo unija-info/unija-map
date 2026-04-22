@@ -56,7 +56,7 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 ## Data Source
 
-Location data is loaded from [`kgb/data/kgb-map.json`](../data/kgb-map.json) — the same data file used by the main `kgb/` directory page.
+Location data is loaded from [`kgb/data/kgb-map.json`](../data/kgb-map.json) at runtime via `raw.githubusercontent.com` (cache-busted). This is the same file used by the main `kgb/` directory page.
 
 Each entry follows this schema:
 
@@ -71,7 +71,21 @@ Each entry follows this schema:
 }
 ```
 
-To update locations, edit `kgb/data/kgb-map.json`. No rebuild required — the page fetches the file at runtime.
+### Updating location data
+
+`kgb-map.json` is **auto-generated from a Google Sheet** — do not edit it directly.
+
+**Pipeline:**
+```
+Google Sheet  →  Apps Script (code.gs)  →  GitHub API  →  kgb-map.json  →  Live map
+```
+
+1. Open the [Google Sheet](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing) and edit the **"JSON DATA"** tab
+2. Click **Campus Map Guide → Update Website Data** in the sheet menu
+3. The Apps Script (`kgb/data/code.gs`) commits the new JSON to GitHub
+4. The live map reflects the change within seconds
+
+Direct edits to `kgb-map.json` will be overwritten on the next sync from the sheet.
 
 ---
 

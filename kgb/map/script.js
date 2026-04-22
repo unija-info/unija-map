@@ -57,6 +57,7 @@ const CATEGORY_COLORS = {
     'CAFE & MAKANAN':                 { bg: '#b0a020', text: 'black' },
     'KESIHATAN':                      { bg: '#DC143C', text: 'white' },
     'IBADAH':                         { bg: '#32CD32', text: 'black' },
+    'FASILITI & KEMUDAHAN':           { bg: '#8f9ce2', text: 'black' },
 };
 
 const DESIRED_ORDER = [
@@ -69,7 +70,21 @@ const DESIRED_ORDER = [
     'CAFE & MAKANAN',
     'KESIHATAN',
     'IBADAH',
+    'FASILITI & KEMUDAHAN',
 ];
+
+const CATEGORY_SLUG = {
+    'PENTADBIRAN & PTJ':              'pentadbiran',
+    'BLOK AKADEMIK & KELAS':          'akademik',
+    'BLOK FAKULTI & PUSAT PENGAJIAN': 'fakulti',
+    'KOLEJ KEDIAMAN':                 'kolej-kediaman',
+    'PUSAT AKTIVITI':                 'aktiviti',
+    'SUKAN & REKREASI':               'sukan',
+    'CAFE & MAKANAN':                 'cafe',
+    'KESIHATAN':                      'kesihatan',
+    'IBADAH':                         'ibadah',
+    'FASILITI & KEMUDAHAN':           'fasiliti',
+};
 
 function getCategoryColor(lt) {
     return (CATEGORY_COLORS[lt] || { bg: '#778899' }).bg;
@@ -594,6 +609,19 @@ function showLocationInfoOverlay(locationId) {
     const textColor = getCategoryTextColor(location.locationType);
     const googleUrl = location.googleMapLink || '#';
 
+    const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
+    const imgUrl = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}.jpg`;
+    const imageHtml = `
+        <div class="info-overlay-image-wrap">
+            <img class="info-overlay-image" src="${imgUrl}" alt="${location.place}"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div class="info-overlay-image-placeholder">
+                <span class="material-symbols-outlined">hide_image</span>
+                <span>Tiada Gambar</span>
+            </div>
+        </div>
+    `;
+
     let detailRowsHtml = '';
 
     if (location.locationType && location.locationType.trim()) {
@@ -642,6 +670,7 @@ function showLocationInfoOverlay(locationId) {
             <button class="info-overlay-close">×</button>
         </div>
         <div class="info-overlay-content">
+            ${imageHtml}
             ${detailRowsHtml ? `<div class="info-overlay-details">${detailRowsHtml}</div>` : ''}
             ${directionsHtml}
         </div>

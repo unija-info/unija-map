@@ -1204,6 +1204,38 @@ body, html {
     background: #a8dfe9;
 }
 
+.info-overlay-image-wrap {
+    width: 100%;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f0f0;
+}
+
+.info-overlay-image {
+    width: 100%;
+    display: block;
+    max-height: 200px;
+    object-fit: cover;
+}
+
+.info-overlay-image-placeholder {
+    display: none;
+    height: 110px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #bdc1c6;
+    font-size: 12px;
+    font-family: 'Google Sans', sans-serif;
+    background: #f5f5f5;
+}
+
+.info-overlay-image-placeholder .material-symbols-outlined {
+    font-size: 36px;
+}
+
 /* Mobile Setup */
 .mobile-toggle {
     display: none;

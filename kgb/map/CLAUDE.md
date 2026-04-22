@@ -295,9 +295,8 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 - **Search result detail line**: `.result-detail` — 11px, `#80868b`, `text-overflow: ellipsis`; shown only when `loc.details` is non-empty
 - **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`; fetched from `/kgb/data/campus-boundary.json` (absolute path — relative path breaks on Vercel `cleanUrls`)
 - **Dot marker**: 12×12px, `border-radius: 50%`, category bg color, `2px solid white` border, `box-shadow: 0 1px 3px rgba(0,0,0,0.4)`
-- **Sidebar nav footer**: `.sidebar-nav-footer` at bottom of sidebar — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text
+- **Sidebar nav footer**: `.sidebar-nav-footer` — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text; globally `display: none` (superseded by info menu panel)
 - **Version/update bar**: `#map-data-info` — globally `display: none`; superseded by info menu panel
-- **Sidebar nav footer**: `.sidebar-nav-footer` — globally `display: none`; superseded by info menu panel
 - **Hamburger button**: `#info-menu-btn` — `position: absolute; right: 10px; z-index: 12`; z-index must exceed search input's `z-index: 11`
 - **Info menu panel (mobile)**: `position: fixed; top: 0; right: 0; width: 100%; height: 100vh; z-index: 2001; transform: translateX(100%)`; `.open { translateX(0) }`
 - **Info menu panel (desktop, `min-width: 769px`)**: `width: 380px; top: 68px; border-radius: 12px; opacity/translateY fade-drop animation`; `left` set dynamically via JS in `openInfoMenu()`
@@ -361,20 +360,16 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 
 ## Adding New Locations
 
-Edit `kgb/data/kgb-map.json` (not `kgb/map/` — data lives one level up):
+`kgb-map.json` is **auto-generated from a Google Sheet** — do not edit the JSON file directly. Changes will be overwritten on the next sync.
 
-```json
-{
-  "number": "P10",
-  "place": "New Building Name",
-  "googleMapLink": "https://maps.google.com/?q=5.4010,103.0805",
-  "locationType": "PENTADBIRAN & PTJ",
-  "shortForm": "NBN",
-  "details": "Optional extra info"
-}
-```
+**To add or edit a location:**
+1. Open the [Google Sheet](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing) and edit the **"JSON DATA"** tab
+2. Add a row with these columns: `number | place | googleMapLink | locationType | shortForm | details`
+3. Get coordinates from Google Maps (right-click on location → copy coordinates) and put them in `googleMapLink` as `https://maps.google.com/?q=LAT,LNG`
+4. Click **Campus Map Guide → Update Website Data** in the sheet menu to push to GitHub
+5. The live map reflects the change within seconds
 
-Get coordinates from Google Maps (right-click on location → copy coordinates).
+**Pipeline:** Google Sheet → `code.gs` (Apps Script) → GitHub API → `kgb-map.json` → live map
 
 To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color entry to `CATEGORY_COLORS`.
 

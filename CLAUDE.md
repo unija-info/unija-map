@@ -81,9 +81,32 @@ python -m http.server 8000
 
 Category filter order is hardcoded in `script.js` (`desiredOrder` array). Add new categories there to control button order.
 
+**Important:** `kgb-map.json` is auto-generated from a Google Sheet — do not edit it directly. See the **Google Sheets Sync** section below.
+
 ### `kgb/data/bus-stop.json` — Bus stop array
 
 See `kgb/bus-stop/CLAUDE.md` for full schema and architecture details.
+
+## Google Sheets Sync (`kgb-map.json`)
+
+`kgb-map.json` is managed via Google Sheets, not by hand. The pipeline:
+
+```
+Google Sheet  →  code.gs (Apps Script)  →  GitHub API  →  kgb-map.json  →  Live map
+```
+
+**Sheet**: [Google Sheet (JSON DATA tab)](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing) — columns: `number | place | googleMapLink | locationType | shortForm | details`
+
+**Script**: `kgb/data/code.gs` runs inside the sheet as a Google Apps Script. It adds a **"Campus Map Guide → Update Website Data"** menu. When triggered:
+1. Reads all rows from the "JSON DATA" tab
+2. Maps only the 6 required columns (extra sheet columns are ignored)
+3. Skips blank rows, serializes to JSON
+4. Calls the GitHub Contents API (`PUT`) to commit the new file to `main` — fetches the current file `sha` first (required by GitHub to update without conflict)
+5. The GitHub Personal Access Token is stored in **Apps Script Script Properties** (never hardcoded)
+
+**After a push**: `kgb/script.js` fetches `kgb-map.json` from `raw.githubusercontent.com` with a cache-bust timestamp, so the live site reflects the new data within seconds.
+
+**Rule**: Always edit location data in the Google Sheet, then click "Update Website Data". Direct edits to `kgb-map.json` will be overwritten on the next sync.
 
 ## Key Patterns
 
