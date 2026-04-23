@@ -1291,6 +1291,57 @@ function initMap() {
         }
     });
 
+    // ===== MOBILE DOUBLE-TAP HOLD TO ZOOM OUT =====
+    // Double-tap = zoom in (replaces Leaflet default on mobile)
+    // Double-tap + hold (≥300ms) = zoom out
+    if (window.innerWidth <= 768) {
+        map.doubleClickZoom.disable();
+
+        let lastTapTime = 0;
+        let lastTapX = 0;
+        let lastTapY = 0;
+        let holdTimer = null;
+        let secondTapLatLng = null;
+
+        const mapEl = document.getElementById('map');
+
+        mapEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            const touch = e.touches[0];
+            const now = Date.now();
+            const dx = touch.clientX - lastTapX;
+            const dy = touch.clientY - lastTapY;
+
+            if (now - lastTapTime < 300 && Math.hypot(dx, dy) < 40) {
+                secondTapLatLng = map.containerPointToLatLng(
+                    L.point(touch.clientX, touch.clientY)
+                );
+                holdTimer = setTimeout(() => {
+                    holdTimer = null;
+                    map.zoomOut(1);
+                    secondTapLatLng = null;
+                }, 300);
+                lastTapTime = 0; // prevent triple-tap re-trigger
+            } else {
+                lastTapTime = now;
+                lastTapX = touch.clientX;
+                lastTapY = touch.clientY;
+            }
+        }, { passive: true });
+
+        mapEl.addEventListener('touchend', () => {
+            if (holdTimer !== null) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+                if (secondTapLatLng) {
+                    map.setZoomAround(secondTapLatLng, map.getZoom() + 1);
+                    secondTapLatLng = null;
+                }
+            }
+        });
+    }
+    // ===== END MOBILE DOUBLE-TAP HOLD =====
+
     fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map/kgb-map.json?v=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
