@@ -4,6 +4,15 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.6] — 2026-04-23
+
+### Changed
+- **Multi-format image support** — info overlay now tries `.jpg` → `.png` → `.webp` in order before falling back to the "Tiada Gambar" placeholder; previously only `.jpg` was attempted
+- Fallback chain uses chained `onerror` handlers: each failed load updates `this.src` to the next extension; if all three fail, the image is hidden and the sibling placeholder is shown
+- No changes to folder structure or `kgb-map.json` schema — upload the image in any of the three supported formats
+
+---
+
 ## [2.5] — 2026-04-22
 
 ### Added

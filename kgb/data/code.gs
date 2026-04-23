@@ -3,7 +3,7 @@
 const USER_CONFIG = {
   GITHUB_USERNAME: "unija-info", // Your GitHub username
   REPO_NAME: "unija-map", // The name of your GitHub repository
-  FILE_PATH: "kgb/data/kgb-map.json", // The path and name for the data file
+  FILE_PATH: "kgb/data/kgb-map/kgb-map.json", // The path and name for the data file
   SHEET_NAME: "JSON DATA" // The name of the sheet tab with your data
 };
 // --------------------------------------------------------

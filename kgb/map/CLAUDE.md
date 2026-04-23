@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with the `kgb/map/` sub-
 
 ## Project Overview
 
-**Peta Kampus UniSZA KGB** — an interactive Leaflet.js campus map for UniSZA Kampus Gong Badak. Displays ~110 campus locations (buildings, facilities, accommodation blocks, etc.) as colored markers on a satellite map. Data is sourced from `kgb/data/kgb-map.json`, the same file used by `kgb/index.html`.
+**Peta Kampus UniSZA KGB** — an interactive Leaflet.js campus map for UniSZA Kampus Gong Badak. Displays ~110 campus locations (buildings, facilities, accommodation blocks, etc.) as colored markers on a satellite map. Data is sourced from `kgb/data/kgb-map/kgb-map.json`, the same file used by `kgb/index.html`.
 
 This project is a structural adaptation of `kgb/bus-stop/` — same layout, same mobile/desktop UX patterns, but tailored for campus locations instead of bus stops.
 
@@ -21,7 +21,7 @@ kgb/map/
   style.css     ← All styles
   CLAUDE.md     ← This file
 
-kgb/data/kgb-map.json   ← Data source (NOT inside kgb/map/)
+kgb/data/kgb-map/kgb-map.json   ← Data source (NOT inside kgb/map/)
 ```
 
 ---
@@ -197,11 +197,11 @@ Slides over the sidebar content (`.stop-info-overlay`). Shows a location photo a
 **Image block** — built in `showLocationInfoOverlay()` before the `innerHTMLString` is assembled:
 ```js
 const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
-const imgUrl = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}.jpg`;
+const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
 ```
-`CATEGORY_SLUG` maps each `locationType` to a subfolder slug (e.g. `'PENTADBIRAN & PTJ'` → `'pentadbiran'`). The `<img>` hides itself via `onerror` and reveals a sibling `.info-overlay-image-placeholder` div (grey card, `hide_image` icon, "Tiada Gambar" text). No external placeholder file is required — uses the `material-symbols-outlined` font already loaded on the page.
+`CATEGORY_SLUG` maps each `locationType` to a subfolder slug (e.g. `'PENTADBIRAN & PTJ'` → `'pentadbiran'`). The `<img>` starts with `src="${imgBase}.jpg"` and uses chained `onerror` handlers to try `.jpg` → `.png` → `.webp` in order; if all three fail, the image is hidden and the sibling `.info-overlay-image-placeholder` div (grey card, `hide_image` icon, "Tiada Gambar" text) is shown instead. No external placeholder file is required — uses the `material-symbols-outlined` font already loaded on the page.
 
-**Image file convention:** `kgb/data/kgb-map/images/{folder}/{number}.jpg` on the `main` branch.
+**Image file convention:** `kgb/data/kgb-map/images/{folder}/{number}.{jpg|png|webp}` on the `main` branch. Upload in any of the three formats; the first found is used.
 
 Contains:
 - Location photo (or "Tiada Gambar" placeholder)
@@ -440,6 +440,11 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.3 — Info Overlay Close Restores All Markers
 - `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
 - Closing the details pane zooms the map back to the full campus view with all markers
+
+### v2.6 — Multi-Format Image Support
+- Info overlay image loading now tries `.jpg` → `.png` → `.webp` in order before falling back to the "Tiada Gambar" placeholder
+- Implemented via chained `onerror` handlers on the `<img>` element — each failure updates `this.src` to the next extension; if all three fail, image is hidden and sibling placeholder shown
+- No folder structure or `kgb-map.json` schema changes — upload the image in any supported format
 
 ### v2.5 — Location Images in Info Overlay
 - `CATEGORY_SLUG` constant maps each `locationType` to its image subfolder slug

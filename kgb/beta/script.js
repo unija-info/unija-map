@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const dataUrl = `https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map.json?v=${new Date().getTime()}`;
+    const dataUrl = `https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map/kgb-map.json?v=${new Date().getTime()}`;
 
     // DOM ELEMENTS
     const quickLinksContainer = document.getElementById('quick-links');
@@ -241,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchLastUpdateDates() {
         const REPO_OWNER = 'unija-info';
         const REPO_NAME = 'unija-map';
-        const DATA_FILE_PATH = 'kgb/data/kgb-map.json';
+        const DATA_FILE_PATH = 'kgb/data/kgb-map/kgb-map.json';
         const MAP_IMAGE_PATH = 'kgb/file/02_Map-Unija-KGB.png'; // Pastikan laluan ini betul
 
         // Fungsi bantuan baharu untuk memformat tarikh dan masa mengikut format yang diminta

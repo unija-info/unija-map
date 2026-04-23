@@ -610,11 +610,15 @@ function showLocationInfoOverlay(locationId) {
     const googleUrl = location.googleMapLink || '#';
 
     const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
-    const imgUrl = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}.jpg`;
+    const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
     const imageHtml = `
         <div class="info-overlay-image-wrap">
-            <img class="info-overlay-image" src="${imgUrl}" alt="${location.place}"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}"
+                 onerror="
+                   if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
+                   else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
+                   else{this.style.display='none';this.nextElementSibling.style.display='flex';}
+                 " />
             <div class="info-overlay-image-placeholder">
                 <span class="material-symbols-outlined">hide_image</span>
                 <span>Tiada Gambar</span>
@@ -1287,7 +1291,7 @@ function initMap() {
         }
     });
 
-    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map.json?v=${Date.now()}`)
+    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map/kgb-map.json?v=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             mapData = processData(data);
@@ -1366,7 +1370,7 @@ async function fetchMapDataInfo() {
                 const m = text.match(/^## \[([^\]]+)\]/m);
                 return m ? m[1] : null;
             }),
-        fetch(`https://api.github.com/repos/unija-info/unija-map/commits?path=kgb/data/kgb-map.json&per_page=1`)
+        fetch(`https://api.github.com/repos/unija-info/unija-map/commits?path=kgb/data/kgb-map/kgb-map.json&per_page=1`)
             .then(r => r.json())
             .then(commits => commits.length > 0 ? new Date(commits[0].commit.committer.date) : null)
     ]);
