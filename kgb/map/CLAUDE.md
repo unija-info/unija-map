@@ -113,6 +113,10 @@ Unknown types fall back to `'lain'` via `??` operator. Used by `showLocationInfo
 - **Overlay layer**: CartoDB Positron labels (place names)
 - **Campus boundary**: fetched from `../data/campus-boundary.json` (local cached coords for OSM Way 1120569731) via `loadCampusBoundary()` on init; rendered as non-interactive `L.polygon()` in `#1967d2`
 - **Zoom control**: bottom-right
+- **Mobile zoom gestures**: Leaflet's `doubleClickZoom` is disabled on mobile (≤768px) and replaced with custom touch handlers:
+  - **Double tap** (one finger, within 300ms, within 40px) → `setZoomAround()` zoom in 1 level at tap position
+  - **Hold one finger (≥150ms) + tap with second finger (<300ms)** → `zoomOut(1)`; mirrors Google Maps two-finger zoom-out
+  - Pinch zoom unaffected (second finger held >300ms hands off to Leaflet); desktop `dblclick` zoom untouched
 
 ### 4. Marker System
 
@@ -440,6 +444,12 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ### v1.3 — Info Overlay Close Restores All Markers
 - `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
 - Closing the details pane zooms the map back to the full campus view with all markers
+
+### v2.7 — Mobile Zoom Gestures
+- Leaflet's `doubleClickZoom` disabled on mobile (≤768px); replaced with custom touch handlers
+- **Double tap** (one finger) → `setZoomAround()` zoom in 1 level at tap position — same feel as Leaflet default
+- **Hold one finger + tap second finger** → `zoomOut(1)` — mirrors Google Maps two-finger zoom-out gesture
+- Pinch zoom and desktop double-click zoom unaffected
 
 ### v2.6 — Multi-Format Image Support
 - Info overlay image loading now tries `.jpg` → `.png` → `.webp` in order before falling back to the "Tiada Gambar" placeholder

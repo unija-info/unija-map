@@ -5,6 +5,16 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-23 — Mobile Zoom Gestures (`kgb/map/`)
+
+- Hold one finger + tap with second finger → zoom out (Google Maps-style two-finger gesture)
+- Double-tap (one finger) → zoom in at tap position (replaces Leaflet default, same feel)
+- Pinch zoom unaffected; desktop double-click zoom untouched
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.7
+
+---
+
 ## 2026-04-23 — Multi-Format Image Support (`kgb/map/`)
 
 - Info overlay image loading now tries `.jpg` → `.png` → `.webp` in order before showing the "Tiada Gambar" placeholder

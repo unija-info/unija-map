@@ -4,6 +4,16 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.7] — 2026-04-23
+
+### Added
+- **Mobile zoom-out gesture** — hold one finger on the map (≥150ms), then tap with a second finger and release quickly (<300ms) to zoom out 1 level; mirrors Google Maps' two-finger zoom-out gesture
+- Leaflet's built-in `doubleClickZoom` is disabled on mobile (≤768px) and replaced entirely with custom touch logic
+- **Double-tap zoom in** preserved — quick double-tap (same finger, within 300ms, within 40px) calls `setZoomAround()` at the tap position, identical feel to Leaflet default
+- Pinch zoom unaffected — second finger held >300ms still hands off to Leaflet's native pinch handler; simultaneous two-finger tap (first finger held <150ms) does not trigger zoom out
+
+---
+
 ## [2.6] — 2026-04-23
 
 ### Changed
