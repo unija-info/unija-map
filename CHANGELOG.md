@@ -5,6 +5,35 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-27 — Image Relocation & SEO Metadata (`kgb/bus-stop/`)
+
+- Bus stop photos moved from `kgb/bus-stop/image/bus-stop/` → `kgb/data/bus-stop/image/` to consolidate all data assets under `kgb/data/`
+- All image paths in `script.js` updated to absolute `/kgb/data/bus-stop/image/` (3 locations: sidebar list, info overlay, fullscreen overlay)
+- OG/Twitter card title and description made more descriptive (highlights "Pickup & Drop Point Bas Ekspress")
+
+→ Full detail: [`kgb/bus-stop/CHANGELOG.md`](kgb/bus-stop/CHANGELOG.md) v2.8
+
+---
+
+## 2026-04-23 — Mobile Zoom Gestures (`kgb/map/`)
+
+- Hold one finger + tap with second finger → zoom out (Google Maps-style two-finger gesture)
+- Double-tap (one finger) → zoom in at tap position (replaces Leaflet default, same feel)
+- Pinch zoom unaffected; desktop double-click zoom untouched
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.7
+
+---
+
+## 2026-04-23 — Multi-Format Image Support (`kgb/map/`)
+
+- Info overlay image loading now tries `.jpg` → `.png` → `.webp` in order before showing the "Tiada Gambar" placeholder
+- Upload location images in any of the three formats — no schema or folder structure changes required
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.6
+
+---
+
 ## 2026-04-22 — Location Images in Info Overlay (`kgb/map/`)
 
 - Info overlay now shows a photo of the selected campus location at the top of the panel

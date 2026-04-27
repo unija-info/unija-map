@@ -56,7 +56,7 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 ## Data Source
 
-Location data is loaded from [`kgb/data/kgb-map.json`](../data/kgb-map.json) at runtime via `raw.githubusercontent.com` (cache-busted). This is the same file used by the main `kgb/` directory page.
+Location data is loaded from [`kgb/data/kgb-map/kgb-map.json`](../data/kgb-map.json) at runtime via `raw.githubusercontent.com` (cache-busted). This is the same file used by the main `kgb/` directory page.
 
 Each entry follows this schema:
 

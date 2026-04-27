@@ -610,11 +610,15 @@ function showLocationInfoOverlay(locationId) {
     const googleUrl = location.googleMapLink || '#';
 
     const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
-    const imgUrl = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}.jpg`;
+    const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
     const imageHtml = `
         <div class="info-overlay-image-wrap">
-            <img class="info-overlay-image" src="${imgUrl}" alt="${location.place}"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}"
+                 onerror="
+                   if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
+                   else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
+                   else{this.style.display='none';this.nextElementSibling.style.display='flex';}
+                 " />
             <div class="info-overlay-image-placeholder">
                 <span class="material-symbols-outlined">hide_image</span>
                 <span>Tiada Gambar</span>
@@ -1287,7 +1291,84 @@ function initMap() {
         }
     });
 
-    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map.json?v=${Date.now()}`)
+    // ===== MOBILE ZOOM GESTURES (replaces Leaflet double-tap on mobile) =====
+    // - Double tap (one finger, quick)          → zoom in at tap position
+    // - Hold one finger + tap with second finger → zoom out
+    if (window.innerWidth <= 768) {
+        map.doubleClickZoom.disable();
+
+        let lastTapTime = 0;
+        let lastTapX = 0, lastTapY = 0;
+        let doubleTapTimer = null;
+        let secondTapLatLng = null;
+        let firstFingerDownTime = 0;
+        let secondFingerDownTime = 0;
+
+        const mapEl = document.getElementById('map');
+
+        mapEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const now = Date.now();
+                const dx = touch.clientX - lastTapX;
+                const dy = touch.clientY - lastTapY;
+                firstFingerDownTime = now;
+                secondFingerDownTime = 0;
+
+                if (now - lastTapTime < 300 && Math.hypot(dx, dy) < 40) {
+                    secondTapLatLng = map.containerPointToLatLng(
+                        L.point(touch.clientX, touch.clientY)
+                    );
+                    doubleTapTimer = setTimeout(() => {
+                        doubleTapTimer = null;
+                        secondTapLatLng = null;
+                    }, 300);
+                    lastTapTime = 0;
+                } else {
+                    lastTapTime = now;
+                    lastTapX = touch.clientX;
+                    lastTapY = touch.clientY;
+                }
+            } else if (e.touches.length === 2) {
+                secondFingerDownTime = Date.now();
+                if (doubleTapTimer) {
+                    clearTimeout(doubleTapTimer);
+                    doubleTapTimer = null;
+                    secondTapLatLng = null;
+                }
+            }
+        }, { passive: true });
+
+        mapEl.addEventListener('touchend', (e) => {
+            const now = Date.now();
+
+            // Quick double-tap → zoom in
+            if (doubleTapTimer !== null) {
+                clearTimeout(doubleTapTimer);
+                doubleTapTimer = null;
+                if (secondTapLatLng) {
+                    map.setZoomAround(secondTapLatLng, map.getZoom() + 1);
+                    secondTapLatLng = null;
+                }
+                return;
+            }
+
+            // Hold one finger + tap second finger → zoom out
+            // Detects: 2→1 transition where second finger was tapped quickly (<300ms)
+            // and first finger was held before second joined (>150ms gap)
+            if (e.touches.length === 1 && secondFingerDownTime > 0) {
+                const secondFingerDuration = now - secondFingerDownTime;
+                const firstFingerHeldBefore = secondFingerDownTime - firstFingerDownTime;
+                if (secondFingerDuration < 300 && firstFingerHeldBefore > 150) {
+                    map.zoomOut(1);
+                }
+                secondFingerDownTime = 0;
+            }
+        });
+    }
+    // ===== END MOBILE ZOOM GESTURES =====
+
+    fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map/kgb-map.json?v=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             mapData = processData(data);
@@ -1366,7 +1447,7 @@ async function fetchMapDataInfo() {
                 const m = text.match(/^## \[([^\]]+)\]/m);
                 return m ? m[1] : null;
             }),
-        fetch(`https://api.github.com/repos/unija-info/unija-map/commits?path=kgb/data/kgb-map.json&per_page=1`)
+        fetch(`https://api.github.com/repos/unija-info/unija-map/commits?path=kgb/data/kgb-map/kgb-map.json&per_page=1`)
             .then(r => r.json())
             .then(commits => commits.length > 0 ? new Date(commits[0].commit.committer.date) : null)
     ]);

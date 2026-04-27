@@ -19,8 +19,12 @@ kgb/                    ← UniSZA Gong Badak hub
   script.js             ← Fetches kgb-map.json from GitHub raw URL (cache-busted), renders list
   style.css
   data/
-    kgb-map.json        ← Campus location data (single source of truth — edit to update locations)
+    kgb-map/
+      kgb-map.json      ← Campus location data (single source of truth — edit to update locations)
+      images/           ← Location photos ({folder}/{number}.jpg|png|webp)
     bus-stop.json       ← Bus stop data (single source of truth for kgb/bus-stop/)
+    bus-stop/
+      image/            ← Bus stop photos ({stopname}.png)
     campus-boundary.json← UniSZA KGB campus polygon coords (OSM Way 1120569731, cached locally)
     code.gs             ← Google Apps Script: syncs kgb-map.json from Google Sheet to GitHub
   file/                 ← Map image assets (PDF + PNG)
@@ -36,7 +40,6 @@ kgb/                    ← UniSZA Gong Badak hub
     index.html
     script.js
     style.css
-    image/bus-stop/     ← Stop photos for info overlay
     CLAUDE.md           ← Detailed architecture for this sub-project (read this before editing)
 ```
 
@@ -56,13 +59,13 @@ python -m http.server 8000
 # Or: npx serve
 ```
 
-`kgb/script.js` fetches `kgb-map.json` from `raw.githubusercontent.com` (not locally), so the `kgb/` map always reflects what is pushed to GitHub `main`. Local edits to `kgb/data/kgb-map.json` require pushing before they appear in the app.
+`kgb/script.js` fetches `kgb-map.json` from `raw.githubusercontent.com` (not locally), so the `kgb/` map always reflects what is pushed to GitHub `main`. Local edits to `kgb/data/kgb-map/kgb-map.json` require pushing before they appear in the app.
 
 `kgb/bus-stop/` reads `../data/bus-stop.json` locally, so it works immediately with a local server.
 
 ## Data Models
 
-### `kgb/data/kgb-map.json` — Campus location array
+### `kgb/data/kgb-map/kgb-map.json` — Campus location array
 
 ```json
 [
