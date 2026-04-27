@@ -14,6 +14,7 @@ A static web application ("Bus Stop @ UniSZA Gong Badak") displaying bus stop lo
 - `script.js` - All application logic (map initialization, filtering, UI interactions)
 - `style.css` - All styles including responsive mobile layout
 - `../data/bus-stop.json` - Bus stop data source (stops, coordinates, company associations)
+- `../data/bus-stop/image/` - Bus stop photos (`{stopname}.png`); loaded via absolute path `/kgb/data/bus-stop/image/`
 
 ### Data Model
 

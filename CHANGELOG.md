@@ -5,6 +5,16 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-04-27 — Image Relocation & SEO Metadata (`kgb/bus-stop/`)
+
+- Bus stop photos moved from `kgb/bus-stop/image/bus-stop/` → `kgb/data/bus-stop/image/` to consolidate all data assets under `kgb/data/`
+- All image paths in `script.js` updated to absolute `/kgb/data/bus-stop/image/` (3 locations: sidebar list, info overlay, fullscreen overlay)
+- OG/Twitter card title and description made more descriptive (highlights "Pickup & Drop Point Bas Ekspress")
+
+→ Full detail: [`kgb/bus-stop/CHANGELOG.md`](kgb/bus-stop/CHANGELOG.md) v2.8
+
+---
+
 ## 2026-04-23 — Mobile Zoom Gestures (`kgb/map/`)
 
 - Hold one finger + tap with second finger → zoom out (Google Maps-style two-finger gesture)

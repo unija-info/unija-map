@@ -5,6 +5,17 @@ All notable changes to the Bus Stop @ UniSZA Gong Badak project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-04-27
+
+### Changed
+- **Image assets consolidated** — bus stop photos moved from `kgb/bus-stop/image/bus-stop/` to `kgb/data/bus-stop/image/` to co-locate all data assets under `kgb/data/`
+- **Image paths in script.js** — all three image references updated from relative `image/bus-stop/${filename}` to absolute `/kgb/data/bus-stop/image/${filename}` (sidebar list, info overlay, fullscreen overlay)
+- **OG/Twitter metadata** — title and description updated to be more descriptive:
+  - Title: `"Peta Bus Stop UniSZA Gong Badak (Pickup & Drop Point Bas Ekspress)"`
+  - Description: highlights express bus operators explicitly
+
+---
+
 ## [2.7.0] - 2026-04-16
 
 ### Added

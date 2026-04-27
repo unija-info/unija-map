@@ -24,7 +24,7 @@ function openFullscreenImage(stopName, filename) {
     overlay.className = 'fullscreen-overlay';
     overlay.innerHTML = `
         <button class="fullscreen-close" aria-label="Close">×</button>
-        <img src="image/bus-stop/${filename}" alt="${stopName}">
+        <img src="/kgb/data/bus-stop/image/${filename}" alt="${stopName}">
         <p class="fullscreen-caption">${stopName}</p>
     `;
     overlay.onclick = (e) => {
@@ -65,7 +65,7 @@ function showStopInfoOverlay(stopId) {
         <div class="info-overlay-content">
             ${imageFilename
                 ? `<div class="info-overlay-image" onclick="openFullscreenImage('${stop.name}', '${imageFilename}')">
-                     <img src="image/bus-stop/${imageFilename}" alt="${stop.name}">
+                     <img src="/kgb/data/bus-stop/image/${imageFilename}" alt="${stop.name}">
                    </div>`
                 : `<div class="info-overlay-image no-image"></div>`
             }
@@ -624,7 +624,7 @@ function renderGroupedList() {
 
         if (imageFilename) {
             const img = document.createElement('img');
-            img.src = `image/bus-stop/${imageFilename}`;
+            img.src = `/kgb/data/bus-stop/image/${imageFilename}`;
             img.alt = stop.name;
             img.onerror = () => {
                 img.style.display = 'none';

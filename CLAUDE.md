@@ -23,6 +23,8 @@ kgb/                    ← UniSZA Gong Badak hub
       kgb-map.json      ← Campus location data (single source of truth — edit to update locations)
       images/           ← Location photos ({folder}/{number}.jpg|png|webp)
     bus-stop.json       ← Bus stop data (single source of truth for kgb/bus-stop/)
+    bus-stop/
+      image/            ← Bus stop photos ({stopname}.png)
     campus-boundary.json← UniSZA KGB campus polygon coords (OSM Way 1120569731, cached locally)
     code.gs             ← Google Apps Script: syncs kgb-map.json from Google Sheet to GitHub
   file/                 ← Map image assets (PDF + PNG)
@@ -38,7 +40,6 @@ kgb/                    ← UniSZA Gong Badak hub
     index.html
     script.js
     style.css
-    image/bus-stop/     ← Stop photos for info overlay
     CLAUDE.md           ← Detailed architecture for this sub-project (read this before editing)
 ```
 
