@@ -5,28 +5,30 @@ let isMapView = false;
 let currentActiveCompany = null;
 let currentSelectedStopId = null; // Track selected stop to prevent repeat animations
 let currentInfoOverlayStopId = null; // Track info overlay to prevent repeat opens
+let currentHighlightedMarker = null;
 
-// Image mapping: stop names to image filenames
-function getStopImageFilename(stopName) {
-    const mapping = {
-        'Bus Stop HoSZA': 'hosza.png',
-        'Bus Stop @ Jasa Pelangi': 'jasa-pelangi.png',
-        'Sani Expres Terminal': 'sani.png',
-        'Terminal Bus Telolet Darul lman': 'perdana.png',
-        'Bus Stop/Wakaf Pintu Depan UniSZA': 'wakaf.png'
+// Try loading an image with .png → .jpg → .webp fallback; calls onMissing() if all fail
+function loadImage(img, base, onMissing) {
+    img.src = base + '.png';
+    img.onerror = () => {
+        img.src = base + '.jpg';
+        img.onerror = () => {
+            img.src = base + '.webp';
+            img.onerror = onMissing;
+        };
     };
-    return mapping[stopName] || null;
 }
 
-// Open fullscreen image overlay
-function openFullscreenImage(stopName, filename) {
+// Open fullscreen image overlay; imageBase is path without extension
+function openFullscreenImage(stopName, imageBase) {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-overlay';
     overlay.innerHTML = `
         <button class="fullscreen-close" aria-label="Close">×</button>
-        <img src="/kgb/data/bus-stop/image/${filename}" alt="${stopName}">
+        <img alt="${stopName}">
         <p class="fullscreen-caption">${stopName}</p>
     `;
+    loadImage(overlay.querySelector('img'), imageBase, () => {});
     overlay.onclick = (e) => {
         if (e.target === overlay || e.target.classList.contains('fullscreen-close')) {
             overlay.remove();
@@ -37,38 +39,29 @@ function openFullscreenImage(stopName, filename) {
 
 // Show stop info overlay on sidebar
 function showStopInfoOverlay(stopId) {
-    // Skip if same overlay is already open
     if (currentInfoOverlayStopId === stopId) return;
 
     const stop = busData.find(s => s.id === stopId);
     if (!stop) return;
 
-    // Remove existing overlay if any
-    const existingOverlay = document.querySelector('.stop-info-overlay');
-    if (existingOverlay) existingOverlay.remove();
-
     currentInfoOverlayStopId = stopId;
 
     const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${stop.coords[0]},${stop.coords[1]}`;
-    const imageFilename = getStopImageFilename(stop.name);
+    const imageBase = stop.image ? `/kgb/data/bus-stop/image/${stop.image}` : null;
 
-    const overlay = document.createElement('div');
-    overlay.className = 'stop-info-overlay';
-    overlay.innerHTML = `
+    const newHTML = `
         <div class="info-overlay-header">
+            <button class="info-overlay-back" aria-label="Back"><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
             <div class="info-overlay-header-text">
                 <h3>${stop.name}</h3>
                 ${stop.description ? `<p class="info-overlay-description">${stop.description}</p>` : ''}
             </div>
-            <button class="info-overlay-close">×</button>
+            <button class="info-overlay-close" aria-label="Close">×</button>
         </div>
         <div class="info-overlay-content">
-            ${imageFilename
-                ? `<div class="info-overlay-image" onclick="openFullscreenImage('${stop.name}', '${imageFilename}')">
-                     <img src="/kgb/data/bus-stop/image/${imageFilename}" alt="${stop.name}">
-                   </div>`
-                : `<div class="info-overlay-image no-image"></div>`
-            }
+            <div class="info-overlay-image${imageBase ? '' : ' no-image'}">
+                ${imageBase ? `<img alt="${stop.name}">` : ''}
+            </div>
             <a href="${googleUrl}" target="_blank" class="info-overlay-directions">
                 Get Directions
             </a>
@@ -81,22 +74,56 @@ function showStopInfoOverlay(stopId) {
         </div>
     `;
 
-    // Close button handler with animation
-    overlay.querySelector('.info-overlay-close').onclick = () => {
-        overlay.classList.add('closing');
-        overlay.addEventListener('animationend', () => {
-            overlay.remove();
-            currentInfoOverlayStopId = null; // Reset so same stop can be opened again
-        });
-    };
+    function wireButtons(el) {
+        function dismissOverlay() {
+            el.style.transition = '';
+            el.style.opacity = '';
+            el.classList.add('closing');
+            el.addEventListener('animationend', () => {
+                el.remove();
+                currentInfoOverlayStopId = null;
+            });
+        }
+        el.querySelector('.info-overlay-back').onclick = dismissOverlay;
+        el.querySelector('.info-overlay-close').onclick = () => {
+            dismissOverlay();
+            showAllStops();
+        };
+        if (imageBase) {
+            const imgContainer = el.querySelector('.info-overlay-image');
+            const imgEl = imgContainer.querySelector('img');
+            loadImage(imgEl, imageBase, () => {
+                imgEl.remove();
+                imgContainer.classList.add('no-image');
+            });
+            imgContainer.onclick = () => openFullscreenImage(stop.name, imageBase);
+        }
+    }
 
-    // Append to sidebar
-    document.getElementById('sidebar').appendChild(overlay);
+    const existingOverlay = document.querySelector('.stop-info-overlay');
 
-    // On mobile, expand bottom sheet to full height
-    if (window.innerWidth <= 768 && sheetElement) {
-        sheetElement.style.height = '';
-        setSheetState('full');
+    if (existingOverlay) {
+        // Cross-fade: fade out, swap content, fade back in
+        existingOverlay.style.transition = 'opacity 0.12s ease';
+        existingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            existingOverlay.innerHTML = newHTML;
+            wireButtons(existingOverlay);
+            existingOverlay.style.opacity = '1';
+        }, 120);
+    } else {
+        // First open: slide-in animation
+        const overlay = document.createElement('div');
+        overlay.className = 'stop-info-overlay';
+        overlay.innerHTML = newHTML;
+        wireButtons(overlay);
+        document.getElementById('sidebar').appendChild(overlay);
+
+        // On mobile, expand bottom sheet to full height
+        if (window.innerWidth <= 768 && sheetElement) {
+            sheetElement.style.height = '';
+            setSheetState('full');
+        }
     }
 }
 
@@ -458,9 +485,10 @@ function renderSearchResults(term) {
     const lowerTerm = term.toLowerCase();
     let html = '';
 
-    // Search stops
+    // Search stops (name + description)
     const matchingStops = busData.filter(stop =>
-        stop.name.toLowerCase().includes(lowerTerm)
+        stop.name.toLowerCase().includes(lowerTerm) ||
+        (stop.description && stop.description.toLowerCase().includes(lowerTerm))
     );
 
     // Search companies (get unique company names)
@@ -475,6 +503,7 @@ function renderSearchResults(term) {
             <div class="search-result-item stop" data-type="stop" data-id="${stop.id}">
                 <div class="result-content">
                     <div class="result-title">${stop.name}</div>
+                    ${stop.description ? `<div class="result-description">${stop.description}</div>` : ''}
                     <div class="result-subtitle">${stop.companies.join(', ')}</div>
                 </div>
             </div>
@@ -525,7 +554,7 @@ function initSearchDropdown() {
         if (type === 'stop') {
             const stopId = parseInt(item.dataset.id);
             const stop = busData.find(s => s.id === stopId);
-            if (stop) filterByStop(stop);
+            if (stop) { filterByStop(stop); showStopInfoOverlay(stop.id); }
         } else if (type === 'company') {
             const companyName = item.dataset.name;
             filterByCompany(companyName);
@@ -566,7 +595,7 @@ function initMap() {
     const isMobile = window.innerWidth <= 768;
     const initialZoom = isMobile ? 14 : 14;
 
-    map = L.map('map', { maxZoom: 25, zoomControl: false }).setView([5.3950, 103.0830], initialZoom);
+    map = L.map('map', { minZoom: 13, maxZoom: 25, zoomControl: false }).setView([5.3950, 103.0830], initialZoom);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
@@ -589,10 +618,85 @@ function initMap() {
         });
     });
 
+    // ===== MOBILE ZOOM GESTURES =====
+    if (window.innerWidth <= 768) {
+        map.doubleClickZoom.disable();
+
+        let lastTapTime = 0;
+        let lastTapX = 0, lastTapY = 0;
+        let doubleTapTimer = null;
+        let secondTapLatLng = null;
+        let firstFingerDownTime = 0;
+        let secondFingerDownTime = 0;
+
+        const mapEl = document.getElementById('map');
+
+        mapEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const now = Date.now();
+                const dx = touch.clientX - lastTapX;
+                const dy = touch.clientY - lastTapY;
+                firstFingerDownTime = now;
+                secondFingerDownTime = 0;
+
+                if (now - lastTapTime < 300 && Math.hypot(dx, dy) < 40) {
+                    secondTapLatLng = map.containerPointToLatLng(
+                        L.point(touch.clientX, touch.clientY)
+                    );
+                    doubleTapTimer = setTimeout(() => {
+                        doubleTapTimer = null;
+                        secondTapLatLng = null;
+                    }, 300);
+                    lastTapTime = 0;
+                } else {
+                    lastTapTime = now;
+                    lastTapX = touch.clientX;
+                    lastTapY = touch.clientY;
+                }
+            } else if (e.touches.length === 2) {
+                secondFingerDownTime = Date.now();
+                if (doubleTapTimer) {
+                    clearTimeout(doubleTapTimer);
+                    doubleTapTimer = null;
+                    secondTapLatLng = null;
+                }
+            }
+        }, { passive: true });
+
+        mapEl.addEventListener('touchend', (e) => {
+            const now = Date.now();
+
+            // Quick double-tap → zoom in
+            if (doubleTapTimer !== null) {
+                clearTimeout(doubleTapTimer);
+                doubleTapTimer = null;
+                if (secondTapLatLng) {
+                    map.setZoomAround(secondTapLatLng, map.getZoom() + 1);
+                    secondTapLatLng = null;
+                }
+                return;
+            }
+
+            // Hold one finger + tap second finger → zoom out
+            if (e.touches.length === 1 && secondFingerDownTime > 0) {
+                const secondFingerDuration = now - secondFingerDownTime;
+                const firstFingerHeldBefore = secondFingerDownTime - firstFingerDownTime;
+                if (secondFingerDuration < 300 && firstFingerHeldBefore > 150) {
+                    map.zoomOut(1);
+                }
+                secondFingerDownTime = 0;
+            }
+        });
+    }
+    // ===== END MOBILE ZOOM GESTURES =====
+
     fetch('/kgb/data/bus-stop.json')
         .then(res => res.json())
         .then(data => {
             busData = data.stops;
+            const countEl = document.getElementById('menu-stop-count');
+            if (countEl) countEl.textContent = busData.length;
             renderGroupedList();
             showAllStops();
         });
@@ -611,6 +715,7 @@ function renderGroupedList() {
         header.innerHTML = `<span>${stop.name}</span>`;
         header.onclick = () => {
             groupDiv.classList.toggle('collapsed');
+            updateToggleButtonLabel();
             // On desktop, also zoom to stop
             if (window.innerWidth > 768) {
                 filterByStop(stop);
@@ -620,20 +725,19 @@ function renderGroupedList() {
         // Create image container (appears when expanded)
         const imageContainer = document.createElement('div');
         imageContainer.className = 'stop-image-container';
-        const imageFilename = getStopImageFilename(stop.name);
 
-        if (imageFilename) {
+        if (stop.image) {
             const img = document.createElement('img');
-            img.src = `/kgb/data/bus-stop/image/${imageFilename}`;
             img.alt = stop.name;
-            img.onerror = () => {
+            const base = `/kgb/data/bus-stop/image/${stop.image}`;
+            loadImage(img, base, () => {
                 img.style.display = 'none';
                 imageContainer.classList.add('no-image');
-            };
+            });
             imageContainer.appendChild(img);
             imageContainer.onclick = (e) => {
                 e.stopPropagation();
-                openFullscreenImage(stop.name, imageFilename);
+                openFullscreenImage(stop.name, base);
             };
         } else {
             imageContainer.classList.add('no-image');
@@ -676,6 +780,15 @@ function renderGroupedList() {
         groupDiv.appendChild(subList);
         container.appendChild(groupDiv);
     });
+
+    updateToggleButtonLabel();
+}
+
+function flyToMarker(coords, duration = 1.2) {
+    const zoom = Math.max(map.getZoom(), 18);
+    const targetPx = map.project(coords, zoom);
+    const offsetCenter = map.unproject(targetPx.subtract([0, -window.innerHeight * 0.15]), zoom);
+    map.flyTo(offsetCenter, zoom, { duration });
 }
 
 // Desktop only: zoom to stop and show marker
@@ -697,6 +810,7 @@ function filterByStop(stop) {
     const marker = createMarker(stop, false);
     marker.openPopup();
     markers.push(marker);
+    setMarkerHighlight(marker);
 
     setTimeout(() => {
         const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
@@ -718,11 +832,12 @@ function showStopOnMap(stop) {
     currentActiveCompany = null;
     clearMarkers();
 
-    map.flyToBounds([stop.coords], { padding: [150, 150], maxZoom: 18, duration: 1.2 });
+    flyToMarker(stop.coords);
 
     const marker = createMarker(stop, false);
     marker.openPopup();
     markers.push(marker);
+    setMarkerHighlight(marker);
 
     setTimeout(() => {
         const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
@@ -759,17 +874,19 @@ function showAllStops() {
     }
 }
 
+function updateToggleButtonLabel() {
+    const toggleBtn = document.getElementById('toggle-all-groups');
+    if (!toggleBtn) return;
+    const hasCollapsed = Array.from(document.querySelectorAll('.stop-group')).some(g => g.classList.contains('collapsed'));
+    toggleBtn.textContent = hasCollapsed ? '📋 Papar Semua Operator' : '📋 Tutup Semua Senarai';
+}
+
 function toggleAllGroups() {
     const allGroups = document.querySelectorAll('.stop-group');
-    const toggleBtn = document.getElementById('toggle-all-groups');
-
-    // Check if any group is collapsed
     const hasCollapsed = Array.from(allGroups).some(group => group.classList.contains('collapsed'));
 
     if (hasCollapsed) {
-        // Expand all
         allGroups.forEach(group => group.classList.remove('collapsed'));
-        toggleBtn.textContent = '📋 Tutup Semua Senarai';
 
         // On mobile, fully expand the bottom sheet to show all operators
         if (window.innerWidth <= 768 && sheetElement) {
@@ -777,10 +894,10 @@ function toggleAllGroups() {
             setSheetState('full');
         }
     } else {
-        // Collapse all
         allGroups.forEach(group => group.classList.add('collapsed'));
-        toggleBtn.textContent = '📋 Papar Semua Operator';
     }
+
+    updateToggleButtonLabel();
 }
 
 function filterByCompany(companyName, btn) {
@@ -932,7 +1049,14 @@ function createMarker(stop, isSelected) {
     return marker;
 }
 
-function clearMarkers() { markers.forEach(m => map.removeLayer(m)); markers = []; }
+function setMarkerHighlight(marker) {
+    const prev = currentHighlightedMarker;
+    currentHighlightedMarker = marker;
+    if (prev) { const el = prev.getElement(); if (el) el.classList.remove('marker-highlighted'); }
+    if (marker) { const el = marker.getElement(); if (el) el.classList.add('marker-highlighted'); }
+}
+
+function clearMarkers() { markers.forEach(m => map.removeLayer(m)); markers = []; currentHighlightedMarker = null; }
 function resetButtons() { document.querySelectorAll('.company-btn').forEach(b => b.classList.remove('active')); }
 
 document.getElementById('show-all').onclick = showAllStops;
@@ -974,7 +1098,32 @@ function initClearSearchButton() {
     }
 }
 
+function openInfoMenu() {
+    const panel = document.getElementById('info-menu-panel');
+    if (window.innerWidth > 768) {
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = sidebar && sidebar.classList.contains('collapsed');
+        panel.style.left = isCollapsed ? '70px' : '420px';
+    } else {
+        panel.style.left = '';
+    }
+    panel.classList.add('open');
+    document.getElementById('info-menu-backdrop').classList.add('open');
+    if (window.innerWidth <= 768) {
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeInfoMenu() {
+    document.getElementById('info-menu-panel').classList.remove('open');
+    document.getElementById('info-menu-backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
 window.onload = function() {
+    document.getElementById('info-menu-btn').addEventListener('click', openInfoMenu);
+    document.getElementById('info-menu-close').addEventListener('click', closeInfoMenu);
+    document.getElementById('info-menu-backdrop').addEventListener('click', closeInfoMenu);
     initMap();
     initBottomSheet();      // Mobile only
     initDesktopSidebar();   // Desktop only

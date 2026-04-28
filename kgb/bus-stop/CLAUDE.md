@@ -64,6 +64,7 @@ The application uses a single JSON data structure in `kgb/data/bus-stop.json`:
    - Company buttons that toggle active state
    - Mobile: Bottom sheet with swipe/tap gestures (peek/half/full states) instead of toggle button
    - Desktop: Floating sidebar card overlay on left side
+   - Hamburger button (`#info-menu-btn`) in the search bar opens the info menu panel
 
 5. **Marker System**: When filtering by company, creates two markers per stop:
    - Ground dot (white circle with blue border, z-index -100)
@@ -101,10 +102,14 @@ The application uses a single JSON data structure in `kgb/data/bus-stop.json`:
    - Shown in the **info overlay** (below stop name, inside `.info-overlay-header-text`): `.info-overlay-description` class
    - Stops without `description` show nothing extra — no empty elements rendered
 
-10. **Sidebar Nav Footer**:
-    - `.sidebar-nav-footer` fixed at the bottom of the sidebar (after `#company-list`)
-    - Links to `/kgb/map/` (Peta Kampus UniSZA KGB) and `/` (Menu Utama)
-    - 12px muted text with `border-top: 1px solid #e8eaed`
+10. **Info Menu Panel**:
+    - Hamburger button (`#info-menu-btn`) is `position: absolute; right: 10px; z-index: 12` inside `.search-container` — above search input's `z-index: 11`
+    - `#search-bar` uses `padding-right: 52px` to prevent text going under the button; `.clear-search-btn` is offset to `right: 52px` so both are visible side-by-side
+    - **Mobile** (≤768px): `#info-menu-panel` slides in full-screen from the right (`transform: translateX(100%)` → `.open { translateX(0) }`); `body.style.overflow = 'hidden'` locks scroll; `#info-menu-backdrop` (semi-transparent) appears behind and clicking it closes the panel
+    - **Desktop** (>768px): panel is a 380px card (`top: 68px`, `border-radius: 12px`, `box-shadow`); uses `opacity`/`translateY` fade-drop animation; backdrop is transparent; `panel.style.left` set dynamically via JS (420px when sidebar expanded, 70px when collapsed)
+    - **Panel content**: hero image (`unisza-kgb-aerial.jpg`, 220px, `object-fit: cover`) with gradient text overlay and `#info-menu-close` button; nav section with pill buttons (Peta Kampus UniSZA KGB, bas.my Kuala Terengganu, bas.my Tracker, Menu Utama); feedback section (⭐ Beri Rating, 🐛 Laporkan Masalah)
+    - `#menu-stop-count` in subtitle is populated after `busData` loads
+    - Note: `.sidebar-nav-footer` was removed — navigation links now live exclusively in the info menu panel
 
 ## Development Commands
 
@@ -138,6 +143,14 @@ python -m http.server 8000
 - Mobile: clicking "i" expands bottom sheet to full and shows overlay
 - Mobile: handle remains visible and usable with overlay open
 - Tooltip arrows point correctly based on `tooltipPosition` (left/right)
+- Hamburger button visible in search bar on both desktop and mobile
+- Desktop: hamburger opens 380px popup card; clicking outside (backdrop) closes it
+- Desktop: popup card shifts left when sidebar is collapsed
+- Mobile: hamburger opens full-screen panel sliding from right; body scroll is locked
+- Info panel: stop count in subtitle matches actual number of stops (5)
+- Info panel: nav buttons (Peta Kampus, bas.my KT, bas.my Tracker, Menu Utama) open correct URLs
+- Info panel: feedback buttons link to correct rating/report pages
+- Close button (×) in hero dismisses the panel
 
 ## Adding New Bus Stops
 
@@ -173,7 +186,9 @@ Edit `kgb/data/bus-stop.json`:
 | `handleHeaderTouchStart/Move/End` | Touch handlers for sidebar header (always moves sheet) |
 | `showStopInfoOverlay(stopId)` | Opens info overlay with stop details on sidebar |
 | `openFullscreenImage(name, file)` | Opens fullscreen image overlay |
-| `getStopImageFilename(stopName)` | Maps stop name to image filename |
+| `loadImage(img, base, onMissing)` | Loads image with `.png`→`.jpg`→`.webp` onerror chain; calls `onMissing()` if all fail |
+| `openInfoMenu()` | Opens info panel; sets `panel.style.left` dynamically on desktop; locks body scroll on mobile |
+| `closeInfoMenu()` | Closes info panel and backdrop; restores `body.style.overflow` |
 
 ## Styling Notes
 
@@ -188,7 +203,13 @@ Edit `kgb/data/bus-stop.json`:
 - **Mobile info overlay**: `top: 24px` offset leaves handle visible
 - **Description (sidebar)**: `.stop-description` — 12px, `#5f6368`, `padding: 0 20px 10px`; hidden via `.stop-group.collapsed .stop-description { display: none }`
 - **Description (overlay)**: `.info-overlay-description` inside `.info-overlay-header-text` wrapper (flex column) — 12px, `#5f6368`; `.info-overlay-header` uses `display: flex; justify-content: space-between` so the wrapper keeps name+description left-aligned while the × button stays right
-- **Sidebar nav footer**: `.sidebar-nav-footer` — 12px, `#80868b`, `border-top: 1px solid #e8eaed`, `flex-shrink: 0`
+- **Hamburger button**: `#info-menu-btn` — `position: absolute; right: 10px; z-index: 12`; above search input's `z-index: 11`
+- **Search bar right padding**: `52px` to clear the hamburger button; `.clear-search-btn` at `right: 52px`
+- **Info menu panel (mobile)**: `position: fixed; top: 0; right: 0; width: 100%; height: 100vh; z-index: 2001; transform: translateX(100%)`; `.open { translateX(0) }`
+- **Info menu panel (desktop, `min-width: 769px`)**: `width: 380px; top: 68px; border-radius: 12px`; `opacity`/`translateY` fade-drop animation; `left` set dynamically via JS
+- **Info menu hero**: `height: 220px; overflow: hidden`; image `object-fit: cover`; text overlay `position: absolute; bottom: 0` with `linear-gradient(to top, rgba(0,0,0,0.72), transparent)`
+- **Info menu close button**: `position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); border-radius: 50%; color: white`
+- **Sidebar nav footer**: removed — navigation links moved to info menu panel
 
 ## CSS Sibling Selector Pattern
 
@@ -197,3 +218,39 @@ The HTML structure requires sidebar to come before search container for CSS `~` 
 .sidebar.collapsed ~ .search-container { left: 70px; }
 .sidebar.collapsed ~ .sidebar-expand-btn { opacity: 1; }
 ```
+
+## Changelog
+
+### v1.4 — Info Menu Panel
+- **Hamburger button** (`#info-menu-btn`) added to right of search bar; `z-index: 12` above search input
+- **Info menu panel** (`#info-menu-panel`): full-screen right-slide on mobile, 380px popup card on desktop
+- Panel content: hero aerial image with gradient text overlay, nav pill buttons (Peta Kampus UniSZA KGB, bas.my Kuala Terengganu, bas.my Tracker, Menu Utama), feedback buttons (⭐ Beri Rating, 🐛 Laporkan Masalah)
+- `#menu-stop-count` in subtitle populated after `busData` loads
+- `openInfoMenu()` / `closeInfoMenu()` functions; backdrop click closes panel on desktop
+- `.sidebar-nav-footer` removed from sidebar — navigation links consolidated into info menu panel
+- `#search-bar` `padding-right` bumped to `52px`; `.clear-search-btn` moved to `right: 52px` to avoid overlapping the hamburger button
+
+### v1.3 — Image & Overlay Polish
+- **Convention-based images**: `"image"` basename field added to `bus-stop.json` (e.g. `"image": "hosza"`); `getStopImageFilename()` replaced by `loadImage(img, base, onMissing)` with `.png`→`.jpg`→`.webp` onerror chain
+- **Marker highlight glow**: `.marker-highlighted` CSS class adds `filter: drop-shadow` on selection; `setMarkerHighlight(marker)` manages state; `clearMarkers()` resets `currentHighlightedMarker`
+- **Cross-fade overlay switching**: switching stops while info overlay is open fades content in-place (120ms opacity) — sidebar never exposed; slide-in animation only plays on first open
+- **← back vs × close**: back button (chevron SVG) dismisses overlay only; close button (×) dismisses and calls `showAllStops()`; back button uses same SVG icon as sidebar collapse button
+
+### v1.2 — Mobile UX Improvements
+- **flyToMarker with sheet offset**: `flyToMarker(coords, duration?)` projects coords to screen pixels, shifts down by 15% viewport height (peek sheet height), unprojects — marker appears in visible area above sheet; used by both marker tap and list select
+- **Mobile zoom gestures**: Leaflet `doubleClickZoom` disabled on mobile (≤768px); double-tap (300ms/40px threshold) → `setZoomAround(+1)`; hold one finger (≥150ms) + tap second finger (<300ms) → `zoomOut(1)`
+- **`minZoom: 13`** prevents disorienting zoom-out on `L.map()` init
+
+### v1.1 — Search & Filtering Improvements
+- **Search opens info overlay**: clicking a stop result in the search dropdown calls `filterByStop(stop)` + `showStopInfoOverlay(stop.id)` in one action
+- **Description in search**: `renderSearchResults()` filter includes `stop.description`; result shows name → description (if present) → companies
+- **`updateToggleButtonLabel()`**: reads actual DOM state (`.collapsed` on `.stop-group`) to set correct label; called from `toggleAllGroups()`, group header `onclick`, and end of `renderGroupedList()`
+
+### v1.0 — Initial Release
+- Interactive Leaflet.js satellite map centered on UniSZA Gong Badak (`[5.3950, 103.0830]`)
+- 5 bus stops from `kgb/data/bus-stop.json`; accordion sidebar with collapsible stop groups
+- Filtering by stop (single marker, zoom in) and by company (all matching stops)
+- Permanent tooltip with "Get Directions" link and "i" info button
+- Info overlay slides over sidebar: stop name, image, directions link, operator list
+- Mobile bottom sheet (peek/half/full), desktop collapsible sidebar
+- Real-time search dropdown filtering stops and companies

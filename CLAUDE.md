@@ -48,7 +48,7 @@ kgb/                    ← UniSZA Gong Badak hub
 All three Gong Badak pages are linked together:
 - `kgb/index.html` — "Peta Interaktif" section with cards linking to `/kgb/map/` and `/kgb/bus-stop/`
 - `kgb/map/` sidebar — `.sidebar-nav-footer` at bottom links to `/kgb/bus-stop/` and `/` (root)
-- `kgb/bus-stop/` sidebar — `.sidebar-nav-footer` at bottom links to `/kgb/map/` and `/` (root)
+- `kgb/bus-stop/` — hamburger menu panel links to `/kgb/map/`, `/` (root), bas.my Kuala Terengganu, and bas.my Tracker (`.sidebar-nav-footer` removed)
 
 ## Development
 

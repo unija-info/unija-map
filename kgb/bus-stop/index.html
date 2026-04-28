@@ -65,11 +65,6 @@
                 <p>Sila click/tap pada nama bus stop untuk melihat senarai operator bas di bawah. </p>
             </div>
             <div id="company-list" class="company-list"></div>
-            <div class="sidebar-nav-footer">
-                Lihat juga:
-                <a href="/kgb/map/">Peta Kampus UniSZA KGB</a> /
-                <a href="/">Menu Utama</a>
-            </div>
         </div>
 
         <!-- Expand button - comes AFTER sidebar for CSS ~ selector -->
@@ -83,6 +78,44 @@
         <div class="search-container">
             <input type="text" id="search-bar" placeholder="Search for bus stops or companies...">
             <div id="search-results" class="search-results"></div>
+            <button id="info-menu-btn" aria-label="Buka menu info">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="2" y="4.5" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+                    <rect x="2" y="9.1" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+                    <rect x="2" y="13.7" width="16" height="1.8" rx="0.9" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="info-menu-backdrop"></div>
+
+        <div id="info-menu-panel">
+            <div class="info-menu-hero">
+                <img src="/media/image/unisza-kgb-aerial.jpg" class="info-menu-hero-img" alt="UniSZA Kampus Gong Badak aerial view">
+                <button id="info-menu-close" aria-label="Tutup">×</button>
+                <div class="info-menu-hero-text">
+                    <h2 class="info-menu-title">Bus Stop @ UniSZA KGB</h2>
+                    <p class="info-menu-subtitle">Peta lokasi <span id="menu-stop-count">—</span> Bus Stop di sekitar UniSZA Kampus Gong Badak.</p>
+                </div>
+            </div>
+            <div class="info-menu-section info-menu-section-meta">
+                <div class="info-menu-nav">
+                    <span class="info-menu-nav-label">Lihat Juga:</span>
+                    <div class="info-menu-nav-row">
+                        <a href="/kgb/map/" class="info-menu-nav-btn">Peta Kampus UniSZA KGB</a>
+                        <a href="https://bas.my/basmyterengganu.php" class="info-menu-nav-btn" target="_blank" rel="noopener">bas.my Kuala Terengganu</a>
+                        <a href="https://malaysiatransit.techmavie.digital/map.html?area=kuala-terengganu" class="info-menu-nav-btn" target="_blank" rel="noopener">bas.my Tracker</a>
+                    </div>
+                    <a href="/" class="info-menu-nav-btn">Menu Utama</a>
+                </div>
+            </div>
+            <div class="info-menu-section info-menu-section-feedback">
+                <p class="info-menu-feedback-text">Terima kasih kerana menggunakan Peta Bus Stop UniSZA Kampus Gong Badak. Jika terdapat sebarang masalah atau cadangan, sila maklumkan kepada kami.</p>
+                <div class="info-menu-actions">
+                    <a href="/feedback/kgb/bus-stop/rating.html" class="info-menu-action-btn">⭐ Beri Rating</a>
+                    <a href="/feedback/kgb/bus-stop/report.html" class="info-menu-action-btn">🐛 Laporkan Masalah</a>
+                </div>
+            </div>
         </div>
 
         <button id="toggle-view" class="mobile-toggle">Show Map</button>
