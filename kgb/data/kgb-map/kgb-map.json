@@ -97,7 +97,7 @@
   },
   {
     "number": "P13",
-    "place": "Bangunan Pengursan Akademik",
+    "place": "Bangunan Pengurusan Akademik",
     "googleMapLink": "https://maps.google.com/?q=5.398989449556346,103.07758473385337",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "BPA",
@@ -137,10 +137,10 @@
   },
   {
     "number": "P18",
-    "place": "Keselamatan (Pos Pengawal 1)",
+    "place": "Jabatan Keselamatan & Kesihatan (Pos Pengawal 1)",
     "googleMapLink": "https://maps.google.com/?q=5.395825688783594,103.08234545136894",
     "locationType": "PENTADBIRAN & PTJ",
-    "shortForm": "",
+    "shortForm": "JKKP",
     "details": ""
   },
   {
@@ -148,7 +148,7 @@
     "place": "Keselamatan (Pos Pengawal 2)",
     "googleMapLink": "https://maps.google.com/?q=5.408873967463442,103.08024778800242",
     "locationType": "PENTADBIRAN & PTJ",
-    "shortForm": "",
+    "shortForm": "JKKP",
     "details": ""
   },
   {
@@ -285,7 +285,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.40019387269499,103.07901704690623",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "UM",
-    "details": "FBK"
+    "details": "FBK (Fakulti Bahasa Dan Komunikasi)"
   },
   {
     "number": "F2",
@@ -293,7 +293,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.4004256874359635,103.07898600850145",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "OTH",
-    "details": "FSSG"
+    "details": "FSSG (Fakulti Sains Sosial Gunaan)"
   },
   {
     "number": "F3",
@@ -301,7 +301,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.400660677627298,103.07900036216093",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "AL",
-    "details": "FSSG"
+    "details": "FSSG (Fakulti Sains Sosial Gunaan)"
   },
   {
     "number": "F4",
@@ -317,7 +317,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.400772125679014,103.07745481151558",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "B",
-    "details": "FUPL"
+    "details": "FUPL (Fakulti Pengajian Umum dan Pengajian Lanjutan)"
   },
   {
     "number": "F6",
@@ -325,7 +325,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.401050742769285,103.07689363987394",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "F",
-    "details": "FKI"
+    "details": "FKI (Fakulti Pengajian Kotemporari Islam)"
   },
   {
     "number": "F7",
@@ -333,7 +333,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.40034051240039,103.07625401198284",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
-    "details": ""
+    "details": "FPP (Fakulti Perniagaan Dan Pengurusan)"
   },
   {
     "number": "F8",
@@ -341,7 +341,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.40021750737347,103.07570805003579",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "AH",
-    "details": "FPP"
+    "details": "FPP (Fakulti Perniagaan Dan Pengurusan)"
   },
   {
     "number": "F9",
@@ -357,7 +357,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.4011701904078535,103.07599620157936",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
-    "details": "FSK"
+    "details": "FSK (Fakulti Sains Kesihatan)"
   },
   {
     "number": "F11",
@@ -373,7 +373,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.401672928618017,103.07599418259609",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "HH",
-    "details": "FUHA"
+    "details": "FUHA (Fakulti Undang-Undang dan Hubungan Antarabangsa)"
   },
   {
     "number": "F13",
@@ -381,7 +381,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.401592925682774,103.07544547961182",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
-    "details": ""
+    "details": "FRIT (Fakulti Rekabentuk Inovatif dan Teknologi)"
   },
   {
     "number": "F14",
@@ -809,7 +809,7 @@
   },
   {
     "number": "C5",
-    "place": "Cafeteria Baru",
+    "place": "Cafeteria Kolej Kediaman",
     "googleMapLink": "https://maps.google.com/?q=5.404255076600683,103.07761230647776",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
@@ -900,6 +900,14 @@
     "place": "DOBI BERPUSAT",
     "googleMapLink": "https://maps.google.com/?q=5.404155248484816,103.07875030541135",
     "locationType": "FASILITI & KEMUDAHAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "K2",
+    "place": "",
+    "googleMapLink": "",
+    "locationType": "",
     "shortForm": "",
     "details": ""
   }
