@@ -6,6 +6,7 @@ let currentActiveCategory = null;
 let currentSelectedLocationId = null;
 let currentInfoOverlayLocationId = null;
 let currentHighlightedMarker = null;
+let currentOverlaySource = null; // null | 'category'
 
 // ===== ZOOM-BASED MARKER TIERS =====
 const ZOOM_FULL_DESKTOP   = 17.5;
@@ -368,14 +369,8 @@ function renderGroupedList() {
         header.style.borderLeftWidth = '10px';
         header.innerHTML = `<span class="stop-header-label">${categoryName}</span><span class="category-share-btn" role="button" tabindex="0" title="Salin pautan kategori"><span class="material-symbols-outlined">link</span></span>`;
         header.onclick = () => {
-            const isCollapsed = groupDiv.classList.contains('collapsed');
-            // Collapse all other groups first
             document.querySelectorAll('.stop-group').forEach(g => g.classList.add('collapsed'));
-            // Toggle this group
-            if (isCollapsed) groupDiv.classList.remove('collapsed');
-            if (window.innerWidth > 768) {
-                filterByCategory(categoryName);
-            }
+            filterByCategory(categoryName);
             updateToggleButtonLabel();
         };
 
@@ -384,21 +379,6 @@ function renderGroupedList() {
             const url = window.location.origin + window.location.pathname + '?type=' + slugify(categoryName);
             copyToClipboard(url);
         });
-
-        // Mobile "See on map" button row
-        const buttonRow = document.createElement('div');
-        buttonRow.className = 'stop-map-btn-row';
-        const seeMapBtn = document.createElement('button');
-        seeMapBtn.className = 'see-on-map-btn';
-        seeMapBtn.innerHTML = '📍 Lihat di peta';
-        seeMapBtn.onclick = () => {
-            filterByCategory(categoryName);
-            if (sheetElement) {
-                sheetElement.style.height = '';
-                setSheetState('peek');
-            }
-        };
-        buttonRow.appendChild(seeMapBtn);
 
         const subList = document.createElement('div');
         subList.className = 'company-sub-list';
@@ -442,7 +422,6 @@ function renderGroupedList() {
         });
 
         groupDiv.appendChild(header);
-        groupDiv.appendChild(buttonRow);
         groupDiv.appendChild(subList);
         container.appendChild(groupDiv);
     });
@@ -485,6 +464,8 @@ function flyToMarker(coords, duration = 0.8) {
 
 function showAllLocations(animate = true, updateUrl = true) {
     if (updateUrl) updateURL();
+    document.querySelector('.stop-category-overlay')?.remove();
+    currentOverlaySource = null;
     clearMarkers();
     setMarkerHighlight(null);
     currentActiveCategory = null;
@@ -560,10 +541,12 @@ function filterByCategory(categoryName) {
     const padding = isMobile ? [100, 100] : basePadding;
     if (coords.length > 0) map.flyToBounds(coords, { padding: padding, maxZoom: 18, duration: 1.2 });
 
-    // Collapse bottom sheet on mobile
+    showCategoryOverlay(categoryName);
+
+    // Expand bottom sheet to half on mobile so the list is visible
     if (window.innerWidth <= 768 && sheetElement) {
         sheetElement.style.height = '';
-        setSheetState('peek');
+        setSheetState('half');
     }
 }
 
@@ -708,7 +691,21 @@ function showLocationInfoOverlay(locationId) {
             overlayEl.addEventListener('animationend', () => {
                 overlayEl.remove();
                 currentInfoOverlayLocationId = null;
-                updateURL({ type: currentActiveCategory || null });
+                if (currentOverlaySource === 'category') {
+                    // Category overlay is still in DOM — restore category markers
+                    currentSelectedLocationId = null;
+                    clearMarkers();
+                    mapData
+                        .filter(l => l.locationType === currentActiveCategory)
+                        .forEach(l => {
+                            const m = createMarker(l);
+                            if (m) markers.push(m);
+                        });
+                    updateURL({ type: currentActiveCategory });
+                    currentOverlaySource = null;
+                } else {
+                    updateURL({ type: currentActiveCategory || null });
+                }
             });
         }
         overlayEl.querySelector('.info-overlay-close').onclick = closeOverlay;
@@ -744,6 +741,89 @@ function showLocationInfoOverlay(locationId) {
             sheetElement.style.height = '';
             setSheetState('half');
         }
+    }
+}
+
+// ===== CATEGORY OVERLAY =====
+
+function showCategoryOverlay(categoryName) {
+    const bgColor = getCategoryColor(categoryName);
+    const textColor = getCategoryTextColor(categoryName);
+    const locs = mapData.filter(l => l.locationType === categoryName).sort(customSort);
+    const sidebar = document.getElementById('sidebar');
+
+    let listHtml = '';
+    locs.forEach(loc => {
+        const isNoCoords = !loc.coords;
+        listHtml += `
+            <button class="category-btn${isNoCoords ? ' no-coords' : ''}" data-loc-id="${loc.id}">
+                <span class="location-number-badge" style="background:${bgColor}; color:${textColor};">${loc.number}</span>
+                <span class="location-place-name">${loc.place}${loc.shortForm && loc.shortForm.trim() ? `<span class="location-short-form"> (${loc.shortForm})</span>` : ''}</span>
+            </button>`;
+    });
+
+    const innerHTMLString = `
+        <div class="category-overlay-header" style="border-left: 6px solid ${bgColor};">
+            <button class="category-overlay-back">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <span class="category-overlay-badge" style="background:${bgColor}; color:${textColor};">${categoryName}</span>
+            <button class="category-overlay-close">×</button>
+        </div>
+        <div class="category-overlay-subtitle">${locs.length} lokasi</div>
+        <div class="category-overlay-list">${listHtml}</div>
+        <div class="category-overlay-footer">
+            <button class="category-overlay-share">
+                <span class="material-symbols-outlined">link</span>
+                Salin Pautan Kategori
+            </button>
+        </div>`;
+
+    function wireCategoryOverlayButtons(overlayEl) {
+        overlayEl.querySelector('.category-overlay-back').onclick = () => showAllLocations();
+        overlayEl.querySelector('.category-overlay-close').onclick = () => showAllLocations();
+
+        overlayEl.querySelector('.category-overlay-share').onclick = () => {
+            const url = window.location.origin + window.location.pathname + '?type=' + slugify(categoryName);
+            copyToClipboard(url);
+        };
+
+        overlayEl.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const locId = parseInt(btn.dataset.locId);
+                const loc = mapData.find(l => l.id === locId);
+                if (!loc) return;
+                // Save category before filterByLocation/showLocationOnMap reset it
+                const savedCategory = currentActiveCategory;
+                currentOverlaySource = 'category';
+                if (loc.coords) {
+                    if (window.innerWidth > 768) filterByLocation(loc);
+                    else showLocationOnMap(loc);
+                }
+                // Restore so dismissOverlay() can re-render category markers
+                currentActiveCategory = savedCategory;
+                showLocationInfoOverlay(loc.id);
+            });
+        });
+    }
+
+    const existingOverlay = sidebar.querySelector('.stop-category-overlay');
+
+    if (existingOverlay) {
+        // Cross-fade when switching categories (e.g. via search)
+        existingOverlay.style.transition = 'opacity 0.12s ease';
+        existingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            existingOverlay.innerHTML = innerHTMLString;
+            wireCategoryOverlayButtons(existingOverlay);
+            existingOverlay.style.opacity = '1';
+        }, 120);
+    } else {
+        const overlay = document.createElement('div');
+        overlay.className = 'stop-category-overlay';
+        overlay.innerHTML = innerHTMLString;
+        wireCategoryOverlayButtons(overlay);
+        sidebar.appendChild(overlay);
     }
 }
 
