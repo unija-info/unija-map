@@ -5,6 +5,29 @@ High-level project history. For technical detail see:
 
 ---
 
+## 2026-05-06 — Category Overlay Panel (`kgb/map/`)
+
+- Clicking a category header (or opening `?type=` deep link) now slides in a category overlay panel listing all locations in that category with a share button — mirrors the location info overlay UX
+- Tapping a location inside the category overlay opens the location info overlay on top; pressing `←` returns to the category overlay with category markers restored
+- Category header click no longer expands the accordion; "📍 Lihat di peta" button removed — category click opens the overlay directly on all platforms
+- The "Kategori" field in the location info overlay is now a colored tappable badge — tapping it opens the category overlay for that category
+- Mobile `flyToBounds` accounts for the half-height sheet so all category markers are visible above it
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.9
+
+---
+
+## 2026-04-30 — Shareable Deep Links (`kgb/map/`)
+
+- `?type=<category-slug>` and `#<place-slug>` deep-link URLs now fully supported
+- Share buttons added: "Salin Pautan" in the location info overlay; link icon in each category header
+- `handleDeepLink()` restores map state on page load from URL params; `#hash` takes priority over `?type=`
+- All URL mutations use `history.replaceState` — no browser history pollution
+
+→ Full detail: [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md) v2.8
+
+---
+
 ## 2026-04-27 — Image Relocation & SEO Metadata (`kgb/bus-stop/`)
 
 - Bus stop photos moved from `kgb/bus-stop/image/bus-stop/` → `kgb/data/bus-stop/image/` to consolidate all data assets under `kgb/data/`

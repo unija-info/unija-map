@@ -537,9 +537,14 @@ function filterByCategory(categoryName) {
     });
 
     const isMobile = window.innerWidth <= 768;
-    const basePadding = getMapPadding();
-    const padding = isMobile ? [100, 100] : basePadding;
-    if (coords.length > 0) map.flyToBounds(coords, { padding: padding, maxZoom: 18, duration: 1.2 });
+    if (coords.length > 0) {
+        if (isMobile) {
+            const bottomPad = Math.round(window.innerHeight * 0.5) + 20;
+            map.flyToBounds(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, bottomPad], maxZoom: 18, duration: 1.2 });
+        } else {
+            map.flyToBounds(coords, { padding: getMapPadding(), maxZoom: 18, duration: 1.2 });
+        }
+    }
 
     showCategoryOverlay(categoryName);
 
@@ -624,7 +629,7 @@ function showLocationInfoOverlay(locationId) {
         detailRowsHtml += `
             <div class="info-overlay-detail-row">
                 <span class="info-overlay-detail-label">Kategori</span>
-                <span class="info-overlay-detail-value">${location.locationType}</span>
+                <button class="info-overlay-category-badge" style="background:${bgColor}; color:${textColor};">${location.locationType}</button>
             </div>`;
     }
 
@@ -711,6 +716,20 @@ function showLocationInfoOverlay(locationId) {
         overlayEl.querySelector('.info-overlay-close').onclick = closeOverlay;
         overlayEl.querySelector('.info-overlay-back').onclick = dismissOverlay;
 
+        const categoryBadge = overlayEl.querySelector('.info-overlay-category-badge');
+        if (categoryBadge) {
+            categoryBadge.addEventListener('click', () => {
+                const catName = location.locationType;
+                overlayEl.classList.add('closing');
+                overlayEl.addEventListener('animationend', () => {
+                    overlayEl.remove();
+                    currentInfoOverlayLocationId = null;
+                    currentOverlaySource = null;
+                    filterByCategory(catName);
+                }, { once: true });
+            });
+        }
+
         const shareBtn = overlayEl.querySelector('.info-overlay-share');
         if (shareBtn) {
             shareBtn.addEventListener('click', () => copyToClipboard(window.location.href));
@@ -770,14 +789,14 @@ function showCategoryOverlay(categoryName) {
             <span class="category-overlay-badge" style="background:${bgColor}; color:${textColor};">${categoryName}</span>
             <button class="category-overlay-close">×</button>
         </div>
-        <div class="category-overlay-subtitle">${locs.length} lokasi</div>
-        <div class="category-overlay-list">${listHtml}</div>
-        <div class="category-overlay-footer">
+        <div class="category-overlay-share-row">
             <button class="category-overlay-share">
                 <span class="material-symbols-outlined">link</span>
                 Salin Pautan Kategori
             </button>
-        </div>`;
+        </div>
+        <div class="category-overlay-subtitle">${locs.length} lokasi</div>
+        <div class="category-overlay-list">${listHtml}</div>`;
 
     function wireCategoryOverlayButtons(overlayEl) {
         overlayEl.querySelector('.category-overlay-back').onclick = () => showAllLocations();

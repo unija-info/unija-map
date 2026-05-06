@@ -4,6 +4,49 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.9] — 2026-05-06
+
+### Added
+- **Category overlay panel** (`showCategoryOverlay()`) — when a category is selected (by click or `?type=` deep link), a panel slides in over the sidebar showing the category name as a colored badge, a share button, location count, and a scrollable list of all locations in that category; mirrors the location info overlay UX and reuses the same `slideInFromLeft`/`slideOutToLeft` animations
+- **`currentOverlaySource`** state variable (`null | 'category'`) — tracks whether the location info overlay was opened from within the category overlay; controls `←` behavior in `dismissOverlay()`
+- Tapping a location inside the category overlay opens the location info overlay on top (category overlay stays in DOM behind); pressing `←` in the location overlay closes it, restores category markers on the map, and reveals the category overlay — no `flyToBounds` (keeps current map position)
+- `?type=` deep link now opens the category overlay in addition to filtering markers
+- Mobile sheet expands to `half` (50vh) when a category overlay is activated
+- **Tappable category badge in location info overlay** — the "Kategori" row now renders as a colored pill `<button>`; tapping it animates the location overlay out and calls `filterByCategory()` to open the category overlay for that category
+
+### Changed
+- **Category header click no longer expands the accordion** — on both desktop and mobile, clicking a category header directly calls `filterByCategory()` which opens the category overlay; the accordion is now only expanded via "Papar Semua Kategori"
+- **Removed "📍 Lihat di peta" button** — previously a mobile-only button inside each accordion group; no longer needed since the category header directly opens the overlay on all platforms
+- **Mobile `flyToBounds` accounts for half-sheet** — `filterByCategory()` on mobile now uses `paddingTopLeft: [40, 60]` / `paddingBottomRight: [40, 50vh + 20px]` so all category markers fit in the visible map area above the sheet
+- **Share button moved to below the header** in the category overlay (previously at the bottom footer); more discoverable on mobile without scrolling past the location list
+- `showAllLocations()` now removes `.stop-category-overlay` from the DOM and resets `currentOverlaySource = null`
+
+### New CSS classes
+`.stop-category-overlay`, `.category-overlay-header`, `.category-overlay-badge`, `.category-overlay-back`, `.category-overlay-close`, `.category-overlay-share-row`, `.category-overlay-share`, `.category-overlay-subtitle`, `.category-overlay-list`, `.info-overlay-category-badge`
+
+---
+
+## [2.8] — 2026-04-30
+
+### Added
+- **Shareable deep links** — two URL parameters restored and extended:
+  - `?type=<category-slug>` — filters map to a category (e.g. `?type=kolej-kediaman`)
+  - `#<place-slug>` — opens location info overlay (e.g. `#canselori`)
+  - Both can combine: `?type=kolej-kediaman#canselori` (location overlay with category context for correct `←` dismiss)
+- **`slugify(text)`** — converts any text to a URL-safe slug: lowercase → strip NFD diacritics → replace non-alphanumeric runs with `-` → trim hyphens
+- **`updateURL({ type, location })`** — single source of truth for all URL mutations via `history.replaceState`; pass no args to clear both params; **always use this, never manipulate `window.location` directly**
+- **`handleDeepLink()`** — runs once after `mapData` is ready; reads `#hash` and `?type=` params; `#hash` takes priority over `?type=`; `?type=` with no hash calls `filterByCategory()` and expands accordion; `?type=X#place` stores `currentActiveCategory` silently so `←` dismiss restores the correct URL
+- **`showAllLocations(animate, updateUrl)`** — new `updateUrl` flag; initial load passes `false` to preserve URL params for `handleDeepLink()`
+- **Share button in info overlay** — `<button class="info-overlay-share">` with `link` icon; copies current URL to clipboard; appears below "Buka di Google Maps"
+- **Share icon in category header** — `<span class="category-share-btn" role="button">` (must be `<span>`, not `<button>` — nested `<button>` inside `.stop-header <button>` is invalid HTML); copies `?type=` URL on click; `stopPropagation` prevents accordion toggle
+- **`copyToClipboard(text)`** — uses `navigator.clipboard` on HTTPS; falls back to `execCommand('copy')` via temporary textarea on HTTP (local dev); always calls `showToast()`
+- **`showToast(message)`** — shows `#map-toast` fixed bottom-center element with fade-in/out; auto-removes after 2s
+
+### New CSS classes
+`.info-overlay-share`, `#map-toast`, `#map-toast.visible`, `.category-share-btn`, `.stop-header-label { flex: 1 }`
+
+---
+
 ## [2.7] — 2026-04-23
 
 ### Added

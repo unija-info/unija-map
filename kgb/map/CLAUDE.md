@@ -64,6 +64,7 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
 | `currentSelectedLocationId` | number\|null | `id` of currently selected single location |
 | `currentInfoOverlayLocationId` | number\|null | `id` of location whose info overlay is open |
 | `currentHighlightedMarker` | L.Marker\|null | Marker with `.marker-highlighted` class; kept as full icon regardless of zoom |
+| `currentOverlaySource` | `null\|'category'` | Tracks whether the location info overlay was opened from the category overlay; controls `←` behavior in `dismissOverlay()` |
 | `sheetState` | string | Mobile bottom sheet state: `'peek'`/`'half'`/`'full'` |
 
 ### 2. Category Color System
@@ -178,8 +179,8 @@ Click a marker to toggle sticky/expanded. Click `×` or the map background to cl
 
 Categories rendered in `DESIRED_ORDER` (defined in `script.js`). Each group:
 - Collapsed by default (`.stop-group.collapsed`)
-- Header click: expands/collapses accordion + calls `filterByCategory()` on desktop
-- Mobile: separate "📍 Lihat di peta" button row to trigger `filterByCategory()`
+- **Header click: calls `filterByCategory()` directly on both desktop and mobile** — accordion does NOT expand; the category overlay serves as the location list
+- Accordion expansion only happens via the "Papar Semua Kategori" toggle button
 - Each location item: colored `number` badge + place name + short form
 - Locations with `coords === null` get `.no-coords` class (dimmed, cursor:default on map interaction)
 
@@ -187,12 +188,14 @@ Categories rendered in `DESIRED_ORDER` (defined in `script.js`). Each group:
 
 | Action | Result |
 |---|---|
-| `showAllLocations()` | All markers shown, `flyToBounds` to campus |
-| `filterByCategory(name)` | Only that category's markers, `flyToBounds` to fit; toggle: clicking same category again calls `showAllLocations()` |
+| `showAllLocations()` | All markers shown, `flyToBounds` to campus; removes category overlay from DOM |
+| `filterByCategory(name)` | Only that category's markers, `flyToBounds` to fit (mobile-aware padding); opens category overlay; toggle: clicking same category calls `showAllLocations()` |
 | `filterByLocation(loc)` | Only that one marker, zoomed in to max; used on desktop |
 | `showLocationOnMap(loc)` | Same as `filterByLocation` but also collapses mobile sheet to peek; used on mobile |
 
 Both `filterByLocation` and `showLocationOnMap` call `clearMarkers()` first, then `createMarker()` for the single location only.
+
+**Mobile `flyToBounds` in `filterByCategory()`** uses asymmetric padding — `paddingTopLeft: [40, 60]` / `paddingBottomRight: [40, 50vh + 20px]` — so all category markers fit in the visible map area above the half-height sheet.
 
 ### 8. Info Overlay
 
@@ -213,9 +216,13 @@ Contains:
 - Detail rows: Kategori, Singkatan, Info, and a "no coordinates" warning if applicable
 - "🗺️ Buka di Google Maps" link
 
-**Back (`←`) behavior**: animates out, removes overlay, keeps current map state (selected marker stays visible).
+**Back (`←`) behavior** — two cases controlled by `currentOverlaySource`:
+- `currentOverlaySource === 'category'`: overlay animates out, category markers restored (`clearMarkers()` + re-render), category overlay (still in DOM behind) becomes visible, URL updated to `?type=slug`
+- `currentOverlaySource === null`: overlay animates out, keeps current map state, URL updated
 
 **Close (`×`) behavior**: animates out, removes overlay, then calls `showAllLocations()` to restore all markers and zoom to campus bounds.
+
+**Category badge**: the "Kategori" detail row renders as `<button class="info-overlay-category-badge">` with the category's background/text color. Tapping it animates the location overlay out and calls `filterByCategory(location.locationType)` — opening the category overlay for that category. Styled as a small colored pill; `cursor: pointer`; hover reduces opacity.
 
 **Switching locations**: if an overlay is already open, the panel updates **in place** via a 120ms cross-fade (fade out → swap content → fade in). The sidebar is never exposed. The slide-in animation only plays on first open.
 
@@ -295,8 +302,9 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 | `updateMarkerModes()` | Called on `zoomend`; updates all marker icons in-place via `setIcon()`; re-applies `.marker-highlighted` class |
 | `setMarkerHighlight(marker)` | Sets highlighted marker; reverts old marker's icon before switching |
 | `renderGroupedList()` | Builds 10-category accordion in `#company-list` |
-| `showAllLocations(animate?, updateUrl?)` | Clears markers, re-renders all, fits bounds. `updateUrl` defaults to `true`; pass `false` on initial load so `handleDeepLink()` can read URL params before they are cleared |
-| `filterByCategory(name)` | Shows only one category's markers; toggles on repeat click |
+| `showAllLocations(animate?, updateUrl?)` | Clears markers, re-renders all, fits bounds; also removes `.stop-category-overlay` from DOM and resets `currentOverlaySource`. `updateUrl` defaults to `true`; pass `false` on initial load so `handleDeepLink()` can read URL params before they are cleared |
+| `filterByCategory(name)` | Shows only one category's markers; calls `showCategoryOverlay()`; mobile sheet → `half`; toggles on repeat click |
+| `showCategoryOverlay(categoryName)` | Renders `.stop-category-overlay` panel into sidebar: colored header with back/close buttons, share button, location count subtitle, scrollable location list. Cross-fades if a category overlay is already open (different category). Wires: back/close → `showAllLocations()`; location items → save `currentActiveCategory`, set `currentOverlaySource = 'category'`, call `filterByLocation`/`showLocationOnMap` + `showLocationInfoOverlay()`; share → `copyToClipboard(?type=slug)` |
 | `filterByLocation(loc)` | Clears to single marker, zooms in (desktop) |
 | `flyToMarker(coords, duration?)` | Pans/zooms to a location with bottom-sheet-aware offset (mobile); reused by both marker tap and list select for consistent positioning |
 | `showLocationOnMap(loc)` | Clears to single marker, calls `flyToMarker()`, collapses sheet (mobile) |
@@ -348,6 +356,11 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 - **Toast**: `#map-toast` — `position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%)` with `opacity`/`translateY` fade animation; `z-index: 9999`; `pointer-events: none`; `.visible` class triggers the transition
 - **Category share icon**: `.category-share-btn` — `<span role="button">` inside `.stop-header` (not a `<button>` — nested buttons are invalid HTML); `flex-shrink: 0; margin-right: 4px`; blue on hover
 - **Category header label**: `.stop-header-label` — `flex: 1` so it fills available space, pushing the share icon and `::after` chevron to the right. `justify-content: space-between` removed from `.stop-header` when this was added
+- **Category overlay**: `.stop-category-overlay` — `position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; flex-direction: column`; animation `slideInFromLeft` (desktop) / `slideInFromBottom` with `top: 24px` (mobile)
+- **Category overlay header**: `.category-overlay-header` — flex row; `border-left: 6px solid {bgColor}` set inline; back/close buttons same size as info overlay equivalents
+- **Category overlay share row**: `.category-overlay-share-row` — `padding: 10px 16px 6px; flex-shrink: 0`; sits between header and subtitle
+- **Category overlay share button**: `.category-overlay-share` — full-width grey pill button (`#f1f3f4`), flex row with `link` icon
+- **Info overlay category badge**: `.info-overlay-category-badge` — `font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px; border: none; cursor: pointer`; background/color set inline from category colors; hover reduces opacity
 
 ---
 
@@ -376,9 +389,10 @@ All URL changes use `history.replaceState` — map navigation does **not** add b
 | `showAllLocations()` | — | — |
 | Open overlay (no category active) | — | `slugify(place)` |
 | Open overlay (category active) | `slugify(category)` | `slugify(place)` |
-| `←` dismiss (no category) | — | — |
-| `←` dismiss (category was active) | `slugify(category)` | — |
+| `←` dismiss (from category overlay) | `slugify(category)` | — |
+| `←` dismiss (standalone, no category) | — | — |
 | `×` close | — | — |
+| Tap category badge in location overlay | `slugify(category)` | — |
 
 ### Deep-Link Resolution on Load
 
@@ -459,6 +473,19 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 - [ ] Deep-link with invalid slug: page loads normally, no crash
 - [ ] Deep-link to no-coords location: overlay opens, map stays at campus view
 - [ ] Toast appears on both desktop and mobile; fades after 2 seconds
+- [ ] Clicking a category header (desktop) → category overlay slides in, accordion stays collapsed, map filters
+- [ ] Clicking a category header (mobile) → category overlay opens, sheet rises to half height, map filters
+- [ ] "Papar Semua Kategori" button still expands all accordion groups (not blocked by new behavior)
+- [ ] In category overlay: tapping a location opens location info overlay on top; category overlay stays in DOM
+- [ ] In location overlay (from category): `←` closes location overlay, category overlay visible, category markers restored
+- [ ] In location overlay (from category): `×` closes both overlays, all markers restored
+- [ ] In category overlay: `←` and `×` both reset to all locations
+- [ ] "Salin Pautan Kategori" button (below header) copies `?type=slug` URL; toast appears
+- [ ] Deep link `?type=slug` → category overlay opens, map filters, mobile sheet at half
+- [ ] Deep link `?type=slug#place-slug` → category overlay does NOT open, location overlay opens directly
+- [ ] Mobile: all category markers fit in visible map area above the half-height sheet (bottom padding correct)
+- [ ] "Kategori" field in location info overlay shows as colored pill badge
+- [ ] Tapping the category badge closes the location overlay and opens the category overlay for that category
 
 ---
 
@@ -480,6 +507,31 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ---
 
 ## Changelog
+
+### v2.9 — Category Overlay Panel
+
+**Category overlay:**
+- `showCategoryOverlay(categoryName)` — new function; renders `.stop-category-overlay` panel into sidebar with colored header, share button, location count, and scrollable location list; cross-fades if called while another category overlay is already open
+- `currentOverlaySource` — new state variable (`null | 'category'`); set to `'category'` when opening location overlay from within category overlay; controls `←` behavior in `dismissOverlay()`
+- Category overlay stays in DOM while location overlay is open on top (DOM order ensures location overlay wins); becomes visible when location overlay animates out
+- `dismissOverlay()` split into two paths: `currentOverlaySource === 'category'` → restore category markers + URL, reveal category overlay; `null` → existing dismiss behavior
+- `showAllLocations()` removes `.stop-category-overlay` from DOM and resets `currentOverlaySource`
+- `filterByCategory()` calls `showCategoryOverlay()` and `setSheetState('half')` on mobile
+- Mobile `flyToBounds` uses `paddingBottomRight: [40, 50vh + 20px]` to keep all category markers above the half-sheet
+
+**Accordion behavior change:**
+- Category header click calls `filterByCategory()` directly on both desktop and mobile — accordion no longer expands
+- "📍 Lihat di peta" button removed (mobile-only, now redundant)
+
+**Category badge in location info overlay:**
+- "Kategori" detail row renders as `<button class="info-overlay-category-badge">` with category color; tapping it animates the location overlay out and calls `filterByCategory(location.locationType)`
+
+**Share button repositioned:**
+- "Salin Pautan Kategori" button moved from overlay footer to a `.category-overlay-share-row` div just below the header
+
+**New CSS classes:**
+- `.stop-category-overlay`, `.category-overlay-header`, `.category-overlay-badge`, `.category-overlay-back`, `.category-overlay-close`, `.category-overlay-share-row`, `.category-overlay-share`, `.category-overlay-subtitle`, `.category-overlay-list`, `.info-overlay-category-badge`
+- Mobile override: `.stop-category-overlay { top: 24px; animation-name: slideInFromBottom }` (reuses existing keyframes)
 
 ### v2.8 — Shareable Deep Links
 
