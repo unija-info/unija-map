@@ -366,7 +366,7 @@ function renderGroupedList() {
         header.className = 'stop-header';
         header.style.borderLeftColor = bgColor;
         header.style.borderLeftWidth = '10px';
-        header.innerHTML = `<span>${categoryName}</span>`;
+        header.innerHTML = `<span class="stop-header-label">${categoryName}</span><span class="category-share-btn" role="button" tabindex="0" title="Salin pautan kategori"><span class="material-symbols-outlined">link</span></span>`;
         header.onclick = () => {
             const isCollapsed = groupDiv.classList.contains('collapsed');
             // Collapse all other groups first
@@ -378,6 +378,12 @@ function renderGroupedList() {
             }
             updateToggleButtonLabel();
         };
+
+        header.querySelector('.category-share-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const url = window.location.origin + window.location.pathname + '?type=' + slugify(categoryName);
+            copyToClipboard(url);
+        });
 
         // Mobile "See on map" button row
         const buttonRow = document.createElement('div');
@@ -477,7 +483,8 @@ function flyToMarker(coords, duration = 0.8) {
     map.flyTo(offsetCenter, zoom, { duration });
 }
 
-function showAllLocations(animate = true) {
+function showAllLocations(animate = true, updateUrl = true) {
+    if (updateUrl) updateURL();
     clearMarkers();
     setMarkerHighlight(null);
     currentActiveCategory = null;
@@ -524,6 +531,7 @@ function filterByCategory(categoryName) {
 
     currentActiveCategory = categoryName;
     currentSelectedLocationId = null;
+    updateURL({ type: categoryName });
 
     // Update header active state
     document.querySelectorAll('.stop-header').forEach(h => {
@@ -604,6 +612,7 @@ function showLocationInfoOverlay(locationId) {
     if (!location) return;
 
     currentInfoOverlayLocationId = locationId;
+    updateURL({ type: currentActiveCategory || null, location });
 
     const bgColor = getCategoryColor(location.locationType);
     const textColor = getCategoryTextColor(location.locationType);
@@ -664,6 +673,8 @@ function showLocationInfoOverlay(locationId) {
         ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions"><span class="material-symbols-outlined">directions</span>Buka di Google Maps</a>`
         : '';
 
+    const shareHtml = `<button class="info-overlay-share"><span class="material-symbols-outlined">link</span>Salin Pautan</button>`;
+
     const innerHTMLString = `
         <div class="info-overlay-header">
             <button class="info-overlay-back">
@@ -677,6 +688,7 @@ function showLocationInfoOverlay(locationId) {
             ${imageHtml}
             ${detailRowsHtml ? `<div class="info-overlay-details">${detailRowsHtml}</div>` : ''}
             ${directionsHtml}
+            ${shareHtml}
         </div>
     `;
 
@@ -696,10 +708,16 @@ function showLocationInfoOverlay(locationId) {
             overlayEl.addEventListener('animationend', () => {
                 overlayEl.remove();
                 currentInfoOverlayLocationId = null;
+                updateURL({ type: currentActiveCategory || null });
             });
         }
         overlayEl.querySelector('.info-overlay-close').onclick = closeOverlay;
         overlayEl.querySelector('.info-overlay-back').onclick = dismissOverlay;
+
+        const shareBtn = overlayEl.querySelector('.info-overlay-share');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', () => copyToClipboard(window.location.href));
+        }
     }
 
     const existingOverlay = document.querySelector('.stop-info-overlay');
@@ -1171,6 +1189,82 @@ function updateToggleButtonLabel() {
 
 // ===== UTILITIES =====
 
+function slugify(text) {
+    return (text || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function updateURL({ type = null, location = null } = {}) {
+    const url = new URL(window.location.href);
+    if (type) {
+        url.searchParams.set('type', slugify(type));
+    } else {
+        url.searchParams.delete('type');
+    }
+    if (location) {
+        url.hash = slugify(location.place);
+    } else {
+        url.hash = '';
+    }
+    history.replaceState(null, '', url.toString().replace(/#$/, ''));
+}
+
+function showToast(message) {
+    const existing = document.getElementById('map-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'map-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showToast('Pautan disalin!'));
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        showToast('Pautan disalin!');
+    }
+}
+
+function handleDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const typeSlug = params.get('type');
+    const locSlug = window.location.hash.slice(1);
+
+    if (locSlug) {
+        const loc = mapData.find(l => slugify(l.place) === locSlug);
+        if (!loc) return;
+        if (loc.coords) {
+            if (window.innerWidth > 768) filterByLocation(loc);
+            else showLocationOnMap(loc);
+        }
+        showLocationInfoOverlay(loc.id);
+        // Restore category context for correct ← dismiss URL
+        if (typeSlug) {
+            const cat = DESIRED_ORDER.find(c => slugify(c) === typeSlug);
+            if (cat) currentActiveCategory = cat;
+        }
+    } else if (typeSlug) {
+        const cat = DESIRED_ORDER.find(c => slugify(c) === typeSlug);
+        if (cat) filterByCategory(cat);
+    }
+}
+
 function clearMarkers() {
     markers.forEach(m => map.removeLayer(m));
     markers = [];
@@ -1377,7 +1471,8 @@ function initMap() {
             const menuCountEl = document.getElementById('menu-location-count');
             if (menuCountEl) menuCountEl.textContent = mapData.length;
             renderGroupedList();
-            showAllLocations();
+            showAllLocations(true, false);
+            handleDeepLink();
         })
         .catch(err => {
             console.error('Failed to load map data:', err);

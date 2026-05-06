@@ -295,7 +295,7 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 | `updateMarkerModes()` | Called on `zoomend`; updates all marker icons in-place via `setIcon()`; re-applies `.marker-highlighted` class |
 | `setMarkerHighlight(marker)` | Sets highlighted marker; reverts old marker's icon before switching |
 | `renderGroupedList()` | Builds 10-category accordion in `#company-list` |
-| `showAllLocations()` | Clears markers, re-renders all, fits bounds |
+| `showAllLocations(animate?, updateUrl?)` | Clears markers, re-renders all, fits bounds. `updateUrl` defaults to `true`; pass `false` on initial load so `handleDeepLink()` can read URL params before they are cleared |
 | `filterByCategory(name)` | Shows only one category's markers; toggles on repeat click |
 | `filterByLocation(loc)` | Clears to single marker, zooms in (desktop) |
 | `flyToMarker(coords, duration?)` | Pans/zooms to a location with bottom-sheet-aware offset (mobile); reused by both marker tap and list select for consistent positioning |
@@ -310,6 +310,11 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 | `updateToggleButtonLabel()` | Reads DOM state of all `.stop-group` elements and sets `#toggle-all-groups` button text to match; called after any accordion state change |
 | `openInfoMenu()` | Adds `.open` to `#info-menu-panel` and `#info-menu-backdrop`; sets `panel.style.left` on desktop based on sidebar collapse state; locks body scroll on mobile only |
 | `closeInfoMenu()` | Removes `.open` from panel and backdrop; restores `body.style.overflow` |
+| `slugify(text)` | Converts text to URL-safe slug: lowercase → strip diacritics → replace non-alphanumeric with `-` → trim hyphens. Used for both place names and category names in deep-link URLs |
+| `updateURL({ type, location })` | Single source of truth for URL state. Sets `?type=<category-slug>` and/or `#<place-slug>` via `history.replaceState`. Pass no args to clear both. **Always use this — never manipulate `window.location` directly** |
+| `showToast(message)` | Shows a fixed bottom-center fade-in/out toast (`#map-toast`). Auto-removes after 2s |
+| `copyToClipboard(text)` | Writes text to clipboard; uses `navigator.clipboard` on HTTPS, falls back to `execCommand('copy')` on HTTP (local dev). Always calls `showToast('Pautan disalin!')` |
+| `handleDeepLink()` | Reads URL on page load (after `mapData` is ready) and restores map state. Resolution order: `#hash` (location) takes priority over `?type=` (category). Called once in `initMap()` after `showAllLocations(true, false)` |
 
 ---
 
@@ -339,6 +344,55 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 - **Mobile title/subtitle hidden**: `.sidebar-header h2, .sidebar-header .subtitle { display: none }` inside `@media (max-width: 768px)`
 - **Info overlay image**: `.info-overlay-image-wrap` — `width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px`; `.info-overlay-image` — `width: 100%; max-height: 200px; object-fit: cover`
 - **Info overlay image placeholder**: `.info-overlay-image-placeholder` — `display: none` by default; `onerror` sets it to `display: flex`; `height: 110px; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #bdc1c6; background: #f5f5f5`; icon `font-size: 36px`
+- **Info overlay share button**: `.info-overlay-share` — mirrors `.info-overlay-directions` layout (`display: flex; justify-content: center`); grey background `#f1f3f4`; `border: none`; full-width; appears below the Google Maps link
+- **Toast**: `#map-toast` — `position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%)` with `opacity`/`translateY` fade animation; `z-index: 9999`; `pointer-events: none`; `.visible` class triggers the transition
+- **Category share icon**: `.category-share-btn` — `<span role="button">` inside `.stop-header` (not a `<button>` — nested buttons are invalid HTML); `flex-shrink: 0; margin-right: 4px`; blue on hover
+- **Category header label**: `.stop-header-label` — `flex: 1` so it fills available space, pushing the share icon and `::after` chevron to the right. `justify-content: space-between` removed from `.stop-header` when this was added
+
+---
+
+## URL / Deep-Link System
+
+### URL Format
+
+```
+/kgb/map/                                  → default (all locations, no filter)
+/kgb/map/?type=kolej-kediaman              → category filter only
+/kgb/map/#canselori                        → location overlay (all markers shown)
+/kgb/map/?type=kolej-kediaman#canselori    → location overlay (single marker; type= stored as context)
+```
+
+**Slug rule:** `slugify(text)` — lowercase → strip NFD diacritics → replace non-alphanumeric runs with `-` → trim hyphens.
+
+All URL changes use `history.replaceState` — map navigation does **not** add browser history entries. The back button exits the page.
+
+### URL State Machine
+
+| User action | `?type=` | `#hash` |
+|---|---|---|
+| Page load default | — | — |
+| `filterByCategory(X)` | `slugify(X)` | — |
+| Category toggled off | — | — |
+| `showAllLocations()` | — | — |
+| Open overlay (no category active) | — | `slugify(place)` |
+| Open overlay (category active) | `slugify(category)` | `slugify(place)` |
+| `←` dismiss (no category) | — | — |
+| `←` dismiss (category was active) | `slugify(category)` | — |
+| `×` close | — | — |
+
+### Deep-Link Resolution on Load
+
+`handleDeepLink()` runs once after `mapData` is ready, called with `showAllLocations(true, false)` (animate but skip URL clear so params survive):
+
+1. **`#hash` present** → `find` by slug → `filterByLocation()` + `showLocationInfoOverlay()`. If `?type=` also present, sets `currentActiveCategory` silently (no map change) so `←` dismiss correctly restores `?type=` in URL.
+2. **`?type=` only** → `filterByCategory()` + accordion expands.
+3. **Neither** → normal load.
+
+### Known Constraints
+
+- **Slug collision** — if two locations produce the same slug, `find()` returns the first match. Full place names on this campus are unique in practice.
+- **`copyToClipboard()`** — `navigator.clipboard` requires HTTPS. On `http://localhost`, falls back to `execCommand('copy')`.
+- **Category share button** is a `<span role="button">` not `<button>` — nesting `<button>` inside `.stop-header <button>` is invalid HTML; browsers hoist inner buttons out of DOM.
 
 ---
 
@@ -392,6 +446,19 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 - [ ] Desktop sidebar: collapse/expand via chevron button
 - [ ] Desktop: search bar repositions when sidebar is collapsed
 - [ ] Closing info overlay (`×`) calls `showAllLocations()` — all markers restored
+- [ ] Opening info overlay updates URL hash to `#place-slug` (e.g. `#canselori`)
+- [ ] If category was active when overlay opened, URL is `?type=slug#place-slug`
+- [ ] Closing overlay with `←` removes hash but preserves `?type=` if category was active
+- [ ] Closing overlay with `×` clears URL completely
+- [ ] Selecting a category updates URL to `?type=slug`; toggling same category clears URL
+- [ ] "Salin Pautan" in info overlay copies current URL to clipboard; toast "Pautan disalin!" appears
+- [ ] Share icon in category header copies `?type=slug` URL; toast appears; accordion/filter not triggered
+- [ ] Deep-link `#place-slug` on page load: single marker, overlay opens, correct location
+- [ ] Deep-link `?type=slug` on page load: category filtered, accordion expanded, no overlay
+- [ ] Deep-link `?type=slug#place-slug` on page load: single marker + overlay (category param stored in `currentActiveCategory` for correct `←` dismiss)
+- [ ] Deep-link with invalid slug: page loads normally, no crash
+- [ ] Deep-link to no-coords location: overlay opens, map stays at campus view
+- [ ] Toast appears on both desktop and mobile; fades after 2 seconds
 
 ---
 
@@ -413,6 +480,35 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 ---
 
 ## Changelog
+
+### v2.8 — Shareable Deep Links
+
+**URL system:**
+- `?type=<category-slug>` — shareable category filter link (e.g. `?type=kolej-kediaman`)
+- `#<place-slug>` — shareable location link (e.g. `#canselori`)
+- Both can combine: `?type=kolej-kediaman#canselori`
+- All URL changes use `history.replaceState` — no browser history pollution
+- `updateURL({ type, location })` is the single function for all URL mutations
+
+**Deep-link handling:**
+- `handleDeepLink()` called once after data loads; reads URL params and restores map state
+- `#hash` takes priority over `?type=` — always resolves to single-marker + overlay
+- `?type=` on deep-link with no hash: filters category, expands accordion
+- `showAllLocations(animate, updateUrl)` now accepts `updateUrl` flag; initial load passes `false` to preserve URL params for `handleDeepLink()`
+
+**Share buttons:**
+- Info overlay: "Salin Pautan" button (`<button class="info-overlay-share">`) copies current URL; appears below "Buka di Google Maps"
+- Category header: link icon (`<span class="category-share-btn" role="button">`) copies `?type=` URL with `stopPropagation` so it doesn't trigger accordion/filter. Must be a `<span>` not `<button>` — nested `<button>` inside `.stop-header` is invalid HTML
+- `copyToClipboard(text)` — HTTPS uses `navigator.clipboard`; HTTP fallback uses `execCommand('copy')` via temporary textarea
+- `showToast(message)` — fixed bottom-center `#map-toast` element, 2s fade-out
+
+**CSS changes:**
+- `.info-overlay-share` — grey pill button, mirrors `.info-overlay-directions` layout
+- `#map-toast` / `#map-toast.visible` — fade animation via `opacity` + `translateY`
+- `.category-share-btn` — icon button in category header, blue on hover
+- `.stop-header-label { flex: 1 }` — label fills flex space; `justify-content: space-between` removed from `.stop-header`
+
+**Bug fix:** Initial load zoom level was incorrectly using the `animate=false` zoom (`17.5`) instead of the button zoom (`16.3`). Fixed by calling `showAllLocations(true, false)` — animate keeps correct zoom, `updateUrl=false` preserves params for deep-link.
 
 ### v1.0 — Initial Release
 - Created `kgb/map/` sub-project: `index.html`, `script.js`, `style.css`
