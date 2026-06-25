@@ -13,6 +13,18 @@ let satelliteLabelsLayer = null;
 let regularLabelsLayer = null;
 let currentBaseView = 'satellite'; // 'satellite' | 'osm'
 let showLabels = true;
+let currentUserLocation = null;        // {lat, lng, accuracy}
+let userLocationMarker = null;         // L.marker (blue dot)
+let userLocationAccuracyCircle = null; // L.circle
+let userLocationWatchId = null;        // navigator.geolocation.watchPosition handle
+let showUserLocation = false;
+let currentRouteLine = null;           // L.geoJSON layer for the active OSRM route
+let directionsModeActive = false;      // is the Directions panel open
+let directionsStart = null;            // { type:'location'|'maplabel'|'gps', id?, coords:[lat,lng]|null, label }
+let directionsEnd = null;              // same shape
+let directionsActiveField = null;      // 'start' | 'end' | null — which field the shared dropdown feeds
+let directionsStartMarker = null;      // L.marker pin for the chosen start point
+let directionsEndMarker = null;        // L.marker pin for the chosen end point
 
 // ===== ZOOM-BASED MARKER TIERS =====
 const ZOOM_FULL_DESKTOP   = 17.5;
@@ -229,7 +241,9 @@ function createMarker(location, exempt = false) {
 
     const mode = shouldShowFullMarker(location) ? 'full' : 'dot';
     const icon = createMarkerIcon(location, mode);
-    const marker = L.marker(location.coords, { icon: icon, pane: exempt ? undefined : 'campusMarkerPane' });
+    const markerOptions = { icon: icon };
+    if (!exempt) markerOptions.pane = 'campusMarkerPane';
+    const marker = L.marker(location.coords, markerOptions);
     marker._location = location;
     marker.addTo(map);
 
@@ -246,13 +260,14 @@ function createMarker(location, exempt = false) {
     `;
 
     const isMobile = window.innerWidth <= 768;
-    marker.bindTooltip(tooltipContent, {
+    const tooltipOptions = {
         permanent: true,
         direction: isMobile ? 'top' : 'right',
         className: 'custom-tooltip-popup',
         offset: isMobile ? [0, -5] : [location.number.length >= 4 ? 24 : 18, 0],
-        pane: exempt ? undefined : 'campusTooltipPane',
-    });
+    };
+    if (!exempt) tooltipOptions.pane = 'campusTooltipPane';
+    marker.bindTooltip(tooltipContent, tooltipOptions);
 
     // Wait for tooltip element to be in DOM
     setTimeout(() => {
@@ -572,7 +587,10 @@ function filterByLocation(location) {
 
     clearMarkers();
     const m = createMarker(location, true);
-    if (m) markers.push(m);
+    if (m) {
+        markers.push(m);
+        setMarkerHighlight(m);
+    }
 
     const basePadding = getMapPadding();
     const padding = [100, 100, 100, basePadding[3] || 100];
@@ -588,7 +606,10 @@ function showLocationOnMap(location) {
 
     clearMarkers();
     const m = createMarker(location, true);
-    if (m) markers.push(m);
+    if (m) {
+        markers.push(m);
+        setMarkerHighlight(m);
+    }
 
     flyToMarker(location.coords);
 
@@ -602,6 +623,7 @@ function showLocationOnMap(location) {
 
 function showLocationInfoOverlay(locationId) {
     if (currentInfoOverlayLocationId === locationId) return;
+    clearRoute();
 
     const location = mapData.find(l => l.id === locationId);
     if (!location) return;
@@ -668,6 +690,10 @@ function showLocationInfoOverlay(locationId) {
         ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions"><span class="material-symbols-outlined">directions</span>Buka di Google Maps</a>`
         : '';
 
+    const directionsToHereHtml = location.coords
+        ? `<button class="info-overlay-directions info-overlay-directions-to-here"><span class="material-symbols-outlined">route</span>Dapatkan Arah</button>`
+        : '';
+
     const shareHtml = `<button class="info-overlay-share"><span class="material-symbols-outlined">link</span>Salin Pautan</button>`;
 
     const innerHTMLString = `
@@ -683,6 +709,7 @@ function showLocationInfoOverlay(locationId) {
             ${imageHtml}
             ${detailRowsHtml ? `<div class="info-overlay-details">${detailRowsHtml}</div>` : ''}
             ${directionsHtml}
+            ${directionsToHereHtml}
             ${shareHtml}
         </div>
     `;
@@ -694,6 +721,7 @@ function showLocationInfoOverlay(locationId) {
             overlayEl.addEventListener('animationend', () => {
                 overlayEl.remove();
                 currentInfoOverlayLocationId = null;
+                clearRoute();
                 showAllLocations();
             });
         }
@@ -703,6 +731,7 @@ function showLocationInfoOverlay(locationId) {
             overlayEl.addEventListener('animationend', () => {
                 overlayEl.remove();
                 currentInfoOverlayLocationId = null;
+                clearRoute();
                 if (currentOverlaySource === 'category') {
                     // Category overlay is still in DOM — restore category markers
                     currentSelectedLocationId = null;
@@ -740,6 +769,17 @@ function showLocationInfoOverlay(locationId) {
         const shareBtn = overlayEl.querySelector('.info-overlay-share');
         if (shareBtn) {
             shareBtn.addEventListener('click', () => copyToClipboard(window.location.href));
+        }
+
+        const directionsToHereBtn = overlayEl.querySelector('.info-overlay-directions-to-here');
+        if (directionsToHereBtn) {
+            directionsToHereBtn.addEventListener('click', () => {
+                dismissOverlay();
+                openDirectionsPanel({
+                    start: { type: 'gps', coords: null, label: 'Lokasi Saya (GPS)' },
+                    end: { type: 'location', id: location.id, coords: location.coords, label: location.place },
+                });
+            });
         }
     }
 
@@ -1115,6 +1155,17 @@ function getMapPadding() {
 
 // ===== SEARCH =====
 
+function matchLocationsByTerm(term) {
+    const lowerTerm = term.toLowerCase();
+    return mapData.filter(loc =>
+        (loc.number || '').toLowerCase().includes(lowerTerm) ||
+        (loc.place || '').toLowerCase().includes(lowerTerm) ||
+        (loc.shortForm || '').toLowerCase().includes(lowerTerm) ||
+        (loc.details || '').toLowerCase().includes(lowerTerm) ||
+        (loc.locationType || '').toLowerCase().includes(lowerTerm)
+    );
+}
+
 function renderSearchResults(term) {
     const resultsContainer = document.getElementById('search-results');
     if (!resultsContainer) return;
@@ -1129,13 +1180,7 @@ function renderSearchResults(term) {
     let html = '';
 
     // Search locations by number, place, shortForm, details, locationType
-    const matchingLocations = mapData.filter(loc =>
-        (loc.number || '').toLowerCase().includes(lowerTerm) ||
-        (loc.place || '').toLowerCase().includes(lowerTerm) ||
-        (loc.shortForm || '').toLowerCase().includes(lowerTerm) ||
-        (loc.details || '').toLowerCase().includes(lowerTerm) ||
-        (loc.locationType || '').toLowerCase().includes(lowerTerm)
-    );
+    const matchingLocations = matchLocationsByTerm(term);
 
     // Search map text labels (lakes, fields, etc.)
     const matchingLabels = mapLabels.filter(({ text }) =>
@@ -1374,6 +1419,7 @@ function handleDeepLink() {
 function clearMarkers() {
     markers.forEach(m => map.removeLayer(m));
     markers = [];
+    currentHighlightedMarker = null;
 }
 
 function createClearSearchButton() {
@@ -1421,12 +1467,8 @@ function setBaseView(view, persist) {
     applyLabelVisibility();
     if (persist) localStorage.setItem('kgbMapBaseLayer', view);
 
-    const mapViewToggleBtn = document.getElementById('map-view-toggle');
-    if (mapViewToggleBtn) {
-        // Icon shows the view you'd switch TO, not the current one
-        mapViewToggleBtn.querySelector('.material-symbols-outlined').textContent =
-            view === 'satellite' ? 'map' : 'satellite_alt';
-    }
+    const satelliteToggleCheckbox = document.getElementById('toggle-satellite-checkbox');
+    if (satelliteToggleCheckbox) satelliteToggleCheckbox.checked = view === 'satellite';
 }
 
 function applyLabelVisibility() {
@@ -1448,6 +1490,353 @@ function setMarkersVisible(visible, persist) {
     if (persist) localStorage.setItem('kgbMapShowMarkers', visible);
 }
 
+// ===== GPS POSITIONING (EXPERIMENT) =====
+function setUserLocationVisible(visible) {
+    showUserLocation = visible;
+    if (visible) {
+        if (!navigator.geolocation) return;
+        userLocationWatchId = navigator.geolocation.watchPosition(
+            (pos) => updateUserLocationMarker(pos.coords),
+            (err) => console.warn('Geolocation error:', err),
+            { enableHighAccuracy: true }
+        );
+    } else {
+        if (userLocationWatchId !== null) navigator.geolocation.clearWatch(userLocationWatchId);
+        userLocationWatchId = null;
+        if (userLocationMarker) { map.removeLayer(userLocationMarker); userLocationMarker = null; }
+        if (userLocationAccuracyCircle) { map.removeLayer(userLocationAccuracyCircle); userLocationAccuracyCircle = null; }
+        currentUserLocation = null;
+        // Directions endpoints are coordinate snapshots, not live references —
+        // an active two-point route stays valid regardless of watch state.
+        if (!directionsModeActive) clearRoute();
+    }
+}
+
+function updateUserLocationMarker(coords) {
+    currentUserLocation = { lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy };
+    const latlng = [coords.latitude, coords.longitude];
+    if (!userLocationMarker) {
+        userLocationMarker = L.marker(latlng, {
+            icon: L.divIcon({ className: 'user-location-dot', iconSize: [16, 16] }),
+            pane: 'userLocationPane',
+        }).addTo(map);
+        userLocationAccuracyCircle = L.circle(latlng, {
+            radius: coords.accuracy,
+            className: 'user-location-accuracy',
+            pane: 'userLocationPane',
+        }).addTo(map);
+    } else {
+        userLocationMarker.setLatLng(latlng);
+        userLocationAccuracyCircle.setLatLng(latlng);
+        userLocationAccuracyCircle.setRadius(coords.accuracy);
+    }
+}
+
+// ===== OSRM DIRECTIONS (EXPERIMENT) =====
+// Public OSRM demo server — driving profile only (no foot/walking profile available).
+async function drawOSRMRoute(fromCoords, toCoords) {
+    if (!fromCoords || !toCoords) return null;
+    clearRoute();
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.routes || !data.routes.length) return null;
+        const route = data.routes[0];
+        const geometry = route.geometry;
+
+        const glowLine = L.geoJSON(geometry, {
+            pane: 'routeLinePane',
+            style: { color: '#1967d2', weight: 10, opacity: 0.45, className: 'osrm-route-glow' },
+        });
+        const baseLine = L.geoJSON(geometry, {
+            pane: 'routeLinePane',
+            style: { color: '#1967d2', weight: 5, opacity: 0.9 },
+        });
+        const dashLine = L.geoJSON(geometry, {
+            pane: 'routeLinePane',
+            style: { color: '#ffffff', weight: 3, opacity: 0.95, dashArray: '1, 14', lineCap: 'round', className: 'osrm-route-dash' },
+        });
+
+        currentRouteLine = L.layerGroup([glowLine, baseLine, dashLine]).addTo(map);
+        map.fitBounds(baseLine.getBounds(), { padding: [60, 60] });
+
+        return { distance: route.distance, duration: route.duration };
+    } catch (err) {
+        console.warn('OSRM route fetch failed:', err);
+        return null;
+    }
+}
+
+function clearRoute() {
+    if (currentRouteLine) { map.removeLayer(currentRouteLine); currentRouteLine = null; }
+}
+
+// ===== DIRECTIONS PANEL (TWO-POINT ROUTING) =====
+
+function renderDirectionsPin(field, point) {
+    const isStart = field === 'start';
+    const existing = isStart ? directionsStartMarker : directionsEndMarker;
+    if (existing) { map.removeLayer(existing); }
+
+    const marker = L.marker(point.coords, {
+        icon: L.divIcon({
+            html: `<span class="material-symbols-outlined directions-pin directions-pin-${field}">location_on</span>`,
+            className: '',
+            iconSize: [28, 36],
+            iconAnchor: [14, 36],
+        }),
+        pane: 'directionsPinPane',
+    }).addTo(map);
+
+    if (isStart) directionsStartMarker = marker;
+    else directionsEndMarker = marker;
+}
+
+function clearDirectionsPins() {
+    if (directionsStartMarker) { map.removeLayer(directionsStartMarker); directionsStartMarker = null; }
+    if (directionsEndMarker) { map.removeLayer(directionsEndMarker); directionsEndMarker = null; }
+}
+
+function updateDirectionsRouteInfo(result) {
+    const infoEl = document.getElementById('directions-route-info');
+    if (!infoEl) return;
+    if (result === 'loading') {
+        infoEl.textContent = 'Mengira jarak...';
+    } else if (result === null) {
+        infoEl.textContent = '';
+    } else {
+        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (memandu)`;
+    }
+}
+
+async function maybeComputeRoute() {
+    if (!directionsStart || !directionsEnd || !directionsStart.coords || !directionsEnd.coords) {
+        clearRoute();
+        updateDirectionsRouteInfo(null);
+        return;
+    }
+    updateDirectionsRouteInfo('loading');
+    const result = await drawOSRMRoute(directionsStart.coords, directionsEnd.coords);
+    if (!result) {
+        const infoEl = document.getElementById('directions-route-info');
+        if (infoEl) infoEl.textContent = 'Gagal mengira laluan.';
+        return;
+    }
+    updateDirectionsRouteInfo(result);
+}
+
+function setDirectionsField(field, value) {
+    if (field === 'start') directionsStart = value;
+    else directionsEnd = value;
+
+    const input = document.getElementById(field === 'start' ? 'directions-start-input' : 'directions-end-input');
+    if (input) input.value = value ? value.label : '';
+
+    if (value && value.coords) {
+        renderDirectionsPin(field, value);
+    } else {
+        const existing = field === 'start' ? directionsStartMarker : directionsEndMarker;
+        if (existing) { map.removeLayer(existing); }
+        if (field === 'start') directionsStartMarker = null;
+        else directionsEndMarker = null;
+    }
+
+    maybeComputeRoute();
+}
+
+function swapDirectionsFields() {
+    const newStart = directionsEnd;
+    const newEnd = directionsStart;
+    setDirectionsField('start', newStart);
+    setDirectionsField('end', newEnd);
+}
+
+async function resolveGpsPoint(field) {
+    const input = document.getElementById(field === 'start' ? 'directions-start-input' : 'directions-end-input');
+
+    if (currentUserLocation) {
+        setDirectionsField(field, {
+            type: 'gps',
+            coords: [currentUserLocation.lat, currentUserLocation.lng],
+            label: 'Lokasi Saya (GPS)',
+        });
+        return;
+    }
+
+    if (!navigator.geolocation) return;
+    if (input) input.value = 'Mencari lokasi...';
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            setDirectionsField(field, {
+                type: 'gps',
+                coords: [pos.coords.latitude, pos.coords.longitude],
+                label: 'Lokasi Saya (GPS)',
+            });
+        },
+        (err) => {
+            console.warn('Geolocation error:', err);
+            if (input) input.value = '';
+            setDirectionsField(field, null);
+            showToast('Gagal mengesan lokasi anda.');
+        },
+        { enableHighAccuracy: true }
+    );
+}
+
+function renderDirectionsResults(term, field) {
+    const dropdown = document.getElementById('directions-dropdown');
+    if (!dropdown) return;
+
+    let html = `
+        <div class="search-result-item gps" data-type="gps">
+            <div class="result-content">
+                <div class="result-title">Lokasi Saya (GPS)</div>
+            </div>
+        </div>
+    `;
+
+    if (term && term.length > 0) {
+        const matchingLocations = matchLocationsByTerm(term).filter(loc => loc.coords);
+        matchingLocations.slice(0, 12).forEach(loc => {
+            html += `
+                <div class="search-result-item location" data-type="location" data-id="${loc.id}">
+                    <div class="result-content">
+                        <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
+                        <div class="result-subtitle">${loc.locationType || ''}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        const lowerTerm = term.toLowerCase();
+        const matchingLabels = mapLabels.filter(({ text }) =>
+            text.replace(/<br>/gi, ' ').toLowerCase().includes(lowerTerm)
+        );
+        matchingLabels.forEach((label) => {
+            const displayText = label.text.replace(/<br>/gi, ' ');
+            html += `
+                <div class="search-result-item maplabel" data-type="maplabel" data-index="${mapLabels.indexOf(label)}">
+                    <div class="result-content">
+                        <div class="result-title">${displayText}</div>
+                        <div class="result-subtitle">Kawasan / Tapak</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    dropdown.innerHTML = html;
+    dropdown.classList.add('active');
+}
+
+function openDirectionsPanel({ start, end } = {}) {
+    directionsModeActive = true;
+    document.getElementById('directions-container')?.classList.add('active');
+    document.querySelector('.search-container')?.classList.add('directions-hidden');
+    document.getElementById('directions-toggle-btn')?.classList.add('active');
+    renderSearchResults('');
+
+    setDirectionsField('start', null);
+    setDirectionsField('end', null);
+
+    if (start) {
+        if (start.type === 'gps' && !start.coords) {
+            resolveGpsPoint('start');
+        } else {
+            setDirectionsField('start', start);
+        }
+    }
+    if (end) setDirectionsField('end', end);
+}
+
+function closeDirectionsPanel() {
+    directionsModeActive = false;
+    document.getElementById('directions-container')?.classList.remove('active');
+    document.querySelector('.search-container')?.classList.remove('directions-hidden');
+    document.getElementById('directions-toggle-btn')?.classList.remove('active');
+
+    clearRoute();
+    clearDirectionsPins();
+    directionsStart = null;
+    directionsEnd = null;
+    directionsActiveField = null;
+    updateDirectionsRouteInfo(null);
+
+    const startInput = document.getElementById('directions-start-input');
+    const endInput = document.getElementById('directions-end-input');
+    if (startInput) startInput.value = '';
+    if (endInput) endInput.value = '';
+
+    const dropdown = document.getElementById('directions-dropdown');
+    if (dropdown) { dropdown.classList.remove('active'); dropdown.innerHTML = ''; }
+}
+
+function initDirectionsPanel() {
+    const toggleBtn = document.getElementById('directions-toggle-btn');
+    const closeBtn = document.getElementById('directions-close-btn');
+    const swapBtn = document.getElementById('directions-swap-btn');
+    const startInput = document.getElementById('directions-start-input');
+    const endInput = document.getElementById('directions-end-input');
+    const dropdown = document.getElementById('directions-dropdown');
+
+    if (!toggleBtn || !startInput || !endInput || !dropdown) return;
+
+    toggleBtn.addEventListener('click', () => {
+        if (directionsModeActive) closeDirectionsPanel();
+        else openDirectionsPanel();
+    });
+
+    closeBtn.addEventListener('click', closeDirectionsPanel);
+
+    swapBtn.addEventListener('click', swapDirectionsFields);
+
+    [['start', startInput], ['end', endInput]].forEach(([field, input]) => {
+        input.addEventListener('focus', () => {
+            directionsActiveField = field;
+            renderDirectionsResults(input.value.trim(), field);
+        });
+        input.addEventListener('input', () => {
+            renderDirectionsResults(input.value.trim(), field);
+        });
+    });
+
+    dropdown.addEventListener('click', (e) => {
+        const item = e.target.closest('.search-result-item');
+        if (!item) return;
+        const field = directionsActiveField;
+        const type = item.dataset.type;
+
+        if (type === 'gps') {
+            resolveGpsPoint(field);
+        } else if (type === 'location') {
+            const loc = mapData.find(l => l.id === parseInt(item.dataset.id));
+            if (loc) setDirectionsField(field, { type: 'location', id: loc.id, coords: loc.coords, label: loc.place });
+        } else if (type === 'maplabel') {
+            const label = mapLabels[parseInt(item.dataset.index)];
+            if (label) setDirectionsField(field, { type: 'maplabel', coords: label.coords, label: label.text.replace(/<br>/gi, ' ') });
+        }
+
+        dropdown.classList.remove('active');
+        dropdown.innerHTML = '';
+    });
+
+    document.querySelectorAll('.directions-field-clear').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const field = btn.dataset.field;
+            setDirectionsField(field, null);
+            document.getElementById(field === 'start' ? 'directions-start-input' : 'directions-end-input')?.focus();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.directions-container')) {
+            dropdown.classList.remove('active');
+        }
+    });
+}
+
 function initMap() {
     const isMobileInit = window.innerWidth <= 768;
     map = L.map('map', { minZoom: 15, maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView(
@@ -1461,6 +1850,16 @@ function initMap() {
     map.getPane('campusMarkerPane').style.zIndex = 600;
     map.createPane('campusTooltipPane');
     map.getPane('campusTooltipPane').style.zIndex = 650;
+
+    // GPS dot/accuracy circle and OSRM route line panes (experiment)
+    map.createPane('userLocationPane');
+    map.getPane('userLocationPane').style.zIndex = 650;
+    map.createPane('routeLinePane');
+    map.getPane('routeLinePane').style.zIndex = 450; // below campusMarkerPane(600) so route sits under pins
+
+    // Directions start/end pin markers (above campusMarkerPane(600) and userLocationPane(650))
+    map.createPane('directionsPinPane');
+    map.getPane('directionsPinPane').style.zIndex = 700;
 
     // DEBUG: zoom level indicator
     const zoomDebug = document.createElement('div');
@@ -1500,10 +1899,11 @@ function initMap() {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    const mapViewToggleBtn = document.getElementById('map-view-toggle');
-    if (mapViewToggleBtn) {
-        mapViewToggleBtn.addEventListener('click', () => {
-            setBaseView(currentBaseView === 'satellite' ? 'osm' : 'satellite', true);
+    const toggleSatelliteCheckbox = document.getElementById('toggle-satellite-checkbox');
+    if (toggleSatelliteCheckbox) {
+        toggleSatelliteCheckbox.checked = currentBaseView === 'satellite';
+        toggleSatelliteCheckbox.addEventListener('change', (e) => {
+            setBaseView(e.target.checked ? 'satellite' : 'osm', true);
         });
     }
 
@@ -1524,6 +1924,13 @@ function initMap() {
             showLabels = e.target.checked;
             localStorage.setItem('kgbMapShowLabels', showLabels);
             applyLabelVisibility();
+        });
+    }
+
+    const toggleUserLocationCheckbox = document.getElementById('toggle-user-location-checkbox');
+    if (toggleUserLocationCheckbox) {
+        toggleUserLocationCheckbox.addEventListener('change', (e) => {
+            setUserLocationVisible(e.target.checked);
         });
     }
 
@@ -1687,7 +2094,7 @@ function loadCampusBoundary() {
         weight: 2.5,
         opacity: 100,
         fillColor: '#1967d2',
-        fillOpacity: 0.06,
+        fillOpacity: 0,
         interactive: false,
     };
 
@@ -1799,6 +2206,7 @@ window.onload = function() {
     initBottomSheet();
     initDesktopSidebar();
     initSearchDropdown();
+    initDirectionsPanel();
     createClearSearchButton();
     initClearSearchButton();
     fetchMapDataInfo();

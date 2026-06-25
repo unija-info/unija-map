@@ -122,16 +122,16 @@ Unknown types fall back to `'lain'` via `??` operator. Used by `showLocationInfo
 `setBaseView(view, persist)` (`view`: `'satellite'` | `'osm'`) swaps the active Leaflet base tile layer:
 - Removes the previously active base layer, adds the requested one (`satelliteLayer` or `regularLayer`, both created once in `initMap()`)
 - Calls `applyLabelVisibility()` so the correct label overlay for the new view is shown/hidden per the current `showLabels` state
-- Updates `#map-view-toggle`'s icon to show the view you'd switch **to** (Google Maps convention) — `map` icon while on satellite, `satellite_alt` icon while on OSM
+- Syncs `#toggle-satellite-checkbox`'s checked state (checked = satellite, unchecked = regular)
 - When `persist` is `true`, saves the choice to `localStorage.kgbMapBaseLayer`
 
 On load, `initMap()` reads `localStorage.kgbMapBaseLayer` (defaults to `'satellite'` if unset/invalid) and calls `setBaseView(savedView, false)` — no localStorage write on the initial restore, only on user-initiated toggles.
 
-The toggle button (`#map-view-toggle`, `.map-view-toggle-btn` in `style.css`) is positioned bottom-right, directly above the Leaflet zoom control, using the same 40×40 circular control style as `.sidebar-collapse-btn`. The custom `mapLabels` (Tasik UniSZA, Padang New Zealand) render in both views regardless of `currentBaseView` or `showLabels` — they're campus landmarks not present on any base map provider.
+The toggle (`#toggle-satellite-checkbox`) lives in the hamburger info-menu panel's "Paparan Peta" section alongside the marker/label toggles (3c) — not a floating map button. The custom `mapLabels` (Tasik UniSZA, Padang New Zealand) render in both views regardless of `currentBaseView` or `showLabels` — they're campus landmarks not present on any base map provider.
 
 #### 3c. Marker & Label Visibility Toggles
 
-Two independent on/off toggles live in the hamburger info-menu panel (`#info-menu-panel`, section `.info-menu-section-layers`):
+Three independent toggles live in the hamburger info-menu panel (`#info-menu-panel`, section `.info-menu-section-layers`): the satellite/regular toggle (3b) plus these two:
 
 **Markers** (`#toggle-markers-checkbox`) — controls all ~110 campus location pins + their tooltips:
 - `createMarker(location, exempt = false)` renders into dedicated panes `campusMarkerPane` / `campusTooltipPane` (created in `initMap()`, z-index matched to Leaflet's default `markerPane`/`tooltipPane`) unless `exempt` is `true`, in which case it renders into Leaflet's default panes instead
@@ -144,6 +144,29 @@ Two independent on/off toggles live in the hamburger info-menu panel (`#info-men
 - Called from `setBaseView()` (on view switch) and from the labels-checkbox change handler (on toggle)
 
 Both checkboxes are wired in `initMap()`, reading their initial state from localStorage and applying it before any user interaction.
+
+#### 3d. GPS Positioning & OSRM Directions (Experiment)
+
+A fourth toggle, `#toggle-user-location-checkbox` ("Lokasi Saya (GPS)"), lives in the same `.info-menu-section-layers` block as 3b/3c, but is **not** persisted to localStorage — it always starts OFF on page load (auto-starting a GPS watch without a fresh confirmation would be surprising, and the browser's permission prompt is per-session anyway).
+
+- `setUserLocationVisible(visible)` starts/stops `navigator.geolocation.watchPosition()` (`enableHighAccuracy: true`). On stop, it clears the watch, removes the GPS marker/accuracy circle, clears `currentUserLocation`, and calls `clearRoute()` — **unless** the Directions panel is open (`directionsModeActive`), in which case the active two-point route is left alone since it doesn't depend on the live watch (see 3e).
+- `updateUserLocationMarker(coords)` renders/moves a blue dot (`L.marker` with `.user-location-dot` divIcon) plus an accuracy `L.circle`, both in the dedicated `userLocationPane` (z-index 650, created in `initMap()` alongside `campusMarkerPane`/`campusTooltipPane`).
+- `drawOSRMRoute(fromCoords, toCoords)` fetches a route from the **public OSRM demo server** (`router.project-osrm.org`, `driving` profile only — no `foot`/walking profile is reliably available there) and draws it as a 3-layer glow/base/dash `L.geoJSON` group in the `routeLinePane` (z-index 450, below markers). Self-hosting OSRM with a `foot` profile would be needed for an accurate walking route on campus footpaths — out of scope for this experiment. Generic two-point signature — no implicit dependency on GPS state; see 3e for how the two points are chosen.
+- `clearRoute()` removes the active route layer; called whenever the info overlay closes (`closeOverlay`/`dismissOverlay`), a different location's overlay is opened (`showLocationInfoOverlay`), or the Directions panel closes/recomputes — so a stale route never lingers across selections.
+- The old single "Arah Dari Lokasi Saya (Eksperimen)" button has been replaced by "Dapatkan Arah" in the info overlay, which opens the Directions panel (see 3e) instead of drawing a route directly.
+
+#### 3e. Directions Panel (Two-Point Routing)
+
+A Google-Maps-style Directions panel lets users pick any **Start** and **End** point (campus location, map label, or "Lokasi Saya (GPS)") and get an OSRM driving route between them — superseding the old single-button "route from GPS to here" flow.
+
+- **Entry points**: `#directions-toggle-btn` (next to `#info-menu-btn` in the search bar) opens the panel with both fields empty. The info overlay's "Dapatkan Arah" button (`.info-overlay-directions-to-here`) calls `dismissOverlay()` then `openDirectionsPanel({ start: {type:'gps', coords:null, ...}, end: {type:'location', coords: location.coords, ...} })` — Start pre-fills to GPS (auto-resolving), End to that location.
+- **State**: `directionsModeActive`, `directionsStart`/`directionsEnd` (`{ type:'location'|'maplabel'|'gps', id?, coords:[lat,lng]|null, label }`), `directionsActiveField` (`'start'|'end'|null`, tracks which input the shared dropdown feeds), `directionsStartMarker`/`directionsEndMarker` (pin `L.marker`s).
+- **Picking a point**: `renderDirectionsResults(term, field)` always pins a "Lokasi Saya (GPS)" row at the top of `#directions-dropdown`, then filters `mapData` (via the shared `matchLocationsByTerm()`, also used by the main search bar) and `mapLabels` — locations with `coords === null` are excluded. Selecting a row calls `setDirectionsField(field, value)`, which updates the input label, drops/moves a colored pin via `renderDirectionsPin()` (`directionsPinPane`, z-index 700 — above `campusMarkerPane`(600) and `userLocationPane`(650)), and triggers `maybeComputeRoute()`.
+- **GPS as an endpoint** (`resolveGpsPoint(field)`): if the continuous watch is already running (`currentUserLocation` set via the hamburger toggle), reuse it immediately. Otherwise call `navigator.geolocation.getCurrentPosition()` **once** — this is deliberately decoupled from `#toggle-user-location-checkbox`/`watchPosition()`: picking GPS in Directions never starts/stops the continuous watch, and toggling the watch never affects an already-resolved directions point (coordinates are a snapshot, not a live reference).
+- **Route drawing**: `maybeComputeRoute()` calls the generalized `drawOSRMRoute(directionsStart.coords, directionsEnd.coords)` once both points are set, and writes the loading/result/error text into `#directions-route-info` via `updateDirectionsRouteInfo()`.
+- **Cleanup**: `closeDirectionsPanel()` clears the route, removes both pins (`clearDirectionsPins()`), and resets all directions state. The swap button (`swapDirectionsFields()`) exchanges Start/End (including their pins) and recomputes the route. Clearing a single field (`.directions-field-clear`) only clears that field and its pin.
+- The panel and the main search bar share the same screen slot and are mutually exclusive — opening Directions adds `.directions-hidden` to `.search-container`; closing it removes that class. They do **not** share dropdown DOM (`#search-results` vs `#directions-dropdown`), only the `matchLocationsByTerm()` predicate.
+
 - **Campus boundary**: fetched from `../data/campus-boundary.json` (local cached coords for OSM Way 1120569731) via `loadCampusBoundary()` on init; rendered as non-interactive `L.polygon()` in `#1967d2`
 - **Zoom control**: bottom-right
 - **Mobile zoom gestures**: Leaflet's `doubleClickZoom` is disabled on mobile (≤768px) and replaced with custom touch handlers:
@@ -505,17 +528,32 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 - [ ] Info overlay: `×` dismisses panel and resets to all locations
 - [ ] Info overlay: switching between locations cross-fades content (no sidebar flicker)
 - [ ] Map cannot zoom out past level 14
-- [ ] Map view toggle button (bottom-right, above zoom control) switches between satellite and OSM regular view
-- [ ] Switching to regular view hides the CartoDB label overlay; custom map text labels (Tasik UniSZA, Padang New Zealand) remain visible
-- [ ] Switching back to satellite view restores the CartoDB label overlay
-- [ ] Toggle button icon reflects the view you'd switch to (shows `map` icon while on satellite, `satellite_alt` icon while on regular)
+- [ ] Hamburger menu "Paparan Peta" section's "Paparan Satelit" toggle switches between satellite and regular (CartoDB Voyager) view
+- [ ] Switching to regular view hides the satellite's label overlay; custom map text labels (Tasik UniSZA, Padang New Zealand) remain visible
+- [ ] Switching back to satellite view restores the satellite label overlay
+- [ ] "Paparan Satelit" toggle reflects current state (checked = satellite, unchecked = regular)
 - [ ] Reloading the page after switching views restores the last-selected view (localStorage `kgbMapBaseLayer`)
-- [ ] Hamburger menu shows "Paparan Peta" section with "Penanda Lokasi" and "Nama Tempat & Jalan" toggles, both ON by default
+- [ ] Hamburger menu shows "Paparan Peta" section with "Paparan Satelit", "Penanda Lokasi" and "Nama Tempat & Jalan" toggles, all ON by default
 - [ ] Toggling "Penanda Lokasi" OFF hides all campus pins + tooltips on both satellite and regular view; campus boundary and custom map text labels stay visible
 - [ ] While markers are OFF, selecting a location from the sidebar list or search still shows that single pin; returning to all-locations/category view hides pins again
 - [ ] Toggling "Nama Tempat & Jalan" OFF hides the active label overlay (satellite: `light_only_labels`; regular: `voyager_only_labels`); custom landmark labels (Tasik UniSZA, Padang New Zealand) remain visible regardless
 - [ ] Switching base view while labels are OFF keeps labels OFF on the new view, with no leaked label layer from the previous view
 - [ ] Reloading the page after changing either toggle restores both states (localStorage `kgbMapShowMarkers`, `kgbMapShowLabels`)
+- [ ] "Lokasi Saya (GPS)" toggle is OFF by default on every page load (not persisted)
+- [ ] Toggling GPS ON triggers a browser geolocation permission prompt; accepting shows a blue dot + accuracy circle at the device's real position, updating as the device moves
+- [ ] Opening a location's info overlay (with coords) always shows both "Buka di Google Maps" (unchanged) and "Dapatkan Arah" — no longer gated on the GPS toggle
+- [ ] Tapping "Dapatkan Arah" dismisses the overlay and opens the Directions panel with Start = "Lokasi Saya (GPS)" (auto-resolving) and End = that location; route auto-draws once GPS resolves
+- [ ] Toggling GPS OFF removes the dot/accuracy circle and stops further position updates, but does **not** clear an active Directions route/pins
+- [ ] Directions icon (`#directions-toggle-btn`, next to hamburger) opens the panel with both fields empty; clicking again closes it
+- [ ] Focusing either Start/End field shows "Lokasi Saya (GPS)" pinned at the top of the dropdown even with no text typed
+- [ ] Typing in a field filters campus locations and map labels identically to the main search bar; locations with no coords are excluded
+- [ ] Picking GPS with the watch OFF shows a one-shot loading state, resolves without turning the hamburger toggle on; picking GPS with the watch ON resolves instantly
+- [ ] Selecting a location/map label for a field drops a colored pin (green = start, red = end) in `directionsPinPane`, visually above regular markers and the blue GPS dot
+- [ ] Once both fields are set, the route auto-draws with the existing glow/dash polyline styling and distance/duration readout (`X.X km · Y minit (memandu)`); OSRM failure shows "Gagal mengira laluan."
+- [ ] Swap button exchanges Start/End (labels, pins, and the route all update)
+- [ ] Clearing a single field (×) removes only that field's pin and clears the route
+- [ ] Closing the Directions panel removes both pins and the route, and restores the search bar in the same screen slot
+- [ ] All of the above behave identically on desktop (>768px) and mobile (≤768px)
 - [ ] Desktop sidebar: collapse/expand via chevron button
 - [ ] Desktop: search bar repositions when sidebar is collapsed
 - [ ] Closing info overlay (`×`) calls `showAllLocations()` — all markers restored

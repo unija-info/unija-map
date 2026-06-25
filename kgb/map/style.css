@@ -39,36 +39,6 @@ body, html {
     background: #ebe7de;
 }
 
-/* Map view toggle (satellite / regular) - sits above the Leaflet zoom control */
-.map-view-toggle-btn {
-    position: absolute;
-    right: 10px;
-    bottom: 82px;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    background: white;
-    border: none;
-    border-radius: 6px;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
-    cursor: pointer;
-    color: #5f6368;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-    transition: background 0.2s, color 0.2s;
-}
-
-.map-view-toggle-btn:hover {
-    background: #f5f5f5;
-    color: #202124;
-}
-
-.map-view-toggle-btn:active {
-    background: #e8eaed;
-}
-
 /* Search Container - Floating at top, repositions with sidebar */
 .search-container {
     position: absolute;
@@ -84,9 +54,13 @@ body, html {
     left: 70px; /* Past the expand button */
 }
 
+.search-container.directions-hidden {
+    display: none;
+}
+
 #search-bar {
     width: 100%;
-    padding: 14px 52px 14px 48px;
+    padding: 14px 94px 14px 48px;
     border: none;
     border-radius: 24px; /* Pill shape like Google Maps */
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -164,6 +138,10 @@ body, html {
     content: "🗂️";
 }
 
+.search-result-item.gps::before {
+    content: "🧭";
+}
+
 .result-title {
     font-weight: 500;
     font-size: 14px;
@@ -229,6 +207,159 @@ body, html {
 }
 #info-menu-btn:hover { background: rgba(0,0,0,0.07); }
 #info-menu-btn:active { background: rgba(0,0,0,0.12); }
+
+/* Directions toggle icon in search bar */
+#directions-toggle-btn {
+    position: absolute;
+    right: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    border-radius: 8px;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+    z-index: 12;
+}
+#directions-toggle-btn:hover { background: rgba(0,0,0,0.07); }
+#directions-toggle-btn.active { background: #e8f0fe; color: #1967d2; }
+
+/* Directions panel — replaces the search bar's screen slot when open */
+.directions-container {
+    position: absolute;
+    top: 20px;
+    left: 420px;
+    z-index: 1002;
+    width: 380px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: none;
+    transition: left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.directions-container.active {
+    display: block;
+}
+.sidebar.collapsed ~ .directions-container {
+    left: 70px;
+}
+
+.directions-header {
+    position: relative;
+    padding: 14px 44px 14px 14px;
+}
+
+#directions-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    font-size: 20px;
+    transition: background 0.2s;
+}
+#directions-close-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.directions-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+.directions-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f1f3f4;
+    border-radius: 8px;
+    padding: 0 12px;
+}
+
+.directions-field-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.directions-field-dot-start {
+    background: #0f9d58;
+}
+.directions-field-dot-end {
+    background: #ea4335;
+}
+
+.directions-field input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 10px 0;
+    font-size: 14px;
+    color: #202124;
+    font-family: 'Google Sans', sans-serif;
+}
+
+.directions-field-clear {
+    border: none;
+    background: transparent;
+    color: #80868b;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+#directions-swap-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    z-index: 1;
+}
+#directions-swap-btn:hover {
+    background: #f8f9fa;
+}
+
+.directions-dropdown {
+    position: relative;
+    top: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 1px solid #f0f0f0;
+}
 
 /* Info menu backdrop */
 #info-menu-backdrop {
@@ -1428,6 +1559,80 @@ body, html {
     background: #a8dfe9;
 }
 
+.info-overlay-directions-to-here {
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    background: #e8f0fe;
+    color: #1967d2;
+    border-left: 4px solid #1967d2;
+}
+
+.info-overlay-directions-to-here:hover {
+    background: #d2e3fc;
+}
+
+.osrm-route-info {
+    text-align: center;
+    font-size: 13px;
+    color: #5f6368;
+    font-family: 'Google Sans', sans-serif;
+    margin-top: -10px;
+    margin-bottom: 16px;
+}
+
+.osrm-route-info:empty {
+    display: none;
+}
+
+.user-location-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4285f4;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.35), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.user-location-accuracy {
+    fill: #4285f4;
+    fill-opacity: 0.1;
+    stroke: #4285f4;
+    stroke-width: 1;
+}
+
+.osrm-route-glow {
+    filter: drop-shadow(0 0 6px rgba(25, 103, 210, 0.85)) drop-shadow(0 0 14px rgba(25, 103, 210, 0.5));
+}
+
+.osrm-route-dash {
+    animation: osrm-route-flow 0.8s linear infinite;
+}
+
+@keyframes osrm-route-flow {
+    to {
+        stroke-dashoffset: -15;
+    }
+}
+
+.directions-pin {
+    width: 28px;
+    height: 36px;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+}
+
+.directions-pin-start {
+    color: #0f9d58;
+}
+
+.directions-pin-end {
+    color: #ea4335;
+}
+
 .info-overlay-share {
     display: flex;
     align-items: center;
@@ -1592,6 +1797,19 @@ body, html {
 
     #search-bar {
         font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    .directions-container {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        z-index: 1600;
+    }
+
+    .sidebar.collapsed ~ .directions-container {
+        left: 12px;
     }
 
     .sidebar {

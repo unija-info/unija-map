@@ -4,6 +4,20 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [Unreleased] — Directions Panel (Experiment)
+
+### Added
+- **Two-point Directions panel** — Start/End fields opened via a new directions icon in the search bar (or via "Dapatkan Arah" in a location's info overlay, which pre-fills Start = GPS, End = that location). Each field accepts a campus location, a map label (Tasik UniSZA, Padang New Zealand), or a pinned "Lokasi Saya (GPS)" option
+- Distinct colored pin markers (green start / red end) in a new `directionsPinPane` (z-index 700)
+- `drawOSRMRoute()` generalized from `(toCoords)` (always FROM live GPS) to `(fromCoords, toCoords)` — no longer implicitly tied to the GPS watch
+- Picking GPS as an endpoint uses a one-shot `getCurrentPosition()`, decoupled from the continuous `watchPosition()` tied to the hamburger "Lokasi Saya (GPS)" toggle — picking it never turns the toggle on, and toggling GPS off never clears an active Directions route
+
+### Changed/Removed
+- **Removed** the single "Arah Dari Lokasi Saya (Eksperimen)" button (always routed FROM live GPS only) — superseded entirely by the Directions panel
+- `setUserLocationVisible(false)` now only calls `clearRoute()` when the Directions panel is closed
+
+---
+
 ## [2.9] — 2026-05-06
 
 ### Added

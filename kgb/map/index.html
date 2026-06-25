@@ -53,9 +53,6 @@
 
     <div class="app-container">
         <div id="map"></div>
-        <button id="map-view-toggle" class="map-view-toggle-btn" title="Tukar paparan peta" aria-label="Tukar paparan peta">
-            <span class="material-symbols-outlined">map</span>
-        </button>
 
         <!-- Sidebar MUST come first for CSS ~ sibling selectors to work -->
         <div class="sidebar" id="sidebar">
@@ -101,6 +98,9 @@
         <div class="search-container">
             <input type="text" id="search-bar" placeholder="Cari lokasi, kategori, kod...">
             <div id="search-results" class="search-results"></div>
+            <button id="directions-toggle-btn" aria-label="Buka arah">
+                <span class="material-symbols-outlined">directions</span>
+            </button>
             <button id="info-menu-btn" aria-label="Buka menu info">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <rect x="2" y="4.5" width="16" height="1.8" rx="0.9" fill="currentColor"/>
@@ -108,6 +108,29 @@
                     <rect x="2" y="13.7" width="16" height="1.8" rx="0.9" fill="currentColor"/>
                 </svg>
             </button>
+        </div>
+
+        <div class="directions-container" id="directions-container">
+            <div class="directions-header">
+                <button id="directions-close-btn" aria-label="Tutup arah">×</button>
+                <div class="directions-fields">
+                    <div class="directions-field" data-field="start">
+                        <span class="directions-field-dot directions-field-dot-start"></span>
+                        <input type="text" id="directions-start-input" placeholder="Pilih lokasi mula">
+                        <button class="directions-field-clear" data-field="start" aria-label="Kosongkan">×</button>
+                    </div>
+                    <button id="directions-swap-btn" aria-label="Tukar mula/akhir">
+                        <span class="material-symbols-outlined">swap_vert</span>
+                    </button>
+                    <div class="directions-field" data-field="end">
+                        <span class="directions-field-dot directions-field-dot-end"></span>
+                        <input type="text" id="directions-end-input" placeholder="Pilih destinasi">
+                        <button class="directions-field-clear" data-field="end" aria-label="Kosongkan">×</button>
+                    </div>
+                </div>
+            </div>
+            <div id="directions-dropdown" class="search-results directions-dropdown"></div>
+            <div id="directions-route-info" class="osrm-route-info"></div>
         </div>
 
         <button id="toggle-view" class="mobile-toggle">Tunjuk Peta</button>
@@ -145,6 +168,11 @@
         <div class="info-menu-section info-menu-section-layers">
             <span class="info-menu-section-label">Paparan Peta</span>
             <label class="map-layer-toggle">
+                <span>Paparan Satelit</span>
+                <input type="checkbox" id="toggle-satellite-checkbox" checked>
+                <span class="toggle-switch"></span>
+            </label>
+            <label class="map-layer-toggle">
                 <span>Penanda Lokasi</span>
                 <input type="checkbox" id="toggle-markers-checkbox" checked>
                 <span class="toggle-switch"></span>
@@ -152,6 +180,11 @@
             <label class="map-layer-toggle">
                 <span>Nama Tempat &amp; Jalan</span>
                 <input type="checkbox" id="toggle-labels-checkbox" checked>
+                <span class="toggle-switch"></span>
+            </label>
+            <label class="map-layer-toggle">
+                <span>Lokasi Saya (GPS)</span>
+                <input type="checkbox" id="toggle-user-location-checkbox">
                 <span class="toggle-switch"></span>
             </label>
         </div>
