@@ -57,7 +57,7 @@
   },
   {
     "number": "P8",
-    "place": "Tadika",
+    "place": "Taska Permata Keluarga Unisza",
     "googleMapLink": "https://maps.google.com/?q=5.402109286384535,103.07551634402765",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
@@ -385,27 +385,35 @@
   },
   {
     "number": "F14",
+    "place": "Virtual and Futuristic Learning Space",
+    "googleMapLink": "https://maps.google.com/?q=5.401293444807906,103.07529227400421",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
+    "shortForm": "VFLS",
+    "details": "FRIT (Fakulti Rekabentuk Inovatif dan Teknologi)"
+  },
+  {
+    "number": "F15",
     "place": "Bengkel FRIT B",
     "googleMapLink": "https://maps.google.com/?q=5.400597380286814,103.07450819833646",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
-    "details": ""
-  },
-  {
-    "number": "F15",
-    "place": "Frit Blok A",
-    "googleMapLink": "https://maps.google.com/?q=5.400300236947365,103.07443536856546",
-    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
-    "shortForm": "",
-    "details": ""
+    "details": "FRIT (Fakulti Rekabentuk Inovatif dan Teknologi)"
   },
   {
     "number": "F16",
-    "place": "Frit Blok B",
+    "place": "FRIT Blok A",
+    "googleMapLink": "https://maps.google.com/?q=5.400300236947365,103.07443536856546",
+    "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
+    "shortForm": "",
+    "details": "FRIT (Fakulti Rekabentuk Inovatif dan Teknologi)"
+  },
+  {
+    "number": "F17",
+    "place": "FRIT Blok B",
     "googleMapLink": "https://maps.google.com/?q=5.399920386095519,103.07440787592247",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
-    "details": ""
+    "details": "FRIT (Fakulti Rekabentuk Inovatif dan Teknologi)"
   },
   {
     "number": "A",
