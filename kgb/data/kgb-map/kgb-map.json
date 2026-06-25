@@ -801,6 +801,14 @@
   },
   {
     "number": "C3",
+    "place": "Cafeteria PWB",
+    "googleMapLink": "",
+    "locationType": "CAFE & MAKANAN",
+    "shortForm": "",
+    "details": ""
+  },
+  {
+    "number": "C4",
     "place": "Cafeteria FKI",
     "googleMapLink": "https://maps.google.com/?q=5.400837831490066,103.07707644040742",
     "locationType": "CAFE & MAKANAN",
@@ -808,7 +816,7 @@
     "details": " "
   },
   {
-    "number": "C4",
+    "number": "C5",
     "place": "Cafeteria Lama Ibnu Sina",
     "googleMapLink": "https://maps.google.com/?q=5.402462836279461,103.07954202195498",
     "locationType": "CAFE & MAKANAN",
@@ -816,7 +824,7 @@
     "details": ""
   },
   {
-    "number": "C5",
+    "number": "C6",
     "place": "Cafeteria Kolej Kediaman",
     "googleMapLink": "https://maps.google.com/?q=5.404255076600683,103.07761230647776",
     "locationType": "CAFE & MAKANAN",
@@ -824,7 +832,7 @@
     "details": ""
   },
   {
-    "number": "C6",
+    "number": "C7",
     "place": "CU@ UniSZA (TUMPU)",
     "googleMapLink": "https://maps.google.com/?q=5.408747548865256,103.07978895461028",
     "locationType": "CAFE & MAKANAN",
@@ -832,7 +840,7 @@
     "details": ""
   },
   {
-    "number": "",
+    "number": "C8",
     "place": "MUIZ HOT CHICKEN",
     "googleMapLink": "https://maps.google.com/?q=5.409078103188084,103.0808781380698",
     "locationType": "CAFE & MAKANAN",
