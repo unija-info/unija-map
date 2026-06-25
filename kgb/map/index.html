@@ -53,6 +53,9 @@
 
     <div class="app-container">
         <div id="map"></div>
+        <button id="map-view-toggle" class="map-view-toggle-btn" title="Tukar paparan peta" aria-label="Tukar paparan peta">
+            <span class="material-symbols-outlined">map</span>
+        </button>
 
         <!-- Sidebar MUST come first for CSS ~ sibling selectors to work -->
         <div class="sidebar" id="sidebar">
@@ -136,6 +139,21 @@
                 </div>
                 <a href="/" class="info-menu-nav-btn">Menu Utama</a>
             </div>
+        </div>
+
+        <!-- Section 2b: Map layer toggles -->
+        <div class="info-menu-section info-menu-section-layers">
+            <span class="info-menu-section-label">Paparan Peta</span>
+            <label class="map-layer-toggle">
+                <span>Penanda Lokasi</span>
+                <input type="checkbox" id="toggle-markers-checkbox" checked>
+                <span class="toggle-switch"></span>
+            </label>
+            <label class="map-layer-toggle">
+                <span>Nama Tempat &amp; Jalan</span>
+                <input type="checkbox" id="toggle-labels-checkbox" checked>
+                <span class="toggle-switch"></span>
+            </label>
         </div>
 
         <!-- Section 3: Feedback -->

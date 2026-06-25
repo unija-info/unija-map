@@ -7,6 +7,12 @@ let currentSelectedLocationId = null;
 let currentInfoOverlayLocationId = null;
 let currentHighlightedMarker = null;
 let currentOverlaySource = null; // null | 'category'
+let satelliteLayer = null;
+let regularLayer = null;
+let satelliteLabelsLayer = null;
+let regularLabelsLayer = null;
+let currentBaseView = 'satellite'; // 'satellite' | 'osm'
+let showLabels = true;
 
 // ===== ZOOM-BASED MARKER TIERS =====
 const ZOOM_FULL_DESKTOP   = 17.5;
@@ -216,14 +222,14 @@ function createMarkerIcon(location, mode = 'full') {
     });
 }
 
-function createMarker(location) {
+function createMarker(location, exempt = false) {
     if (!location.coords) return null;
 
     const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${location.coords[0]},${location.coords[1]}`;
 
     const mode = shouldShowFullMarker(location) ? 'full' : 'dot';
     const icon = createMarkerIcon(location, mode);
-    const marker = L.marker(location.coords, { icon: icon });
+    const marker = L.marker(location.coords, { icon: icon, pane: exempt ? undefined : 'campusMarkerPane' });
     marker._location = location;
     marker.addTo(map);
 
@@ -245,6 +251,7 @@ function createMarker(location) {
         direction: isMobile ? 'top' : 'right',
         className: 'custom-tooltip-popup',
         offset: isMobile ? [0, -5] : [location.number.length >= 4 ? 24 : 18, 0],
+        pane: exempt ? undefined : 'campusTooltipPane',
     });
 
     // Wait for tooltip element to be in DOM
@@ -564,7 +571,7 @@ function filterByLocation(location) {
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
     clearMarkers();
-    const m = createMarker(location);
+    const m = createMarker(location, true);
     if (m) markers.push(m);
 
     const basePadding = getMapPadding();
@@ -580,7 +587,7 @@ function showLocationOnMap(location) {
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
     clearMarkers();
-    const m = createMarker(location);
+    const m = createMarker(location, true);
     if (m) markers.push(m);
 
     flyToMarker(location.coords);
@@ -1403,12 +1410,57 @@ function initClearSearchButton() {
 
 // ===== MAP INIT =====
 
+function setBaseView(view, persist) {
+    const nextLayer = view === 'osm' ? regularLayer : satelliteLayer;
+    const prevLayer = view === 'osm' ? satelliteLayer : regularLayer;
+
+    if (map.hasLayer(prevLayer)) map.removeLayer(prevLayer);
+    if (!map.hasLayer(nextLayer)) nextLayer.addTo(map);
+
+    currentBaseView = view;
+    applyLabelVisibility();
+    if (persist) localStorage.setItem('kgbMapBaseLayer', view);
+
+    const mapViewToggleBtn = document.getElementById('map-view-toggle');
+    if (mapViewToggleBtn) {
+        // Icon shows the view you'd switch TO, not the current one
+        mapViewToggleBtn.querySelector('.material-symbols-outlined').textContent =
+            view === 'satellite' ? 'map' : 'satellite_alt';
+    }
+}
+
+function applyLabelVisibility() {
+    const activeLabels = currentBaseView === 'satellite' ? satelliteLabelsLayer : regularLabelsLayer;
+    const inactiveLabels = currentBaseView === 'satellite' ? regularLabelsLayer : satelliteLabelsLayer;
+
+    if (map.hasLayer(inactiveLabels)) map.removeLayer(inactiveLabels);
+
+    if (showLabels) {
+        if (!map.hasLayer(activeLabels)) activeLabels.addTo(map);
+    } else if (map.hasLayer(activeLabels)) {
+        map.removeLayer(activeLabels);
+    }
+}
+
+function setMarkersVisible(visible, persist) {
+    map.getPane('campusMarkerPane').style.display = visible ? '' : 'none';
+    map.getPane('campusTooltipPane').style.display = visible ? '' : 'none';
+    if (persist) localStorage.setItem('kgbMapShowMarkers', visible);
+}
+
 function initMap() {
     const isMobileInit = window.innerWidth <= 768;
     map = L.map('map', { minZoom: 15, maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView(
         isMobileInit ? [5.4030603222603855, 103.07978857810325] : [5.400403569715876, 103.07990647727662],
         isMobileInit ? 16 : 14
     );
+
+    // Dedicated panes for campus markers/tooltips so they can be hidden as a group
+    // without affecting explicitly-selected (exempt) markers, which use the default panes
+    map.createPane('campusMarkerPane');
+    map.getPane('campusMarkerPane').style.zIndex = 600;
+    map.createPane('campusTooltipPane');
+    map.getPane('campusTooltipPane').style.zIndex = 650;
 
     // DEBUG: zoom level indicator
     const zoomDebug = document.createElement('div');
@@ -1418,19 +1470,62 @@ function initMap() {
     map.on('zoomend', () => { zoomDebug.textContent = 'Zoom: ' + map.getZoom(); });
     // END DEBUG
 
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         maxNativeZoom: 19,
         maxZoom: 22,
-    }).addTo(map);
+    });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+    regularLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        maxNativeZoom: 20,
+        maxZoom: 22,
+    });
+
+    satelliteLabelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
         pane: 'shadowPane',
         maxNativeZoom: 20,
         maxZoom: 22,
-    }).addTo(map);
+    });
+
+    regularLabelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+        pane: 'shadowPane',
+        maxNativeZoom: 20,
+        maxZoom: 22,
+    });
+
+    currentBaseView = localStorage.getItem('kgbMapBaseLayer') === 'osm' ? 'osm' : 'satellite';
+    showLabels = localStorage.getItem('kgbMapShowLabels') !== 'false';
+    setBaseView(currentBaseView, false);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const mapViewToggleBtn = document.getElementById('map-view-toggle');
+    if (mapViewToggleBtn) {
+        mapViewToggleBtn.addEventListener('click', () => {
+            setBaseView(currentBaseView === 'satellite' ? 'osm' : 'satellite', true);
+        });
+    }
+
+    const showMarkersInit = localStorage.getItem('kgbMapShowMarkers') !== 'false';
+    setMarkersVisible(showMarkersInit, false);
+    const toggleMarkersCheckbox = document.getElementById('toggle-markers-checkbox');
+    if (toggleMarkersCheckbox) {
+        toggleMarkersCheckbox.checked = showMarkersInit;
+        toggleMarkersCheckbox.addEventListener('change', (e) => {
+            setMarkersVisible(e.target.checked, true);
+        });
+    }
+
+    const toggleLabelsCheckbox = document.getElementById('toggle-labels-checkbox');
+    if (toggleLabelsCheckbox) {
+        toggleLabelsCheckbox.checked = showLabels;
+        toggleLabelsCheckbox.addEventListener('change', (e) => {
+            showLabels = e.target.checked;
+            localStorage.setItem('kgbMapShowLabels', showLabels);
+            applyLabelVisibility();
+        });
+    }
 
     // ===== MAP TEXT LABELS =====
     mapLabels.forEach(({ coords, text, fontSize, minZoom }) => {

@@ -16,10 +16,13 @@ Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools. Uses Leaflet.js 1.
 
 ```
 kgb/map/
-  index.html    ← HTML shell (map, sidebar, search, mobile toggle)
-  script.js     ← All application logic
-  style.css     ← All styles
-  CLAUDE.md     ← This file
+  index.html      ← HTML shell (map, sidebar, search, mobile toggle)
+  script.js       ← All application logic
+  style.css       ← All styles
+  CLAUDE.md       ← This file (technical architecture)
+  README.md       ← User-facing feature overview & data/image update instructions
+  CHANGELOG.md    ← Full version history (v1.0–present); update this, not the section below
+  link-guide.md   ← Deep-link/share system reference, written as a blueprint for porting the same feature to kgb/bus-stop/
 
 kgb/data/kgb-map/kgb-map.json   ← Data source (NOT inside kgb/map/)
 ```
@@ -82,6 +85,7 @@ const CATEGORY_COLORS = {
     'CAFE & MAKANAN':                 { bg: '#b0a020', text: 'black' },
     'KESIHATAN':                      { bg: '#DC143C', text: 'white' },
     'IBADAH':                         { bg: '#32CD32', text: 'black' },
+    'FASILITI & KEMUDAHAN':           { bg: '#8f9ce2', text: 'black' },
 };
 ```
 
@@ -110,14 +114,57 @@ Unknown types fall back to `'lain'` via `??` operator. Used by `showLocationInfo
 
 - **Center**: `[5.3950, 103.0830]` (UniSZA Gong Badak area)
 - **Default zoom**: 16
-- **Base layer**: ArcGIS World Imagery (satellite)
-- **Overlay layer**: CartoDB Positron labels (place names)
+- **Base layers**: ArcGIS World Imagery (satellite, default) or CartoDB Voyager no-labels tiles (regular), user-toggleable. Both are rendered from OpenStreetMap's underlying contributor data — Voyager is just CartoDB's own tile rendering of it, chosen over raw OSM standard tiles because it ships a label-split variant (see 3c)
+- **Label overlays**: `satelliteLabelsLayer` (CartoDB `light_only_labels`) over satellite, `regularLabelsLayer` (CartoDB `voyager_only_labels`) over regular — only one is ever attached at a time, matching `currentBaseView`
+
+#### 3b. Base Layer Toggle (Satellite / Regular)
+
+`setBaseView(view, persist)` (`view`: `'satellite'` | `'osm'`) swaps the active Leaflet base tile layer:
+- Removes the previously active base layer, adds the requested one (`satelliteLayer` or `regularLayer`, both created once in `initMap()`)
+- Calls `applyLabelVisibility()` so the correct label overlay for the new view is shown/hidden per the current `showLabels` state
+- Updates `#map-view-toggle`'s icon to show the view you'd switch **to** (Google Maps convention) — `map` icon while on satellite, `satellite_alt` icon while on OSM
+- When `persist` is `true`, saves the choice to `localStorage.kgbMapBaseLayer`
+
+On load, `initMap()` reads `localStorage.kgbMapBaseLayer` (defaults to `'satellite'` if unset/invalid) and calls `setBaseView(savedView, false)` — no localStorage write on the initial restore, only on user-initiated toggles.
+
+The toggle button (`#map-view-toggle`, `.map-view-toggle-btn` in `style.css`) is positioned bottom-right, directly above the Leaflet zoom control, using the same 40×40 circular control style as `.sidebar-collapse-btn`. The custom `mapLabels` (Tasik UniSZA, Padang New Zealand) render in both views regardless of `currentBaseView` or `showLabels` — they're campus landmarks not present on any base map provider.
+
+#### 3c. Marker & Label Visibility Toggles
+
+Two independent on/off toggles live in the hamburger info-menu panel (`#info-menu-panel`, section `.info-menu-section-layers`):
+
+**Markers** (`#toggle-markers-checkbox`) — controls all ~110 campus location pins + their tooltips:
+- `createMarker(location, exempt = false)` renders into dedicated panes `campusMarkerPane` / `campusTooltipPane` (created in `initMap()`, z-index matched to Leaflet's default `markerPane`/`tooltipPane`) unless `exempt` is `true`, in which case it renders into Leaflet's default panes instead
+- `filterByLocation()` and `showLocationOnMap()` — the two functions that render exactly one marker for an explicit user selection (sidebar list, search result, category-overlay item) — pass `exempt = true`, so that selected pin always shows even if markers are toggled off
+- `setMarkersVisible(visible, persist)` toggles `display` on the two custom panes as a group; persists to `localStorage.kgbMapShowMarkers` when `persist` is `true`
+
+**Labels** (`#toggle-labels-checkbox`) — controls base-map place/road name text (not the custom `mapLabels`):
+- Module-scope `showLabels` (default `true`, read from `localStorage.kgbMapShowLabels !== 'false'` on init)
+- `applyLabelVisibility()` picks the label layer matching `currentBaseView`, removes the other entirely, and adds/removes the active one based on `showLabels`
+- Called from `setBaseView()` (on view switch) and from the labels-checkbox change handler (on toggle)
+
+Both checkboxes are wired in `initMap()`, reading their initial state from localStorage and applying it before any user interaction.
 - **Campus boundary**: fetched from `../data/campus-boundary.json` (local cached coords for OSM Way 1120569731) via `loadCampusBoundary()` on init; rendered as non-interactive `L.polygon()` in `#1967d2`
 - **Zoom control**: bottom-right
 - **Mobile zoom gestures**: Leaflet's `doubleClickZoom` is disabled on mobile (≤768px) and replaced with custom touch handlers:
   - **Double tap** (one finger, within 300ms, within 40px) → `setZoomAround()` zoom in 1 level at tap position
   - **Hold one finger (≥150ms) + tap with second finger (<300ms)** → `zoomOut(1)`; mirrors Google Maps two-finger zoom-out
   - Pinch zoom unaffected (second finger held >300ms hands off to Leaflet); desktop `dblclick` zoom untouched
+
+### 3a. Map Text Labels
+
+`mapLabels` (top of `script.js`, global scope so search can read it) defines static landmark/area labels rendered directly on the map — not tied to a `kgb-map.json` entry:
+
+```js
+const mapLabels = [
+    { coords: [5.405672070610966, 103.08435741479786], text: 'Tasik UniSZA', fontSize: 13, minZoom: 15 },
+    { coords: [5.4027246673160985, 103.07766728429158], text: 'Padang<br>New Zealand', fontSize: 13, minZoom: 15 },
+];
+```
+
+In `initMap()`, each entry becomes a non-interactive `L.marker` with an `L.divIcon` (`.map-text-label` class, `zIndexOffset: -1000`). `mapLabelRefs` stores `{ marker, fontSize, minZoom }` for each. `updateMapTextLabels()` (called on `zoomend` and once on init) hides labels below `minZoom` and scales `fontSize` from 60%→100% over the 3 zoom levels above threshold. Supports `<br>` for multi-line text.
+
+Labels are included in the search dropdown (`renderSearchResults()` matches `mapLabels` by `text`); selecting one flies to its coordinate like a location marker, with mobile sheet collapse to `peek`. To add a label, just append an entry to `mapLabels` — no JSON/data changes needed.
 
 ### 4. Marker System
 
@@ -407,6 +454,7 @@ All URL changes use `history.replaceState` — map navigation does **not** add b
 - **Slug collision** — if two locations produce the same slug, `find()` returns the first match. Full place names on this campus are unique in practice.
 - **`copyToClipboard()`** — `navigator.clipboard` requires HTTPS. On `http://localhost`, falls back to `execCommand('copy')`.
 - **Category share button** is a `<span role="button">` not `<button>` — nesting `<button>` inside `.stop-header <button>` is invalid HTML; browsers hoist inner buttons out of DOM.
+- **Leftover debug zoom indicator** — `initMap()` still appends a fixed bottom-right "Zoom: N" div on every load (marked `// DEBUG` / `// END DEBUG` in `script.js`, originally added for v1.7 development). Harmless but shows on production; remove if/when cleaning up.
 
 ---
 
@@ -457,6 +505,17 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 - [ ] Info overlay: `×` dismisses panel and resets to all locations
 - [ ] Info overlay: switching between locations cross-fades content (no sidebar flicker)
 - [ ] Map cannot zoom out past level 14
+- [ ] Map view toggle button (bottom-right, above zoom control) switches between satellite and OSM regular view
+- [ ] Switching to regular view hides the CartoDB label overlay; custom map text labels (Tasik UniSZA, Padang New Zealand) remain visible
+- [ ] Switching back to satellite view restores the CartoDB label overlay
+- [ ] Toggle button icon reflects the view you'd switch to (shows `map` icon while on satellite, `satellite_alt` icon while on regular)
+- [ ] Reloading the page after switching views restores the last-selected view (localStorage `kgbMapBaseLayer`)
+- [ ] Hamburger menu shows "Paparan Peta" section with "Penanda Lokasi" and "Nama Tempat & Jalan" toggles, both ON by default
+- [ ] Toggling "Penanda Lokasi" OFF hides all campus pins + tooltips on both satellite and regular view; campus boundary and custom map text labels stay visible
+- [ ] While markers are OFF, selecting a location from the sidebar list or search still shows that single pin; returning to all-locations/category view hides pins again
+- [ ] Toggling "Nama Tempat & Jalan" OFF hides the active label overlay (satellite: `light_only_labels`; regular: `voyager_only_labels`); custom landmark labels (Tasik UniSZA, Padang New Zealand) remain visible regardless
+- [ ] Switching base view while labels are OFF keeps labels OFF on the new view, with no leaked label layer from the previous view
+- [ ] Reloading the page after changing either toggle restores both states (localStorage `kgbMapShowMarkers`, `kgbMapShowLabels`)
 - [ ] Desktop sidebar: collapse/expand via chevron button
 - [ ] Desktop: search bar repositions when sidebar is collapsed
 - [ ] Closing info overlay (`×`) calls `showAllLocations()` — all markers restored
@@ -508,126 +567,4 @@ To add a new category: add it to `DESIRED_ORDER` in `script.js` and add a color 
 
 ## Changelog
 
-### v2.9 — Category Overlay Panel
-
-**Category overlay:**
-- `showCategoryOverlay(categoryName)` — new function; renders `.stop-category-overlay` panel into sidebar with colored header, share button, location count, and scrollable location list; cross-fades if called while another category overlay is already open
-- `currentOverlaySource` — new state variable (`null | 'category'`); set to `'category'` when opening location overlay from within category overlay; controls `←` behavior in `dismissOverlay()`
-- Category overlay stays in DOM while location overlay is open on top (DOM order ensures location overlay wins); becomes visible when location overlay animates out
-- `dismissOverlay()` split into two paths: `currentOverlaySource === 'category'` → restore category markers + URL, reveal category overlay; `null` → existing dismiss behavior
-- `showAllLocations()` removes `.stop-category-overlay` from DOM and resets `currentOverlaySource`
-- `filterByCategory()` calls `showCategoryOverlay()` and `setSheetState('half')` on mobile
-- Mobile `flyToBounds` uses `paddingBottomRight: [40, 50vh + 20px]` to keep all category markers above the half-sheet
-
-**Accordion behavior change:**
-- Category header click calls `filterByCategory()` directly on both desktop and mobile — accordion no longer expands
-- "📍 Lihat di peta" button removed (mobile-only, now redundant)
-
-**Category badge in location info overlay:**
-- "Kategori" detail row renders as `<button class="info-overlay-category-badge">` with category color; tapping it animates the location overlay out and calls `filterByCategory(location.locationType)`
-
-**Share button repositioned:**
-- "Salin Pautan Kategori" button moved from overlay footer to a `.category-overlay-share-row` div just below the header
-
-**New CSS classes:**
-- `.stop-category-overlay`, `.category-overlay-header`, `.category-overlay-badge`, `.category-overlay-back`, `.category-overlay-close`, `.category-overlay-share-row`, `.category-overlay-share`, `.category-overlay-subtitle`, `.category-overlay-list`, `.info-overlay-category-badge`
-- Mobile override: `.stop-category-overlay { top: 24px; animation-name: slideInFromBottom }` (reuses existing keyframes)
-
-### v2.8 — Shareable Deep Links
-
-**URL system:**
-- `?type=<category-slug>` — shareable category filter link (e.g. `?type=kolej-kediaman`)
-- `#<place-slug>` — shareable location link (e.g. `#canselori`)
-- Both can combine: `?type=kolej-kediaman#canselori`
-- All URL changes use `history.replaceState` — no browser history pollution
-- `updateURL({ type, location })` is the single function for all URL mutations
-
-**Deep-link handling:**
-- `handleDeepLink()` called once after data loads; reads URL params and restores map state
-- `#hash` takes priority over `?type=` — always resolves to single-marker + overlay
-- `?type=` on deep-link with no hash: filters category, expands accordion
-- `showAllLocations(animate, updateUrl)` now accepts `updateUrl` flag; initial load passes `false` to preserve URL params for `handleDeepLink()`
-
-**Share buttons:**
-- Info overlay: "Salin Pautan" button (`<button class="info-overlay-share">`) copies current URL; appears below "Buka di Google Maps"
-- Category header: link icon (`<span class="category-share-btn" role="button">`) copies `?type=` URL with `stopPropagation` so it doesn't trigger accordion/filter. Must be a `<span>` not `<button>` — nested `<button>` inside `.stop-header` is invalid HTML
-- `copyToClipboard(text)` — HTTPS uses `navigator.clipboard`; HTTP fallback uses `execCommand('copy')` via temporary textarea
-- `showToast(message)` — fixed bottom-center `#map-toast` element, 2s fade-out
-
-**CSS changes:**
-- `.info-overlay-share` — grey pill button, mirrors `.info-overlay-directions` layout
-- `#map-toast` / `#map-toast.visible` — fade animation via `opacity` + `translateY`
-- `.category-share-btn` — icon button in category header, blue on hover
-- `.stop-header-label { flex: 1 }` — label fills flex space; `justify-content: space-between` removed from `.stop-header`
-
-**Bug fix:** Initial load zoom level was incorrectly using the `animate=false` zoom (`17.5`) instead of the button zoom (`16.3`). Fixed by calling `showAllLocations(true, false)` — animate keeps correct zoom, `updateUrl=false` preserves params for deep-link.
-
-### v1.0 — Initial Release
-- Created `kgb/map/` sub-project: `index.html`, `script.js`, `style.css`
-- Adapted from `bus-stop-kgb/` architecture for campus locations
-- Data source: `../data/kgb-map.json` (fetched via relative path, cache-busted with `Date.now()`)
-- 10 category color system with `CATEGORY_COLORS` lookup and CSS custom properties
-- `parseCoords()` to extract lat/lng from `googleMapLink` URL (`?q=lat,lng`)
-- `processData()` assigns unique `id` (array index) to handle duplicate `number` values across categories
-- `customSort()` ported from `kgb/script.js` — letter-prefix before pure-number sort
-- Colored `L.divIcon` markers: circle (≤3 chars) and pill (≥4 chars)
-- Permanent tooltips (hidden by default) with hover-reveal and click-to-expand/sticky behavior
-- 10-category accordion sidebar with "📍 Lihat di peta" mobile button per category
-- Text-only info overlay (no images) — slides in from left on desktop, bottom on mobile
-- All mobile bottom sheet touch logic and desktop sidebar collapse/expand ported verbatim from `bus-stop-kgb/`
-
-### v1.1 — Tooltip Hover Fix
-- Changed tooltip to `permanent: true` (always in DOM) but hidden via CSS (`opacity: 0; pointer-events: none`)
-- Added `.tooltip-visible` CSS class — applied via JS `mouseover`/`mouseenter` on both marker and tooltip element
-- This fixes the race condition where non-permanent tooltips disappeared before inner buttons could be clicked (mouse moving from marker to tooltip triggered `mouseout` → tooltip closed)
-- Sticky state (`.expanded`) persists tooltip after click regardless of mouse position
-- `map.on('click')` clears all sticky/visible states
-
-### v1.2 — Single-Marker Focus on Location Select
-- `filterByLocation()` and `showLocationOnMap()` now call `clearMarkers()` before creating the selected location's marker
-- Selecting a location from the sidebar list or search results hides all other markers
-- Both functions also reset `currentActiveCategory` and clear `.category-active` header highlights
-- "Papar semua Lokasi" and closing the info overlay (`×`) both restore all markers via `showAllLocations()`
-
-### v1.3 — Info Overlay Close Restores All Markers
-- `showLocationInfoOverlay()` close button (`×`) now calls `showAllLocations()` after the slide-out animation completes
-- Closing the details pane zooms the map back to the full campus view with all markers
-
-### v2.7 — Mobile Zoom Gestures
-- Leaflet's `doubleClickZoom` disabled on mobile (≤768px); replaced with custom touch handlers
-- **Double tap** (one finger) → `setZoomAround()` zoom in 1 level at tap position — same feel as Leaflet default
-- **Hold one finger + tap second finger** → `zoomOut(1)` — mirrors Google Maps two-finger zoom-out gesture
-- Pinch zoom and desktop double-click zoom unaffected
-
-### v2.6 — Multi-Format Image Support
-- Info overlay image loading now tries `.jpg` → `.png` → `.webp` in order before falling back to the "Tiada Gambar" placeholder
-- Implemented via chained `onerror` handlers on the `<img>` element — each failure updates `this.src` to the next extension; if all three fail, image is hidden and sibling placeholder shown
-- No folder structure or `kgb-map.json` schema changes — upload the image in any supported format
-
-### v2.5 — Location Images in Info Overlay
-- `CATEGORY_SLUG` constant maps each `locationType` to its image subfolder slug
-- `showLocationInfoOverlay()` builds image URL by convention (`kgb/data/kgb-map/images/{folder}/{number}.jpg`) from existing fields — no schema changes
-- `<img>` with `onerror` fallback: hides image and shows sibling `.info-overlay-image-placeholder` div when the file is missing
-- CSS: `.info-overlay-image-wrap`, `.info-overlay-image`, `.info-overlay-image-placeholder`, `.info-overlay-image-placeholder .material-symbols-outlined`
-
-### v2.4 — Info Menu Panel
-- **Hamburger button** (`#info-menu-btn`) added to right of search bar; `z-index: 12` to appear above search input
-- **Info menu panel** (`#info-menu-panel`): full-screen right-slide on mobile, 380px popup card on desktop
-- Panel sections: hero image with gradient text overlay, nav pill buttons (Bus Stop / 360° VT / Menu Utama), feedback pill buttons, version/kemaskini
-- `openInfoMenu()` / `closeInfoMenu()` functions; backdrop click closes panel
-- `#map-data-info` and `.sidebar-nav-footer` globally hidden (display: none) — superseded by panel
-- Mobile: sidebar title/subtitle hidden; CSS `order` reorders sheet: "Senarai Lokasi" header → action buttons → accordion list
-
-### v1.5 — Navigation & Campus Boundary Fix
-- **Sidebar nav footer**: added `.sidebar-nav-footer` at bottom of sidebar with links to `/kgb/bus-stop/` (Peta Bus Stop) and `/` (Kembali ke menu utama)
-- **Campus boundary local cache**: `loadCampusBoundary()` now fetches `../data/campus-boundary.json` instead of querying Overpass API — eliminates 504 timeout failures; polygon loads reliably on every page load
-- `kgb/data/campus-boundary.json` contains 45 hardcoded lat/lon pairs for OSM Way 1120569731
-
-### v1.4 — Mobile UX Improvements
-- **Bottom sheet collapses on map tap**: tapping empty map area on mobile collapses sheet to `peek`; marker taps are unaffected (stopPropagation)
-- **Back vs close buttons differentiated**: `←` dismisses the info overlay only (keeps selected marker); `×` resets to all locations
-- **Mobile tooltips appear above marker**: `direction: 'top'` with downward-pointing CSS arrow on mobile; desktop remains `direction: 'right'`; `tooltipAnchor` set per-breakpoint in `createMarkerIcon()`
-- **Consistent marker focus position**: extracted `flyToMarker(coords)` helper used by both marker tap and list select — same bottom-sheet-aware offset calculation for both paths
-- **Info overlay cross-fade on location switch**: switching between locations while overlay is open cross-fades in place (120ms) instead of remove + slide-in; sidebar never exposed during transition
-- **`minZoom: 14`** added to `L.map()` options to prevent zooming out past campus view
-- **"Papar semua Lokasi" zoom fixed**: `flyTo` now uses mobile `16`, desktop `14` to match initial load zoom
+Full version history (v1.0–present) lives in [CHANGELOG.md](CHANGELOG.md) — update that file when shipping changes, not this one. Current version: **v2.9** (Category Overlay Panel).
