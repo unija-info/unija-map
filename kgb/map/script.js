@@ -1777,7 +1777,11 @@ function renderDirectionsResults(term, field) {
     const dropdown = document.getElementById('directions-dropdown');
     if (!dropdown) return;
 
-    let html = `
+    // An endpoint already used by the other field can't be picked again — hide
+    // it from this field's dropdown (covers GPS, a specific location, or a map label).
+    const otherField = field === 'start' ? directionsEnd : directionsStart;
+
+    let html = (otherField && otherField.type === 'gps') ? '' : `
         <div class="search-result-item gps" data-type="gps">
             <div class="result-content">
                 <div class="result-title">Lokasi Saya (GPS)</div>
@@ -1788,6 +1792,7 @@ function renderDirectionsResults(term, field) {
     if (term && term.length > 0) {
         const matchingLocations = matchLocationsByTerm(term).filter(loc => loc.coords);
         matchingLocations.slice(0, 12).forEach(loc => {
+            if (otherField && otherField.type === 'location' && otherField.id === loc.id) return;
             html += `
                 <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                     <div class="result-content">
@@ -1803,9 +1808,11 @@ function renderDirectionsResults(term, field) {
             text.replace(/<br>/gi, ' ').toLowerCase().includes(lowerTerm)
         );
         matchingLabels.forEach((label) => {
+            const labelIndex = mapLabels.indexOf(label);
+            if (otherField && otherField.type === 'maplabel' && otherField.coords === label.coords) return;
             const displayText = label.text.replace(/<br>/gi, ' ');
             html += `
-                <div class="search-result-item maplabel" data-type="maplabel" data-index="${mapLabels.indexOf(label)}">
+                <div class="search-result-item maplabel" data-type="maplabel" data-index="${labelIndex}">
                     <div class="result-content">
                         <div class="result-title">${displayText}</div>
                         <div class="result-subtitle">Kawasan / Tapak</div>
