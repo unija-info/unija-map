@@ -1896,7 +1896,14 @@ body, html {
     }
 
     .sidebar {
-        /* Position: Bottom sheet anchored to bottom */
+        /* Position: Bottom sheet anchored to the real visible viewport, not
+           .app-container's static 100vh box — matches .search-container/
+           .directions-container/#my-location-btn, which are already `fixed`.
+           Without this, on real mobile browsers (dynamic address-bar resizing
+           the visible viewport) the sheet drifts out of sync with anything
+           anchored via `position: fixed`, showing up as a gap that desktop's
+           fixed-size devtools emulation never reveals. */
+        position: fixed;
         top: auto;
         bottom: 0;
         left: 0;
