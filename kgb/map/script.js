@@ -966,6 +966,7 @@ function handleTouchMove(e) {
     const maxHeight = window.innerHeight * 0.90;
     newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
     sheetElement.style.height = newHeight + 'px';
+    updateFloatingButtonsPosition();
     lastTouchY = touchCurrentY;
 }
 
@@ -1034,6 +1035,7 @@ function handleContentTouchMove(e) {
         const maxHeight = window.innerHeight * 0.90;
         newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
         sheetElement.style.height = newHeight + 'px';
+        updateFloatingButtonsPosition();
     }
 
     lastTouchY = currentY;
@@ -1074,6 +1076,7 @@ function handleHeaderTouchMove(e) {
     const maxHeight = window.innerHeight * 0.90;
     newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
     sheetElement.style.height = newHeight + 'px';
+    updateFloatingButtonsPosition();
     lastTouchY = currentY;
 }
 
@@ -1497,7 +1500,11 @@ function setUserLocationVisible(visible) {
         if (!navigator.geolocation) return;
         userLocationWatchId = navigator.geolocation.watchPosition(
             (pos) => updateUserLocationMarker(pos.coords),
-            (err) => console.warn('Geolocation error:', err),
+            (err) => {
+                console.warn('Geolocation error:', err);
+                showUserLocation = false;
+                document.getElementById('my-location-btn')?.classList.remove('active');
+            },
             { enableHighAccuracy: true }
         );
     } else {
@@ -1515,6 +1522,7 @@ function setUserLocationVisible(visible) {
 function updateUserLocationMarker(coords) {
     currentUserLocation = { lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy };
     const latlng = [coords.latitude, coords.longitude];
+    const isFirstFix = !userLocationMarker;
     if (!userLocationMarker) {
         userLocationMarker = L.marker(latlng, {
             icon: L.divIcon({ className: 'user-location-dot', iconSize: [16, 16] }),
@@ -1530,6 +1538,85 @@ function updateUserLocationMarker(coords) {
         userLocationAccuracyCircle.setLatLng(latlng);
         userLocationAccuracyCircle.setRadius(coords.accuracy);
     }
+    // Focus the map on the very first fix after enabling GPS (mirrors clicking a
+    // location in the list) — not on every subsequent watchPosition update, since
+    // that would yank the camera around as the user moves.
+    if (isFirstFix) focusMapOnUserLocation(latlng);
+}
+
+// Same camera-focus behavior used when selecting a location from the list/search,
+// just applied to the user's GPS position instead of a campus location.
+function focusMapOnUserLocation(coords) {
+    if (window.innerWidth <= 768) {
+        flyToMarker(coords);
+        if (sheetElement) {
+            sheetElement.style.height = '';
+            setSheetState('peek');
+        }
+    } else {
+        const basePadding = getMapPadding();
+        const padding = [100, 100, 100, basePadding[3] || 100];
+        map.flyToBounds([coords], { padding: padding, maxZoom: 19, duration: 1.2 });
+    }
+}
+
+// ===== MY LOCATION BUTTON (desktop + mobile FAB) =====
+
+// Desktop: stack the button directly above Leaflet's live-rendered zoom control,
+// so it reads as part of the same control group regardless of the control's actual size.
+function positionMyLocationButtonDesktop() {
+    const btn = document.getElementById('my-location-btn');
+    const zoomEl = document.querySelector('.leaflet-control-zoom');
+    if (!btn || !zoomEl || window.innerWidth <= 768) return;
+    const rect = zoomEl.getBoundingClientRect();
+    btn.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+}
+
+function initMyLocationButton() {
+    const btn = document.getElementById('my-location-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const next = !showUserLocation;
+        setUserLocationVisible(next);
+        btn.classList.toggle('active', next);
+    });
+}
+
+// Mobile: float both buttons above the bottom sheet, tracking its live height, capped at 50vh.
+// Driven two ways: (1) called directly, synchronously, from the sheet's own drag handlers
+// (handleTouchMove/handleContentTouchMove/handleHeaderTouchMove) so the buttons move in the
+// exact same frame as the sheet during a fast drag — a ResizeObserver alone fires ~1 frame
+// later, which reads as elastic/rubber-band lag and lets the buttons briefly overlap the
+// sheet's top edge; (2) a ResizeObserver as a fallback for the CSS-transitioned height
+// changes (setSheetState snaps, programmatic opens) that don't go through those handlers.
+let floatingButtonsMobileInitialized = false;
+function updateFloatingButtonsPosition() {
+    if (!sheetElement) return;
+    const myLocationBtn = document.getElementById('my-location-btn');
+    const directionsBtn = document.getElementById('directions-fab-btn');
+    if (!myLocationBtn && !directionsBtn) return;
+
+    const cap = window.innerHeight * 0.5;
+    const rawHeight = sheetElement.getBoundingClientRect().height;
+    const sheetHeight = Math.min(rawHeight, cap);
+    const baseBottom = sheetHeight + 12;
+    // Once the sheet grows past the 50vh cap, the buttons' frozen position
+    // falls inside the sheet's vertical range — drop them behind the sheet
+    // (instead of floating on top of its content) so it visually covers them.
+    const pastCap = rawHeight > cap;
+    [myLocationBtn, directionsBtn].forEach(btn => {
+        if (!btn) return;
+        btn.classList.toggle('floating-btn-behind-sheet', pastCap);
+    });
+    if (myLocationBtn) myLocationBtn.style.bottom = `${baseBottom}px`;
+    if (directionsBtn) directionsBtn.style.bottom = `${baseBottom + 44 + 10}px`;
+}
+
+function initFloatingButtonsMobile() {
+    if (window.innerWidth > 768 || !sheetElement || floatingButtonsMobileInitialized) return;
+    floatingButtonsMobileInitialized = true;
+    new ResizeObserver(updateFloatingButtonsPosition).observe(sheetElement);
+    updateFloatingButtonsPosition();
 }
 
 // ===== OSRM DIRECTIONS (EXPERIMENT) =====
@@ -1773,8 +1860,14 @@ function closeDirectionsPanel() {
     if (dropdown) { dropdown.classList.remove('active'); dropdown.innerHTML = ''; }
 }
 
+function toggleDirectionsPanel() {
+    if (directionsModeActive) closeDirectionsPanel();
+    else openDirectionsPanel();
+}
+
 function initDirectionsPanel() {
     const toggleBtn = document.getElementById('directions-toggle-btn');
+    const fabBtn = document.getElementById('directions-fab-btn');
     const closeBtn = document.getElementById('directions-close-btn');
     const swapBtn = document.getElementById('directions-swap-btn');
     const startInput = document.getElementById('directions-start-input');
@@ -1783,10 +1876,8 @@ function initDirectionsPanel() {
 
     if (!toggleBtn || !startInput || !endInput || !dropdown) return;
 
-    toggleBtn.addEventListener('click', () => {
-        if (directionsModeActive) closeDirectionsPanel();
-        else openDirectionsPanel();
-    });
+    toggleBtn.addEventListener('click', toggleDirectionsPanel);
+    fabBtn?.addEventListener('click', toggleDirectionsPanel);
 
     closeBtn.addEventListener('click', closeDirectionsPanel);
 
@@ -1898,6 +1989,7 @@ function initMap() {
     setBaseView(currentBaseView, false);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+    positionMyLocationButtonDesktop();
 
     const toggleSatelliteCheckbox = document.getElementById('toggle-satellite-checkbox');
     if (toggleSatelliteCheckbox) {
@@ -1924,13 +2016,6 @@ function initMap() {
             showLabels = e.target.checked;
             localStorage.setItem('kgbMapShowLabels', showLabels);
             applyLabelVisibility();
-        });
-    }
-
-    const toggleUserLocationCheckbox = document.getElementById('toggle-user-location-checkbox');
-    if (toggleUserLocationCheckbox) {
-        toggleUserLocationCheckbox.addEventListener('change', (e) => {
-            setUserLocationVisible(e.target.checked);
         });
     }
 
@@ -2207,6 +2292,8 @@ window.onload = function() {
     initDesktopSidebar();
     initSearchDropdown();
     initDirectionsPanel();
+    initMyLocationButton();
+    initFloatingButtonsMobile();
     createClearSearchButton();
     initClearSearchButton();
     fetchMapDataInfo();
@@ -2217,10 +2304,12 @@ window.addEventListener('resize', function() {
 
     if (window.innerWidth <= 768) {
         initBottomSheet();
+        initFloatingButtonsMobile();
         if (sidebar) sidebar.classList.remove('collapsed');
     } else {
         if (sidebar && desktopSidebarCollapsed) {
             sidebar.classList.add('collapsed');
         }
+        positionMyLocationButtonDesktop();
     }
 });

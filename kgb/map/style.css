@@ -232,6 +232,41 @@ body, html {
 #directions-toggle-btn:hover { background: rgba(0,0,0,0.07); }
 #directions-toggle-btn.active { background: #e8f0fe; color: #1967d2; }
 
+/* My Location button — desktop: stacked above Leaflet's zoom control;
+   `bottom` is set in JS to track the control's actual rendered height. */
+#my-location-btn {
+    position: absolute;
+    right: 10px;
+    z-index: 1002;
+    width: 30px;
+    height: 30px;
+    border: 2px solid rgba(0,0,0,0.2);
+    background-clip: padding-box;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+    padding: 0;
+}
+#my-location-btn .material-symbols-outlined {
+    font-size: 18px;
+}
+#my-location-btn:hover {
+    background: #f4f4f4;
+}
+#my-location-btn.active {
+    color: #1967d2;
+}
+
+/* Directions FAB — mobile-only entry point; hidden on desktop */
+#directions-fab-btn {
+    display: none;
+}
+
 /* Directions panel — replaces the search bar's screen slot when open */
 .directions-container {
     position: absolute;
@@ -1797,6 +1832,15 @@ body, html {
 
     #search-bar {
         font-size: 16px; /* Prevent zoom on iOS */
+        padding-right: 52px; /* directions icon hidden on mobile — only hamburger remains */
+    }
+
+    /* Old search-bar directions icon is replaced by #directions-fab-btn on mobile */
+    #directions-toggle-btn {
+        display: none;
+    }
+    #info-menu-btn {
+        right: 10px;
     }
 
     .directions-container {
@@ -1810,6 +1854,45 @@ body, html {
 
     .sidebar.collapsed ~ .directions-container {
         left: 12px;
+    }
+
+    /* My Location + Directions FABs — float above the bottom sheet, stacked;
+       `bottom` is set in JS to track the sheet's live height (capped at 50vh). */
+    #my-location-btn,
+    #directions-fab-btn {
+        position: fixed;
+        right: 12px;
+        z-index: 1550;
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #5f6368;
+        cursor: pointer;
+        padding: 0;
+        /* No transition on `bottom` — it's driven synchronously from the sheet's own
+           drag handlers (see updateFloatingButtonsPosition() in script.js) and needs
+           to move in lockstep with the sheet, not ease behind it. */
+    }
+    #my-location-btn .material-symbols-outlined,
+    #directions-fab-btn .material-symbols-outlined {
+        font-size: 22px;
+    }
+    #my-location-btn.active {
+        color: #1967d2;
+    }
+
+    /* Once the sheet grows past the 50vh cap and its top edge overtakes the
+       buttons' frozen position, drop them behind the sheet (1500) instead of
+       floating on top of its content. */
+    #my-location-btn.floating-btn-behind-sheet,
+    #directions-fab-btn.floating-btn-behind-sheet {
+        z-index: 1490;
     }
 
     .sidebar {
