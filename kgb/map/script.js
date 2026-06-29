@@ -639,14 +639,14 @@ function showLocationInfoOverlay(locationId) {
     const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
     const imageHtml = `
         <div class="info-overlay-image-wrap">
-            <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}" style="display:none;"
-                 onload="this.style.display='block';this.nextElementSibling.style.display='none';"
+            <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}"
+                 onload="this.style.opacity='1';this.nextElementSibling.style.opacity='0';"
                  onerror="
                    if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
                    else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
-                   else{this.style.display='none';}
+                   else{this.style.opacity='0';}
                  " />
-            <div class="info-overlay-image-placeholder" style="display:flex;">
+            <div class="info-overlay-image-placeholder">
                 <span class="material-symbols-outlined">hide_image</span>
                 <span>Tiada Gambar</span>
             </div>
