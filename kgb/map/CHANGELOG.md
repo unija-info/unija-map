@@ -11,10 +11,15 @@ All notable changes to `kgb/map/` are documented here.
 - Distinct colored pin markers (green start / red end) in a new `directionsPinPane` (z-index 700)
 - `drawOSRMRoute()` generalized from `(toCoords)` (always FROM live GPS) to `(fromCoords, toCoords)` — no longer implicitly tied to the GPS watch
 - Picking GPS as an endpoint uses a one-shot `getCurrentPosition()`, decoupled from the continuous `watchPosition()` tied to the hamburger "Lokasi Saya (GPS)" toggle — picking it never turns the toggle on, and toggling GPS off never clears an active Directions route
+- **`#my-location-btn`** — GPS toggle moved out of the hamburger menu into a dedicated button: stacked above Leaflet's zoom control on desktop, a circular floating button on mobile. Clicking it centers the map on the user's first GPS fix (`focusMapOnUserLocation()`), mirroring the camera-focus behavior of selecting a location from the list
+- **`#directions-fab-btn`** — mobile-only floating Directions button, stacked below `#my-location-btn`; both float above the bottom sheet, tracking its live height up to a 50vh cap, then sit pinned (and visually behind the sheet once it grows past that cap)
+- **No duplicate endpoints** — `renderDirectionsResults()` now excludes whatever the *other* field currently holds (GPS, a specific location, or a map label) from a field's own dropdown, so the same point can no longer be picked for both Start and End
 
 ### Changed/Removed
 - **Removed** the single "Arah Dari Lokasi Saya (Eksperimen)" button (always routed FROM live GPS only) — superseded entirely by the Directions panel
 - `setUserLocationVisible(false)` now only calls `clearRoute()` when the Directions panel is closed
+- **Info overlay image loading** — placeholder now shows immediately and the image cross-fades in on load (`opacity` transition) instead of only appearing after all three format attempts (`.jpg`/`.png`/`.webp`) fail; `.info-overlay-image-wrap` is now a fixed `200px` box with both layers absolutely positioned inside it, eliminating a layout jump that was visible on slower mobile connections
+- Hamburger info-menu panel's hero image (`unisza-kgb-aerial.jpg`) now uses `loading="lazy"` — it's off-screen by default until the panel is opened
 
 ---
 

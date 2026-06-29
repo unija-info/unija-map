@@ -23,8 +23,8 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 - **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
 - **Real-time search** — search by location name, number code, short form, details, or area label
 - **Info menu panel** — hamburger button in the search bar opens a panel (full-screen slide-in on mobile, popup card on desktop) with campus hero image, navigation links, feedback buttons, and version/update info
-- **Directions panel (Experiment)** — Google-Maps-style Start/End routing: pick any campus location, map label, or "Lokasi Saya (GPS)" for either point, get an OSRM driving-route preview with distance/duration and colored start/end pins on the map. Opened via the directions icon in the search bar, or via "Dapatkan Arah" in a location's info overlay (pre-fills Start = GPS, End = that location). Driving-profile only — campus footpaths aren't modeled, so treat routes as an approximation
-- **Live GPS positioning (Experiment)** — optional toggle in the hamburger menu shows your live position as a blue dot with an accuracy circle, independent of the Directions panel
+- **Directions panel (Experiment)** — Google-Maps-style Start/End routing: pick any campus location, map label, or "Lokasi Saya (GPS)" for either point, get an OSRM driving-route preview with distance/duration and colored start/end pins on the map. Opened via the directions icon in the search bar, or via "Dapatkan Arah" in a location's info overlay (pre-fills Start = GPS, End = that location). Driving-profile only — campus footpaths aren't modeled, so treat routes as an approximation. The same point can't be picked for both Start and End
+- **Live GPS positioning (Experiment)** — a dedicated "My Location" button (stacked above the zoom control on desktop, a floating button on mobile) shows your live position as a blue dot with an accuracy circle and centers the map on it, independent of the Directions panel
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
 
 ---
