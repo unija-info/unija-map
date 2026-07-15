@@ -633,7 +633,7 @@
   },
   {
     "number": "BR",
-    "place": "Asrama Farabi  / Biruni",
+    "place": "Asrama Biruni",
     "googleMapLink": "https://maps.google.com/?q=5.402120130914334,103.07933055013933",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "BR",
@@ -641,7 +641,7 @@
   },
   {
     "number": "FR",
-    "place": "Asrama  Bajruni / Farabi",
+    "place": "Asrama  Farabi",
     "googleMapLink": "https://maps.google.com/?q=5.401902045585424,103.0793258086188",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "FR",
