@@ -4,6 +4,23 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [Unreleased] — MapLibre 3D Vector + Walk Routing
+
+### Added
+- **3D vector map (default)** — engine swapped from Leaflet raster to MapLibre GL JS on OpenFreeMap `bright` vector style; campus buildings extrude in 3D (`fill-extrusion`, `pitch: 45`) with a compass/pitch NavigationControl. New `Peta 3D (bangunan)` toggle in the hamburger `Paparan Peta` section (`localStorage.kgbMapPitch3D`)
+- **Satellite kept as toggle** — Esri World Imagery + Carto labels now a MapLibre style switched via the existing `Paparan Satelit` checkbox (unchecked = 3D vector default); legacy `kgbMapBaseLayer === 'osm'` migrates to vector
+- **Walk routing (jalan kaki)** — Directions panel now routes via FOSSGIS `routed-foot` (`routing.openstreetmap.de`, foot profile, no key); readout is `X.X km · Y minit (jalan kaki)`; route renders as glow/base/dash line layers that drape over the 3D map
+
+### Changed/Removed
+- **Removed Leaflet** — CDN, panes (`campusMarkerPane`, `routeLinePane`, …), `L.divIcon` tooltips, and custom mobile double-tap gestures gone; boundary/route/GPS-accuracy are GeoJSON sources (re-added automatically after every `setStyle`), and mobile uses MapLibre native gestures
+- **Pins are canvas layers, not HTML markers** — replaced in a v2 overhaul by badge-only fixed-box HTML markers (number badge / dot, category colors) with NO per-marker popup content, so element boxes can never shift anchors under the pitched camera; hover/click share one external popup (`#pin-popup`), zoom tiers re-render badge HTML in place, highlight is a CSS ring, and dots get a CSS fat-tap hitbox — after canvas layers proved undebuggable remotely (layers created, features in memory, yet zero tiled/rendered with no error)
+- **Default 3D pitch 45° → 30°** — shallower tilt keeps extruded buildings closer to their ground footprints, reducing the parallax that makes correctly-anchored pins look offset from buildings (pins anchor to ground coords; building tops lean away under tilt on every 3D map — tapping the compass snaps back to north-up flat)
+- **Floating pins with stems** — badges now hover above rooftops on a thin stem (`anchor: 'bottom'` at the ground coordinate, stem foot exact), stem renders only when tilted (`body.is-pitched`, hidden top-down), popup lift adapts to pitch; dots stay ground-level
+- **Debug tooling** — removed the always-on zoom chip; `?debug=1` shows a live camera chip (zoom/pitch/bearing/center/pins), `?debugpage` opens a full overlay (camera, data incl. no-coords list, pins, state, prefs + copy-state/clear-prefs/reload actions); noisy logs gated behind the flags, both flags survive in-map navigation
+- **March bug root fix** — `.ml-marker` is now `position: absolute !important` (a `position: relative` rule had been beating MapLibre's own marker rule in cascade order, leaving elements in flow layout so each translate stacked onto the previous row — index-marched pins)
+- **3D buildings tolerate missing heights** — `render_height`/`render_min_height` wrapped in `coalesce` (defaults 8m/0m), fixing the `Expected value to be of type number, but found null` console error and extruding height-less buildings modestly instead of dropping them
+- GPS accuracy circle is now a meters-accurate GeoJSON polygon instead of `L.circle`
+
 ## [Unreleased] — Directions Panel (Experiment)
 
 ### Added

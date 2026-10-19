@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Pure static HTML5/CSS3/Vanilla JS — no npm, no build tools, no frameworks (except Leaflet.js in `kgb/map/` and `kgb/bus-stop/`). Deployed on Vercel; Vercel Analytics script present on all pages.
 
+> **Beta divergence (2026-10, unmerged):** `beta` branch is migrating `kgb/map/` from Leaflet to MapLibre GL JS (OpenFreeMap 3D vector default, foot routing, overhauled pins). See root `CHANGELOG.md` Unreleased section and `kgb/map/DEV_NOTES.md` latest session entry. Agent conventions live in root `AGENTS.md` — read it.
+
 ## Architecture
 
 ```

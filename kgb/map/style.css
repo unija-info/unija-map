@@ -2153,3 +2153,214 @@ body, html {
 .sidebar-nav-footer a:hover {
     text-decoration: underline;
 }
+
+/* ===== MapLibre GL JS (OpenFreeMap 3D vector) — replaces Leaflet ===== */
+.maplibregl-canvas:focus { outline: none; }
+.maplibregl-ctrl-attrib { font-size: 10px; }
+.maplibregl-ctrl-attrib a { color: #5f6368; }
+
+/* My-location button: fixed above MapLibre's nav control (desktop).
+   Mobile bottom is driven inline by updateFloatingButtonsPosition(). */
+#my-location-btn { bottom: 118px; right: 10px; }
+
+/* Campus markers (HTML) — position MUST stay absolute: equal-specificity
+   `.ml-marker{position:relative}` used to beat MapLibre's own rule and left
+   elements in flow layout (translate added onto flow slots = index-marched pins). */
+.ml-marker {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+.ml-badge-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.ml-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Google Sans', sans-serif;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+.ml-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    cursor: pointer;
+}
+.ml-marker.marker-highlighted .ml-badge,
+.ml-marker.marker-highlighted .ml-dot {
+    box-shadow: 0 0 0 2.5px white, 0 0 0 5px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.35);
+}
+
+/* Floating-pin stem: foot is the glued point, badge hovers above the roof.
+   Rendered only when the map is tilted (body.is-pitched); top-down keeps the
+   clean badge-on-coordinate look. */
+.ml-stem {
+    display: none;
+    width: 3px;
+    height: 26px;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, rgba(95,99,104,0.9), rgba(95,99,104,0.5));
+}
+body.is-pitched .ml-stem { display: block; }
+
+/* Marker popup — reuses .custom-tooltip-popup visibility classes */
+.ml-popup {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: max-content;
+    max-width: 220px;
+}
+.ml-popup .popup-content-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+    pointer-events: none;
+    z-index: 10;
+}
+.ml-directions-pin-wrap { line-height: 0; }
+
+/* Fat-tap hitbox so 12px dots stay tappable on mobile (no extra GL layer). */
+.ml-marker::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+}
+
+/* Debug chip (?debug=1): live camera readout, bottom-left. */
+#debug-chip {
+    position: fixed;
+    left: 10px;
+    bottom: 10px;
+    z-index: 3000;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    max-width: calc(100vw - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Debug page (?debugpage): full overlay with live state + actions. */
+#debug-page {
+    position: fixed;
+    inset: 0;
+    z-index: 3001;
+    background: rgba(18,20,24,0.96);
+    color: #d7dce2;
+    display: flex;
+    flex-direction: column;
+    font-family: monospace;
+}
+.debug-page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #333;
+    flex-wrap: wrap;
+}
+.debug-page-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.debug-page-actions button {
+    font-family: monospace;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background: #222;
+    color: #fff;
+    cursor: pointer;
+}
+.debug-page-actions button:hover { background: #333; }
+#debug-page-body {
+    margin: 0;
+    padding: 12px;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+@media (min-width: 769px) {
+    #debug-page {
+        left: auto;
+        width: 460px;
+        border-left: 1px solid #333;
+    }
+}
+
+/* Shared canvas-pin popup (single element, GL-positioned — stays glued) */
+#pin-popup {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -100%);
+    z-index: 1001;
+    width: max-content;
+    max-width: 230px;
+}
+#pin-popup .popup-content-wrapper {
+    text-align: center;
+    padding: 6px 14px;
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+#pin-popup .popup-content-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+    pointer-events: none;
+}
+#pin-popup.mini .popup-category,
+#pin-popup.mini .popup-buttons,
+#pin-popup.mini .tooltip-close-btn { display: none; }
+#pin-popup.full .tooltip-close-btn { display: flex; }
+#pin-popup.full .popup-buttons {
+    max-height: 80px;
+    opacity: 1;
+    margin-top: 6px;
+    padding-bottom: 4px;
+}
+#pin-popup.full .popup-category { display: inline-block; }

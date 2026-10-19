@@ -5,6 +5,16 @@ High-level project history. For technical detail see:
 
 ---
 
+## Unreleased — `beta` branch (unmerged work, not yet on `main`)
+
+MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md):
+
+- Leaflet replaced by MapLibre GL JS on OpenFreeMap `bright` 3D vector tiles (default view); Esri satellite kept as a toggle; foot routing via FOSSGIS `routed-foot`
+- Markers overhauled after a cascade-ordering bug (`.ml-marker{position:relative}` beat MapLibre's own rule → index-marched pins); final form is badge-only HTML pins with pitch-gated float stems
+- Debug tooling: `?debug=1` live camera chip, `?debugpage` full debug overlay; old always-on zoom indicator removed
+
+---
+
 ## 2026-05-06 — Category Overlay Panel (`kgb/map/`)
 
 - Clicking a category header (or opening `?type=` deep link) now slides in a category overlay panel listing all locations in that category with a share button — mirrors the location info overlay UX

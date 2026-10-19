@@ -2,15 +2,16 @@
 
 Interactive campus map for **Universiti Sultan Zainal Abidin (UniSZA), Kampus Gong Badak**, Terengganu, Malaysia.
 
-Displays ~110 campus locations as colored markers on a satellite map — buildings, academic blocks, faculty centres, residential colleges, facilities, and more.
+Displays ~110 campus locations as colored markers on a 3D vector map — buildings, academic blocks, faculty centres, residential colleges, facilities, and more.
 
 > Part of the [unija-map](https://github.com/unija-info/unija-map) project by [unija.info](https://unija.info)
+> Non-technical user guide: [`feature.md`](feature.md)
 
 ---
 
 ## Features
 
-- **Interactive satellite map** powered by Leaflet.js with ArcGIS World Imagery
+- **Interactive 3D vector map** powered by MapLibre GL JS on OpenFreeMap `bright` tiles, with extruded 3D buildings (default pitch 30°, satellite Esri view toggleable)
 - **Color-coded markers** by location category (10 categories); KOLEJ KEDIAMAN uses a distinct rounded-square shape
 - **Zoom-adaptive markers** — priority categories (PENTADBIRAN, AKADEMIK, FAKULTI) always show full markers; other categories appear as small colored dots at low zoom, upgrading to full markers as you zoom in (threshold: 17.5 desktop / 17 mobile)
 - **Hover upgrade** — hovering a dot temporarily expands it to full size; clicking keeps it full until another location is selected
@@ -23,7 +24,7 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 - **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
 - **Real-time search** — search by location name, number code, short form, details, or area label
 - **Info menu panel** — hamburger button in the search bar opens a panel (full-screen slide-in on mobile, popup card on desktop) with campus hero image, navigation links, feedback buttons, and version/update info
-- **Directions panel (Experiment)** — Google-Maps-style Start/End routing: pick any campus location, map label, or "Lokasi Saya (GPS)" for either point, get an OSRM driving-route preview with distance/duration and colored start/end pins on the map. Opened via the directions icon in the search bar, or via "Dapatkan Arah" in a location's info overlay (pre-fills Start = GPS, End = that location). Driving-profile only — campus footpaths aren't modeled, so treat routes as an approximation. The same point can't be picked for both Start and End
+- **Directions panel (Experiment)** — Google-Maps-style Start/End routing: pick any campus location, map label, or "Lokasi Saya (GPS)" for either point, get a walking-route preview with distance/duration and colored start/end pins on the map. Opened via the directions icon in the search bar, or via "Dapatkan Arah" in a location's info overlay (pre-fills Start = GPS, End = that location). Foot profile via FOSSGIS `routed-foot` — campus footpaths come from OSM, so treat routes as an approximation. The same point can't be picked for both Start and End
 - **Live GPS positioning (Experiment)** — a dedicated "My Location" button (stacked above the zoom control on desktop, a floating button on mobile) shows your live position as a blue dot with an accuracy circle and centers the map on it, independent of the Directions panel
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
 
@@ -47,9 +48,8 @@ Displays ~110 campus locations as colored markers on a satellite map — buildin
 
 ## Tech Stack
 
-- **Leaflet.js 1.9.4** — interactive map
-- **ArcGIS World Imagery** — satellite tile layer
-- **CartoDB Positron** — labels overlay
+- **MapLibre GL JS 4.x** — interactive 3D map
+- **OpenFreeMap `bright`** — vector tiles; Esri World Imagery for the satellite toggle
 - **Vanilla JavaScript (ES6+)** — no frameworks, no build tools
 - **Google Sans** — font (Google Fonts)
 - **Vercel Analytics** — usage tracking

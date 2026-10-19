@@ -2,6 +2,8 @@
 
 Not documentation. This is a note to my next self, written right as context is about to run out. If you're reading this, you're me, a few hours or days later, with no memory of any of this. Read it like you're catching up with yourself, not onboarding onto a stranger's code.
 
+> **Session log, 2026-10-19 — the MapLibre 3D migration + marker saga.** Appended below. Everything above this line is older context, still worth reading once.
+
 ---
 
 ## Where we just were
@@ -42,3 +44,60 @@ Easy, low-friction session. No bugs that fought back, no wrong turns. The closes
 1. None of this session's changes have been pushed to remote — `beta` is fast-forwarded locally to `dev`'s commit, but ask before pushing.
 2. The duplicate-endpoint exclusion logic (#3 above) is untested in a real browser — written and `node --check`'d only, like most of this codebase's recent history. If the owner reports the GPS/location dedup *not* hiding an option correctly, check `renderDirectionsResults()`'s `otherField` comparisons first — the map-label check relies on reference equality (`otherField.coords === label.coords`), which holds because `setDirectionsField` never clones the array, but if that ever changes, this comparison silently breaks (same class of bug as last session's `pane: undefined` — a correctness assumption baked into object identity, not value equality).
 3. The architect-persona performance audit (moveend/zoomend, rAF batching, frustum culling, dirty-check) was scoped but explicitly **not implemented** — if the owner comes back wanting to actually do it, the Impact Report from that thread is the starting point, not from scratch. Frustum culling specifically: flagged as the riskiest, lowest-payoff item at this marker count (~110) — push back gently if they want to start there.
+
+---
+
+## Session 2026-10-19 — MapLibre 3D migration + the marker saga (beta, UNPUSHED)
+
+### Where we were
+
+Branch `beta`, checked out fresh from `origin/beta` at `a692ce1`. Everything below is **uncommitted local work on `beta`** — `git status` shows 5 modified files (`index.html`, `script.js` ~+760/−540, `style.css` +120, `CHANGELOG.md`, `CLAUDE.md` header note). Nothing pushed, nothing merged. The owner asked for it in stages across one long session with several Plan-mode interludes, and every single visual claim below was verified by THEM on real devices (desktop Five Server + real Android Chrome), never by me — I have no browser here, only `node --check`, spec validators, and served-file fetches. Internalize that: you cannot see this map. They are your eyes. Trust their screenshots over your theories (more on that — it burned us twice).
+
+### The shape of the session (read this before the technical list)
+
+It started as project Q&A ("what do you understand"), turned into a feasibility chat about OpenFreeMap 3D (Plan mode), then "ok go" — and from there it was a **bug-hunting marathon**, not a feature arc. The owner fires short observations with screenshots ("marker is scattered", "still not fixed", "all marker gone? why"), I diagnose, they test. Fast rounds, terse messages, high signal. Match that energy: diagnose first, minimal diff, brief explanation, one concrete thing for them to check.
+
+Two process notes that matter more than any code detail:
+
+1. **Plan mode whiplash is normal now.** This session flipped in/out of Plan mode ~6 times (system reminders, not the owner's choice half the time). When restricted, I discussed only and said "switch agents to implement" — they always just said "go". Don't lecture about modes; just respect the current one and move fast when it lifts.
+2. **My early theories were wrong THREE times and their screenshots kept correcting me.** I blamed pitchAlignment (wrong), then HTML-vs-canvas architecture (wrong direction), then data/viewport (wrong) — each time a screenshot disproved it. The actual root cause (below) was found by *staring at their screenshots until the pattern confessed* (number-order marching), not by reasoning from code. Lesson carved in stone: **when remote and blind, the screenshot is ground truth and your mental model is the suspect.** Say "I don't know yet, here's the decisive test" instead of shipping a theory-fix.
+
+### What got built (in order)
+
+1. **Leaflet → MapLibre GL JS, OpenFreeMap `bright` 3D vector as default** (`index.html`: maplibre-gl@4.7.1 CDN; `SATELLITE_STYLE` inline Esri+ Carto style object for the satellite toggle). 3D buildings via `fill-extrusion` on the `openfreemap` planet source. Default pitch started 45, lowered to **30** after the parallax complaints. Satellite toggle kept (`Paparan Satelit` checkbox, now unchecked-by-default), plus a new `Peta 3D (bangunan)` pitch toggle. `kgbMapBaseLayer` legacy `'osm'` migrates to `'vector'`.
+2. **Foot routing** — Directions panel moved from `router.project-osrm.org/driving` to FOSSGIS `routed-foot` (`routing.openstreetmap.de`), readout `(jalan kaki)`. Route/boundary/GPS-accuracy are GeoJSON sources re-added on `style.load`.
+3. **Debug tooling** — deleted the always-on Zoom div. `?debug=1` = live camera chip (zoom/pitch/bearing/center/pins). `?debugpage` = full overlay (camera, data incl. no-coords list, pins, state, prefs + copy-state/clear-prefs/reload). Both survive navigation because `updateURL()` only touches `?type=`/`#hash`. Noisy `[pins-html]` logs gated behind the flags. Style/script tags now cache-busted (`?v=html8`).
+4. **Marker saga, final state: badge-only HTML markers, `anchor:'center'`, NO inner popup.** Shared external `#pin-popup` (mini name on desktop hover, full on click; mobile tap → overlay directly). Dots below zoom ~17, badges above, priority categories always badges. Floating stems were built then KEPT (badge-on-stem, stem shown only when `body.is-pitched`, popup lift adapts) — wait, no: check current code before assuming. The stem work landed (`v=html7`) AND the circle-badge revert (`v=html6`→chips→circles) — final state per git is circles WITH stems (pinBadgeHTML returns badge + `.ml-stem`). Yes: circles on stems. Hover mini-popup restored. Fat-tap `::after` hitbox on dots. `text-font` fixed to exactly `['Noto Sans Bold']` after the style JSON proved the combined stack 404s.
+
+### THE bug (read twice, never repeat it)
+
+`.ml-marker { position: relative }` in MY appended CSS beat MapLibre's own `.maplibregl-marker { position: absolute }` — equal specificity, later stylesheet wins. Elements stayed in flow layout inside the marker container, so each marker's translate transform ADDED onto its flow slot instead of replacing it: marker N rendered at (true point + N × row height downward). Km-long number-ordered marches (A13/A14 *south* of A9 despite being north in data — the tell-tale inversion), detached popups (popup uses pure `project()`, correct; badges shifted). It also explains the ORIGINAL "drift on pan/zoom" — panning recomputed translates against static flow slots, so pins swam non-rigidly. I chased pitchAlignment, canvas-vs-HTML, data drift, and viewport/resize theories first. All wrong. The screenshots proved it: screen order = file order, not coordinate order.
+
+**How to never repeat it:** any third-party class you style (`.maplibregl-*`, `.leaflet-*`) — YOUR rule with equal specificity silently wins by load order and breaks positioning assumptions you can't see. Either use `!important` deliberately (as the fix does: `position: absolute !important; top: 0; left: 0`), or don't touch positioning properties at all. And when markers misplace in ORDER (not offset), think flow-layout contamination before anything else. The A13/A14-north-of-A9 inversion test is now the canonical check — it's even in the CHANGELOG.
+
+### Smaller bugs, same session
+
+- **Canvas pins invisible** (the detour): layers 6/6 created, 113 features in memory, `querySourceFeatures` = 0, zero errors. Never root-caused — abandoned for HTML v2 rather than solved. If anyone proposes canvas pins again, that mystery is still open; the console evidence is in this chat's screenshots (layers exist + source empty + font 404 in one frame).
+- **Font stack 404**: `['Noto Sans Bold', 'Noto Sans Regular']` requested as one combined `{fontstack}` path — OpenFreeMap only serves the exact stacks its styles use. Verified against the live `bright` style JSON (only Italic/Regular/Bold singles). Lesson: never invent a font stack; copy one verbatim from the style JSON you're actually loading.
+- **`render_height` null**: buildings without height tags → `Expected number, found null` every frame. Fixed with `coalesce(..., 8)` / `(..., 0)`. Lesson: OSM-derived properties are ALWAYS nullable — wrap every data-driven numeric in `coalesce`.
+- **Layer-bound event registration** (`map.on('mousemove', '<layer>')` before the layer exists) replaced with canvas-level hit-testing, then deleted entirely when pins went HTML (elements handle their own events). Lesson: never bind map events to layers that don't exist yet at bind time.
+- **Silent-success logging gap**: the canvas era logged failures but not success, so "no errors" told us nothing for a full round. Now every path logs success (`[pins-html] markers mounted: N`). Lesson: log the happy path too when debugging blind.
+
+### Owner dynamics (update to the standing notes)
+
+- Still terse, still precise, still real-device-first — but this session they also supplied **ground-truth artifacts unprompted** (the original Leaflet satellite screenshot ended the data-vs-renderer debate instantly; their parking-chip reference images defined the design better than words could). When they send a reference image, treat it as the spec.
+- They correct themselves out loud ("my mistake.. dont use pill") — no ego, just signal. Match it: when YOUR theory dies, say so in one line and move on. They never punished a wrong theory, only slowness.
+- They say "go" to mean "implement the plan we just discussed." Don't re-ask.
+- Commit/push discipline: I never committed anything this session (all uncommitted on `beta`). They haven't asked for a push. Don't push without being asked — but DO offer it at handoff, since `beta` now diverges ~1000 lines from origin.
+
+### Mood at handoff
+
+Tired but warm. This was the hardest debugging session in this file's history and the fix turned out to be one CSS rule — the classic ratio. The owner's last messages show trust ("ok i think we need to park here" = satisfied enough to pause, not frustrated). Park cleanly: everything's written up, nothing's pushed, next session starts with THEIR test results (pitch-0/stem check, ?debugpage readout, A13/A14 order check), not our theories.
+
+### Immediate next steps
+
+1. **Await owner test results**: tilted P1 stem check (does 26px clear the roof?), `?debugpage` camera readout at the bad angle, A13/A14-vs-A9 order check.
+2. **If stems fall short on tall roofs**: phase 2 = height-aware lift from `render_height` per pin (scoped in chat, not built).
+3. **Offer to commit + push `beta`** (or squash first — 1000-line uncommitted diff; ask which).
+4. **Stale docs flagged, not all fixed**: root `CLAUDE.md` still describes Leaflet architecture; `kgb/map/README.md` Features/Tech Stack still say Leaflet/satellite-default (only CHANGELOG + CLAUDE header note were updated). If touching docs next session, README is next in line.
+5. Open threads from before this session (§1–3 above) are still open.

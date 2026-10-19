@@ -1,5 +1,7 @@
 # CLAUDE.md — kgb/map/
 
+> **Engine (beta): MapLibre GL JS on OpenFreeMap `bright` 3D vector (default), Esri satellite as toggle.** Leaflet was removed. Markers are HTML (`ml-marker` + `ml-popup`, same badge/dot UX), boundary/route/GPS-accuracy are GeoJSON sources re-added on `style.load`, foot routing via FOSSGIS `routed-foot`. See CHANGELOG `[Unreleased] — MapLibre 3D Vector + Walk Routing`. Much of the detail below still describes UI logic correctly but any `L.*`/pane/`setIcon` reference is stale.
+
 This file provides guidance to Claude Code when working with the `kgb/map/` sub-project.
 
 ## Project Overview

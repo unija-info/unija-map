@@ -1,18 +1,57 @@
+// ===== MAP ENGINE: MapLibre GL JS (OpenFreeMap 3D vector, default) =====
+// Satellite (Esri World Imagery) is a toggleable style in the same engine.
+const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/bright';
+const SATELLITE_STYLE = {
+    version: 8,
+    glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+    sources: {
+        esri: {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            attribution: 'Tiles &copy; Esri',
+            maxzoom: 19,
+        },
+        cartoLabels: {
+            type: 'raster',
+            tiles: [
+                'https://a.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
+                'https://b.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
+                'https://c.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
+                'https://d.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            maxzoom: 20,
+        },
+    },
+    layers: [
+        { id: 'esri', type: 'raster', source: 'esri' },
+        { id: 'sat-labels', type: 'raster', source: 'cartoLabels' },
+    ],
+};
+const DEFAULT_PITCH_3D = 30;
+
 // ===== STATE =====
 let map;
-let markers = [];
 let mapData = [];
 let currentActiveCategory = null;
 let currentSelectedLocationId = null;
 let currentInfoOverlayLocationId = null;
-let currentHighlightedMarker = null;
 let currentOverlaySource = null; // null | 'category'
-let satelliteLayer = null;
-let regularLayer = null;
-let satelliteLabelsLayer = null;
-let regularLabelsLayer = null;
-let currentBaseView = 'satellite'; // 'satellite' | 'osm'
+// HTML pins v2: badge-only fixed-box elements (NO inner popup — the shared
+// #pin-popup lives outside markers, so boxes never change size unexpectedly).
+let pinMarkers = [];          // [{id, marker, el, loc, exempt}]
+let highlightedPinId = null;  // location id with highlight ring or null
+let pinPopupLocId = null;     // location id shown in shared popup (pinned) or null
+let pinPopupHoverId = null;   // location id shown in shared popup (hover mini) or null
+let pinPopupEl = null;        // shared popup element (single instance)
+let currentBaseView = 'vector'; // 'vector' | 'satellite' (3D vector default)
 let showLabels = true;
+let markersVisible = true;
+let show3D = true;
+let pitchBeforeSatellite = DEFAULT_PITCH_3D;
+let campusBoundaryData = null;   // GeoJSON coords cached for re-add after setStyle
+let routeGeoJSON = null;         // active route geometry cached for re-add after setStyle
 let currentUserLocation = null;        // {lat, lng, accuracy}
 let userLocationMarker = null;         // L.marker (blue dot)
 let userLocationAccuracyCircle = null; // L.circle
@@ -43,26 +82,220 @@ const mapLabels = [
 ];
 const mapLabelRefs = [];
 
-function setMarkerHighlight(marker) {
-    const prev = currentHighlightedMarker;
-    currentHighlightedMarker = marker || null;
+// Highlight is a CSS ring on the pin element (re-applied by refreshPinTiers).
+function setMarkerHighlight(locationIdOrNull) {
+    highlightedPinId = (locationIdOrNull === undefined) ? null : locationIdOrNull;
+    pinMarkers.forEach(r => {
+        if (r.el) r.el.classList.toggle('marker-highlighted', r.id === highlightedPinId);
+    });
+    refreshPinTiers();
+}
 
-    // Revert previous marker — update currentHighlightedMarker first so
-    // shouldShowFullMarker evaluates the old marker without highlight bias
-    if (prev) {
-        const el = prev.getElement();
-        if (el) el.classList.remove('marker-highlighted');
-        const loc = prev._location;
-        if (loc) {
-            const mode = shouldShowFullMarker(loc) ? 'full' : 'dot';
-            prev.setIcon(createMarkerIcon(loc, mode));
+// ===== HTML PIN ENGINE v2 (badge-only markers, shared popup) =====
+
+function pinZoomThreshold() {
+    return window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
+}
+
+// Circle/dot HTML for a pin element. Full mode is badge-on-stem (floating pin);
+// the stem foot (element bottom-center, anchor:'bottom') is the glued point.
+function pinBadgeHTML(location, mode) {
+    const bgColor = getCategoryColor(location.locationType);
+    if (mode === 'dot') return `<div class="ml-dot" style="background:${bgColor};"></div>`;
+    const textColor = getCategoryTextColor(location.locationType);
+    const num = location.number || '?';
+    const isKolej = location.locationType === 'KOLEJ KEDIAMAN';
+    const radius = isKolej ? '6px' : '50%';
+    return `<div class="ml-badge" style="background:${bgColor};color:${textColor};border-radius:${radius};">${num}</div>`
+        + `<div class="ml-stem"></div>`;
+}
+
+function pinModeFor(location) {
+    if (PRIORITY_CATEGORIES.includes(location.locationType)) return 'full';
+    if (map && map.getZoom() >= pinZoomThreshold()) return 'full';
+    if (currentSelectedLocationId !== null && location.id === currentSelectedLocationId) return 'full';
+    if (currentActiveCategory !== null && location.locationType === currentActiveCategory) return 'full';
+    if (highlightedPinId !== null && highlightedPinId !== undefined && highlightedPinId === location.id) return 'full';
+    return 'dot';
+}
+
+function refreshPinTiers() {
+    pinMarkers.forEach(r => {
+        const slot = r.el && r.el.querySelector('.ml-badge-slot');
+        if (slot) slot.innerHTML = pinBadgeHTML(r.loc, pinModeFor(r.loc));
+    });
+}
+
+function createPinMarker(location, exempt = false) {
+    if (!location.coords || !map) return null;
+    const el = document.createElement('div');
+    el.className = 'ml-marker' + (exempt ? ' ml-exempt' : '');
+    el.innerHTML = `<div class="ml-badge-slot">${pinBadgeHTML(location, pinModeFor(location))}</div>`;
+    const rec = { id: location.id, marker: null, el, loc: location, exempt: !!exempt };
+    try {
+        // anchor:'bottom' — the stem foot is the glued point; badge floats above.
+        rec.marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+            .setLngLat([location.coords[1], location.coords[0]])
+            .addTo(map);
+    } catch (e) { return null; }
+    if (!exempt && !markersVisible) el.style.display = 'none';
+
+    el.addEventListener('mouseenter', () => {
+        if (window.innerWidth <= 768) return;
+        // Full name lives in the hover popup; pill stays short.
+        if (pinPopupLocId === null || pinPopupLocId === undefined) {
+            if (pinPopupHoverId !== location.id) showPinPopup(location.id, 'mini');
         }
-    }
+        // Hover-upgrade dot → chip.
+        const slot = el.querySelector('.ml-badge-slot');
+        if (slot) slot.innerHTML = pinBadgeHTML(location, 'full');
+    });
+    el.addEventListener('mouseleave', () => {
+        if (window.innerWidth <= 768) return;
+        if (pinPopupLocId === null || pinPopupLocId === undefined) hidePinPopup();
+        else { pinPopupHoverId = null; positionPinPopup(); }
+        const slot = el.querySelector('.ml-badge-slot');
+        if (slot) slot.innerHTML = pinBadgeHTML(location, pinModeFor(location));
+    });
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.innerWidth <= 768) {
+            flyToMarker(location.coords, 0.6);
+            setMarkerHighlight(location.id);
+            showLocationInfoOverlay(location.id);
+        } else {
+            if (pinPopupLocId === location.id) {
+                hidePinPopup();
+                setMarkerHighlight(null);
+            } else {
+                showPinPopup(location.id, 'full');
+                setMarkerHighlight(location.id);
+            }
+        }
+    });
 
-    if (marker) {
-        const el = marker.getElement();
-        if (el) el.classList.add('marker-highlighted');
+    pinMarkers.push(rec);
+    return rec;
+}
+
+function removePinMarkers() {
+    pinMarkers.forEach(r => { try { if (r.marker) r.marker.remove(); } catch (e) {} });
+    pinMarkers = [];
+    highlightedPinId = null;
+}
+
+// Clear + build markers for the given locations. exempt=true keeps the single
+// focused pin visible even when the markers toggle is off.
+function rebuildPinMarkers(locs, exempt = false) {
+    removePinMarkers();
+    hidePinPopup();
+    setMarkerHighlight(null);
+    locs.forEach(loc => { if (loc.coords) createPinMarker(loc, exempt); });
+    dlog(`[pins-html] markers mounted: ${pinMarkers.length}`);
+}
+
+// (removed: canvas pin layers — v2 uses badge-only HTML markers above)
+
+// v2: no canvas layers at all — markers are badge-only HTML elements.
+// Kept as a no-op hook so style reloads don't need special-casing.
+function ensurePinLayers() {
+    dlog(`[pins-html] markers mounted: ${pinMarkers.length}`);
+    return true;
+}
+
+// Recompute pin tiers after filter/zoom changes.
+function refreshPinView() {
+    refreshPinTiers();
+}
+
+function applyPinVisibility() {
+    pinMarkers.forEach(r => {
+        if (!r.el) return;
+        // Single-pin focus always stays visible (explicit user selection).
+        r.el.style.display = (markersVisible || r.exempt) ? '' : 'none';
+    });
+}
+
+// ===== SHARED PIN POPUP (single element, repositioned on move) =====
+
+function ensurePinPopup() {
+    if (pinPopupEl) return pinPopupEl;
+    pinPopupEl = document.createElement('div');
+    pinPopupEl.id = 'pin-popup';
+    pinPopupEl.style.display = 'none';
+    document.body.appendChild(pinPopupEl);
+    return pinPopupEl;
+}
+
+function positionPinPopup() {
+    if (!pinPopupEl || pinPopupEl.style.display === 'none') return;
+    const locId = (pinPopupLocId !== null && pinPopupLocId !== undefined) ? pinPopupLocId : pinPopupHoverId;
+    const loc = mapData.find(l => l.id === locId);
+    if (!loc || !loc.coords || !map) { hidePinPopup(); return; }
+    const p = map.project([loc.coords[1], loc.coords[0]]);
+    const r = map.getContainer().getBoundingClientRect();
+    // Badge floats above the stem when pitched — lift the popup accordingly.
+    const lift = document.body.classList.contains('is-pitched') ? 58 : 32;
+    pinPopupEl.style.left = `${r.left + p.x}px`;
+    pinPopupEl.style.top = `${r.top + p.y - lift}px`;
+}
+
+function hidePinPopup() {
+    pinPopupLocId = null;
+    pinPopupHoverId = null;
+    if (pinPopupEl) pinPopupEl.style.display = 'none';
+}
+
+function showPinPopup(locationId, mode) {
+    const loc = mapData.find(l => l.id === locationId);
+    if (!loc) return;
+    const el = ensurePinPopup();
+    const bgColor = getCategoryColor(loc.locationType);
+    const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
+    if (mode === 'mini') {
+        pinPopupHoverId = locationId;
+        el.className = 'mini';
+        el.innerHTML = `<div class="popup-content-wrapper"><strong class="popup-stop-name">${loc.place}</strong></div>`;
+    } else {
+        pinPopupLocId = locationId;
+        pinPopupHoverId = null;
+        el.className = 'full';
+        el.innerHTML = `
+            <div class="popup-content-wrapper">
+                <button class="tooltip-close-btn" style="display:flex;">×</button>
+                <strong class="popup-stop-name">${loc.place}</strong>
+                <span class="popup-category" style="background:${bgColor}">${loc.locationType}</span>
+                <div class="popup-buttons" style="max-height:80px;opacity:1;margin-top:6px;padding-bottom:4px;">
+                    <button class="tooltip-info-btn" data-location-id="${loc.id}">i</button>
+                    <a href="${googleUrl}" target="_blank" class="popup-link"><span class="material-symbols-outlined">directions</span>Arah</a>
+                </div>
+            </div>`;
+        const infoBtn = el.querySelector('.tooltip-info-btn');
+        if (infoBtn) infoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showLocationInfoOverlay(parseInt(infoBtn.dataset.locationId));
+        });
+        const closeBtn = el.querySelector('.tooltip-close-btn');
+        if (closeBtn) closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hidePinPopup();
+            setMarkerHighlight(null);
+        });
     }
+    el.style.display = 'block';
+    positionPinPopup();
+}
+
+function initPinInteractions() {
+    // Pins handle their own hover/click on their elements; the map only needs
+    // to keep the shared popup glued while the camera moves — and to flag
+    // pitched state (stems render only when tilted).
+    map.on('move', () => {
+        try {
+            document.body.classList.toggle('is-pitched', map.getPitch() > 5);
+        } catch (e) {}
+        positionPinPopup();
+    });
 }
 
 // ===== CATEGORY COLOR SYSTEM =====
@@ -167,192 +400,7 @@ function processData(rawData) {
         }));
 }
 
-// ===== MARKER CREATION =====
-
-function createMarkerIcon(location, mode = 'full') {
-    const bgColor = getCategoryColor(location.locationType);
-
-    if (mode === 'dot') {
-        const w = 12, h = 12;
-        const html = `<div style="
-            background: ${bgColor};
-            width: ${w}px;
-            height: ${h}px;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            cursor: pointer;
-        "></div>`;
-        return L.divIcon({
-            html: html,
-            className: '',
-            iconSize: [w, h],
-            iconAnchor: [w / 2, h / 2],
-            tooltipAnchor: window.innerWidth <= 768 ? [0, -8] : [8, 0],
-        });
-    }
-
-    const textColor = getCategoryTextColor(location.locationType);
-    const num = location.number || '?';
-    const isLong = num.length >= 4;
-    const isKolej = location.locationType === 'KOLEJ KEDIAMAN';
-
-    let w, h, borderRadius, fontSize;
-    if (isKolej) {
-        w = 20; h = 20; borderRadius = '6px'; fontSize = 9;
-    } else if (isLong) {
-        w = 25; h = 25; borderRadius = '11px'; fontSize = 9;
-    } else {
-        w = 25; h = 25; borderRadius = '50%'; fontSize = 11;
-    }
-
-    const html = `<div style="
-        background: ${bgColor};
-        color: ${textColor};
-        width: ${w}px;
-        height: ${h}px;
-        border-radius: ${borderRadius};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: ${fontSize}px;
-        font-weight: 700;
-        font-family: 'Google Sans', sans-serif;
-        border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.35);
-        white-space: nowrap;
-        cursor: pointer;
-        user-select: none;
-    ">${num}</div>`;
-
-    return L.divIcon({
-        html: html,
-        className: '',
-        iconSize: [w, h],
-        iconAnchor: [w / 2, h / 2],
-        tooltipAnchor: window.innerWidth <= 768 ? [0, -h / 2 - 2] : [w / 2 + 2, -h / 2],
-    });
-}
-
-function createMarker(location, exempt = false) {
-    if (!location.coords) return null;
-
-    const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${location.coords[0]},${location.coords[1]}`;
-
-    const mode = shouldShowFullMarker(location) ? 'full' : 'dot';
-    const icon = createMarkerIcon(location, mode);
-    const markerOptions = { icon: icon };
-    if (!exempt) markerOptions.pane = 'campusMarkerPane';
-    const marker = L.marker(location.coords, markerOptions);
-    marker._location = location;
-    marker.addTo(map);
-
-    const tooltipContent = `
-        <div class="popup-content-wrapper">
-            <button class="tooltip-close-btn">×</button>
-            <strong class="popup-stop-name">${location.place}</strong>
-            <span class="popup-category" style="background:${getCategoryColor(location.locationType)}">${location.locationType}</span>
-            <div class="popup-buttons">
-                <button class="tooltip-info-btn" data-location-id="${location.id}">i</button>
-                <a href="${googleUrl}" target="_blank" class="popup-link" onclick="event.stopPropagation();"><span class="material-symbols-outlined">directions</span>Arah</a>
-            </div>
-        </div>
-    `;
-
-    const isMobile = window.innerWidth <= 768;
-    const tooltipOptions = {
-        permanent: true,
-        direction: isMobile ? 'top' : 'right',
-        className: 'custom-tooltip-popup',
-        offset: isMobile ? [0, -5] : [location.number.length >= 4 ? 24 : 18, 0],
-    };
-    if (!exempt) tooltipOptions.pane = 'campusTooltipPane';
-    marker.bindTooltip(tooltipContent, tooltipOptions);
-
-    // Wait for tooltip element to be in DOM
-    setTimeout(() => {
-        const tooltipEl = marker.getTooltip() && marker.getTooltip().getElement();
-        if (!tooltipEl) return;
-
-        // --- Hover: show/hide tooltip; temporarily upgrade dot → full ---
-        marker.on('mouseover', () => {
-            tooltipEl.classList.add('tooltip-visible');
-            if (!shouldShowFullMarker(location)) {
-                marker.setIcon(createMarkerIcon(location, 'full'));
-            }
-        });
-        marker.on('mouseout', () => {
-            if (!marker._tooltipSticky) {
-                tooltipEl.classList.remove('tooltip-visible');
-                if (!shouldShowFullMarker(location)) {
-                    marker.setIcon(createMarkerIcon(location, 'dot'));
-                }
-            }
-        });
-
-        // --- Hover: keep visible when mouse moves onto tooltip itself ---
-        tooltipEl.addEventListener('mouseenter', () => tooltipEl.classList.add('tooltip-visible'));
-        tooltipEl.addEventListener('mouseleave', () => {
-            if (!marker._tooltipSticky) tooltipEl.classList.remove('tooltip-visible');
-        });
-
-        // --- Click: toggle sticky expanded state ---
-        function openSticky() {
-            // Close any other sticky marker first
-            markers.forEach(m => {
-                if (m !== marker && m._tooltipSticky) {
-                    m._tooltipSticky = false;
-                    const el = m.getTooltip() && m.getTooltip().getElement();
-                    if (el) el.classList.remove('tooltip-visible', 'expanded');
-                }
-            });
-            marker._tooltipSticky = true;
-            tooltipEl.classList.add('tooltip-visible', 'expanded');
-            setMarkerHighlight(marker);
-        }
-
-        function closeSticky() {
-            marker._tooltipSticky = false;
-            tooltipEl.classList.remove('tooltip-visible', 'expanded');
-            setMarkerHighlight(null);
-        }
-
-        marker.on('click', function(e) {
-            L.DomEvent.stopPropagation(e);
-            if (window.innerWidth <= 768) {
-                flyToMarker(location.coords, 0.6);
-                setMarkerHighlight(marker);
-                showLocationInfoOverlay(location.id);
-            } else {
-                if (marker._tooltipSticky) {
-                    closeSticky();
-                } else {
-                    openSticky();
-                }
-            }
-        });
-
-        // --- Tooltip inner button handlers ---
-        tooltipEl.addEventListener('click', function(e) {
-            const infoBtn = e.target.closest('.tooltip-info-btn');
-            if (infoBtn) {
-                e.stopPropagation();
-                showLocationInfoOverlay(parseInt(infoBtn.dataset.locationId));
-                return;
-            }
-            const closeBtn = e.target.closest('.tooltip-close-btn');
-            if (closeBtn) {
-                e.stopPropagation();
-                closeSticky();
-                return;
-            }
-            if (e.target.closest('.popup-link')) return;
-            e.stopPropagation();
-        });
-    }, 50);
-
-    return marker;
-}
+// (removed: HTML markers replaced by canvas pin engine above)
 
 // ===== RENDERING =====
 
@@ -449,70 +497,66 @@ function renderGroupedList() {
     });
 }
 
-// ===== FILTERING =====
+// ===== FILTERING (canvas pins: subsets + layer zoom ranges) =====
 
-function shouldShowFullMarker(location) {
-    if (PRIORITY_CATEGORIES.includes(location.locationType)) return true;
-    const threshold = window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
-    if (map.getZoom() >= threshold) return true;
-    if (currentSelectedLocationId !== null && location.id === currentSelectedLocationId) return true;
-    if (currentActiveCategory !== null && location.locationType === currentActiveCategory) return true;
-    if (currentHighlightedMarker && currentHighlightedMarker._location &&
-        currentHighlightedMarker._location.id === location.id) return true;
-    return false;
-}
-
-function updateMarkerModes() {
-    markers.forEach(marker => {
-        const loc = marker._location;
-        if (!loc) return;
-        const mode = shouldShowFullMarker(loc) ? 'full' : 'dot';
-        marker.setIcon(createMarkerIcon(loc, mode));
-        // setIcon() replaces the DOM element — re-apply highlight class if needed
-        if (marker === currentHighlightedMarker) {
-            const el = marker.getElement();
-            if (el) el.classList.add('marker-highlighted');
-        }
-    });
+// Fit a list of [lat,lng] coords. Accepts Leaflet-style {paddingTopLeft, paddingBottomRight, padding}
+// or a MapLibre padding object — normalized internally.
+function fitCoordsToMap(coords, { paddingTopLeft, paddingBottomRight, padding, maxZoom = 18, duration = 1200 } = {}) {
+    if (!map || !coords.length) return;
+    const bounds = new maplibregl.LngLatBounds();
+    coords.forEach(c => bounds.extend([c[1], c[0]]));
+    // Single point: grow slightly so fitBounds has area
+    if (coords.length === 1) {
+        const c = coords[0];
+        bounds.extend([c[1] + 0.0004, c[0] + 0.0004]);
+        bounds.extend([c[1] - 0.0004, c[0] - 0.0004]);
+    }
+    let pad;
+    if (paddingTopLeft || paddingBottomRight) {
+        const tl = paddingTopLeft || [0, 0];
+        const br = paddingBottomRight || [0, 0];
+        pad = { top: tl[1] || 0, left: tl[0] || 0, bottom: br[1] || 0, right: br[0] || 0 };
+    } else if (Array.isArray(padding)) {
+        pad = padding.length === 4
+            ? { top: padding[0], right: padding[1], bottom: padding[2], left: padding[3] }
+            : { top: padding[0], right: padding[1], bottom: padding[0], left: padding[1] };
+    } else {
+        pad = padding || 60;
+    }
+    map.fitBounds(bounds, { padding: pad, maxZoom, duration });
 }
 
 function flyToMarker(coords, duration = 0.8) {
+    if (!map) return;
     const zoomThreshold = window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
     const zoom = Math.max(map.getZoom(), zoomThreshold);
-    const targetPx = map.project(coords, zoom);
-    const offsetCenter = map.unproject(targetPx.subtract([0, -window.innerHeight * 0.15]), zoom);
-    map.flyTo(offsetCenter, zoom, { duration });
+    // Offset the center downward so the marker sits above the bottom sheet
+    const p = map.project([coords[1], coords[0]]);
+    const center = map.unproject([p.x, p.y + window.innerHeight * 0.15]);
+    map.flyTo({ center, zoom, duration: duration * 1000 });
 }
 
 function showAllLocations(animate = true, updateUrl = true) {
     if (updateUrl) updateURL();
     document.querySelector('.stop-category-overlay')?.remove();
     currentOverlaySource = null;
-    clearMarkers();
-    setMarkerHighlight(null);
     currentActiveCategory = null;
     currentSelectedLocationId = null;
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
-    const coords = [];
-    mapData.forEach(loc => {
-        if (loc.coords) {
-            const m = createMarker(loc);
-            if (m) {
-                markers.push(m);
-                coords.push(loc.coords);
-            }
-        }
-    });
+    rebuildPinMarkers(mapData.filter(loc => loc.coords));
+
+    const coords = mapData.filter(loc => loc.coords).map(loc => loc.coords);
 
     if (coords.length > 0) {
         const isMobile = window.innerWidth <= 768;
-        const mobileCenter = [5.40105971093413, 103.07981725897017];
-        const desktopCenter = [5.402700026344124, 103.08008886748964];
+        const mobileCenter = [103.07981725897017, 5.40105971093413];
+        const desktopCenter = [103.08008886748964, 5.402700026344124];
+        const pitch = (show3D && currentBaseView === 'vector') ? DEFAULT_PITCH_3D : 0;
         if (animate) {
-            map.flyTo(isMobile ? mobileCenter : desktopCenter, isMobile ? 15.5 : 16.3);
+            map.flyTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? 15.5 : 16.3, pitch, duration: 1200 });
         } else {
-            map.setView(isMobile ? mobileCenter : desktopCenter, isMobile ? 15 : 17.5);
+            map.jumpTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? 15 : 17.5, pitch });
         }
     }
 
@@ -547,24 +591,17 @@ function filterByCategory(categoryName) {
     });
 
     clearMarkers();
-    const coords = [];
-    mapData.forEach(loc => {
-        if (loc.locationType === categoryName && loc.coords) {
-            const m = createMarker(loc);
-            if (m) {
-                markers.push(m);
-                coords.push(loc.coords);
-            }
-        }
-    });
+    const catLocs = mapData.filter(loc => loc.locationType === categoryName && loc.coords);
+    rebuildPinMarkers(catLocs);
+    const coords = catLocs.map(loc => loc.coords);
 
     const isMobile = window.innerWidth <= 768;
     if (coords.length > 0) {
         if (isMobile) {
             const bottomPad = Math.round(window.innerHeight * 0.5) + 20;
-            map.flyToBounds(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, bottomPad], maxZoom: 18, duration: 1.2 });
+            fitCoordsToMap(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, bottomPad], maxZoom: 18, duration: 1200 });
         } else {
-            map.flyToBounds(coords, { padding: getMapPadding(), maxZoom: 18, duration: 1.2 });
+            fitCoordsToMap(coords, { padding: getMapPadding(), maxZoom: 18, duration: 1200 });
         }
     }
 
@@ -585,16 +622,12 @@ function filterByLocation(location) {
     currentActiveCategory = null;
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
-    clearMarkers();
-    const m = createMarker(location, true);
-    if (m) {
-        markers.push(m);
-        setMarkerHighlight(m);
-    }
+    rebuildPinMarkers([location], true);
+    setMarkerHighlight(location.id);
 
     const basePadding = getMapPadding();
     const padding = [100, 100, 100, basePadding[3] || 100];
-    map.flyToBounds([location.coords], { padding: padding, maxZoom: 19, duration: 1.2 });
+    fitCoordsToMap([location.coords], { padding, maxZoom: 19, duration: 1200 });
 }
 
 function showLocationOnMap(location) {
@@ -604,12 +637,8 @@ function showLocationOnMap(location) {
     currentActiveCategory = null;
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
-    clearMarkers();
-    const m = createMarker(location, true);
-    if (m) {
-        markers.push(m);
-        setMarkerHighlight(m);
-    }
+    rebuildPinMarkers([location], true);
+    setMarkerHighlight(location.id);
 
     flyToMarker(location.coords);
 
@@ -734,15 +763,9 @@ function showLocationInfoOverlay(locationId) {
                 currentInfoOverlayLocationId = null;
                 clearRoute();
                 if (currentOverlaySource === 'category') {
-                    // Category overlay is still in DOM — restore category markers
+                    // Category overlay is still in DOM — restore category pins
                     currentSelectedLocationId = null;
-                    clearMarkers();
-                    mapData
-                        .filter(l => l.locationType === currentActiveCategory)
-                        .forEach(l => {
-                            const m = createMarker(l);
-                            if (m) markers.push(m);
-                        });
+                    rebuildPinMarkers(mapData.filter(l => l.locationType === currentActiveCategory && l.coords));
                     updateURL({ type: currentActiveCategory });
                     currentOverlaySource = null;
                 } else {
@@ -867,7 +890,7 @@ function showCategoryOverlay(categoryName) {
                     if (window.innerWidth > 768) filterByLocation(loc);
                     else showLocationOnMap(loc);
                 }
-                // Restore so dismissOverlay() can re-render category markers
+                // Restore so dismissOverlay() can re-render category pins
                 currentActiveCategory = savedCategory;
                 showLocationInfoOverlay(loc.id);
             });
@@ -1284,7 +1307,7 @@ function initSearchDropdown() {
             if (label) {
                 const basePadding = getMapPadding();
                 const padding = window.innerWidth <= 768 ? [150, 150] : [100, 100, 100, basePadding[3] || 100];
-                map.flyToBounds([label.coords], { padding, maxZoom: 19, duration: 1.2 });
+                fitCoordsToMap([label.coords], { padding, maxZoom: 19, duration: 1200 });
                 if (window.innerWidth <= 768 && sheetElement) {
                     sheetElement.style.height = '';
                     setSheetState('peek');
@@ -1421,9 +1444,9 @@ function handleDeepLink() {
 }
 
 function clearMarkers() {
-    markers.forEach(m => map.removeLayer(m));
-    markers = [];
-    currentHighlightedMarker = null;
+    // Legacy name kept for callers: drop all pin markers.
+    removePinMarkers();
+    hidePinPopup();
 }
 
 function createClearSearchButton() {
@@ -1458,40 +1481,275 @@ function initClearSearchButton() {
     }
 }
 
+// ===== DEBUG TOOLS (?debug chip, ?debugpage overlay) =====
+// ?debug shows a live camera chip (replaces the old always-on zoom div).
+// ?debugpage opens a full debug overlay. Both flags survive in-map navigation
+// because updateURL() only touches ?type= and #hash.
+const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
+const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
+
+function dlog(...args) {
+    if (DEBUG || DEBUG_PAGE) console.log(...args);
+}
+
+let debugChipEl = null;
+let debugPageEl = null;
+let debugPageTimer = null;
+
+function debugSnapshot() {
+    const snap = { camera: null, data: null, pins: null, state: null, prefs: null };
+    try {
+        if (map) {
+            const c = map.getCenter();
+            snap.camera = {
+                zoom: +map.getZoom().toFixed(2),
+                pitch: +map.getPitch().toFixed(1),
+                bearing: +map.getBearing().toFixed(1),
+                center: [+c.lat.toFixed(5), +c.lng.toFixed(5)],
+                baseView: currentBaseView,
+                show3D,
+            };
+        }
+        const withCoords = mapData.filter(l => l.coords);
+        snap.data = {
+            total: mapData.length,
+            withCoords: withCoords.length,
+            noCoords: mapData.filter(l => !l.coords).map(l => `${l.number || '?'} ${l.place || '(blank)'}`),
+        };
+        let dots = 0, badges = 0, hidden = 0;
+        pinMarkers.forEach(r => {
+            if (r.el && r.el.style.display === 'none') { hidden++; return; }
+            const slot = r.el && r.el.querySelector('.ml-badge-slot');
+            if (slot && slot.querySelector('.ml-dot')) dots++;
+            else badges++;
+        });
+        snap.pins = {
+            mounted: pinMarkers.length,
+            visible: pinMarkers.length - hidden,
+            hidden, dots, badges,
+            highlighted: highlightedPinId,
+            selected: currentSelectedLocationId,
+        };
+        snap.state = {
+            category: currentActiveCategory,
+            overlay: currentInfoOverlayLocationId,
+            overlaySource: currentOverlaySource,
+            sheet: (typeof sheetState !== 'undefined') ? sheetState : null,
+            directions: directionsModeActive ? {
+                start: directionsStart && directionsStart.label,
+                end: directionsEnd && directionsEnd.label,
+            } : false,
+            gps: showUserLocation ? currentUserLocation : false,
+            labels: showLabels,
+            markersVisible,
+        };
+        snap.prefs = {};
+        ['kgbMapBaseLayer', 'kgbMapShowMarkers', 'kgbMapShowLabels', 'kgbMapPitch3D'].forEach(k => {
+            try { snap.prefs[k] = localStorage.getItem(k); } catch (e) { snap.prefs[k] = '(unavailable)'; }
+        });
+    } catch (e) {}
+    return snap;
+}
+
+function updateDebugChip() {
+    if (!debugChipEl || !map) return;
+    const s = debugSnapshot();
+    const c = s.camera || {};
+    const ctr = c.center ? `${c.center[0]}, ${c.center[1]}` : '—';
+    debugChipEl.textContent =
+        `z ${c.zoom ?? '—'} · pitch ${c.pitch ?? '—'}° · brg ${c.bearing ?? '—'}° · ${ctr}` +
+        ` · pins ${s.pins ? `${s.pins.visible}/${s.pins.mounted}` : '—'}`;
+}
+
+function renderDebugPage() {
+    if (!debugPageEl) return;
+    const s = debugSnapshot();
+    const pre = debugPageEl.querySelector('#debug-page-body');
+    if (pre) pre.textContent = JSON.stringify(s, null, 1);
+}
+
+function initDebugTools() {
+    if (!DEBUG && !DEBUG_PAGE) return;
+    if (DEBUG) {
+        debugChipEl = document.createElement('div');
+        debugChipEl.id = 'debug-chip';
+        document.body.appendChild(debugChipEl);
+        map.on('move', updateDebugChip);
+        map.on('zoomend', updateDebugChip);
+        updateDebugChip();
+    }
+    if (DEBUG_PAGE) {
+        debugPageEl = document.createElement('div');
+        debugPageEl.id = 'debug-page';
+        debugPageEl.innerHTML = `
+            <div class="debug-page-head">
+                <strong>Debug (?debugpage)</strong>
+                <span class="debug-page-actions">
+                    <button id="debug-copy">Copy JSON</button>
+                    <button id="debug-prefs">Clear prefs + reload</button>
+                    <button id="debug-reload">Reload data</button>
+                    <button id="debug-close">× Close</button>
+                </span>
+            </div>
+            <pre id="debug-page-body">{loading…}</pre>`;
+        document.body.appendChild(debugPageEl);
+        const close = () => {
+            if (debugPageTimer) clearInterval(debugPageTimer);
+            debugPageTimer = null;
+            debugPageEl.remove();
+            debugPageEl = null;
+        };
+        debugPageEl.querySelector('#debug-close').addEventListener('click', close);
+        document.addEventListener('keydown', function esc(e) {
+            if (e.key === 'Escape' && debugPageEl) {
+                close();
+                document.removeEventListener('keydown', esc);
+            }
+        });
+        debugPageEl.querySelector('#debug-copy').addEventListener('click', () => {
+            copyToClipboard(JSON.stringify(debugSnapshot()));
+        });
+        debugPageEl.querySelector('#debug-prefs').addEventListener('click', () => {
+            try {
+                ['kgbMapBaseLayer', 'kgbMapShowMarkers', 'kgbMapShowLabels', 'kgbMapPitch3D']
+                    .forEach(k => localStorage.removeItem(k));
+            } catch (e) {}
+            window.location.reload();
+        });
+        debugPageEl.querySelector('#debug-reload').addEventListener('click', () => window.location.reload());
+        renderDebugPage();
+        debugPageTimer = setInterval(renderDebugPage, 750);
+    }
+}
+
 // ===== MAP INIT =====
 
+// ===== BASE VIEW: 3D vector (default) <-> satellite =====
+
 function setBaseView(view, persist) {
-    const nextLayer = view === 'osm' ? regularLayer : satelliteLayer;
-    const prevLayer = view === 'osm' ? satelliteLayer : regularLayer;
-
-    if (map.hasLayer(prevLayer)) map.removeLayer(prevLayer);
-    if (!map.hasLayer(nextLayer)) nextLayer.addTo(map);
-
+    // Migrate legacy values: 'osm' (old regular) and 'satellite' stay meaningful.
+    if (view === 'osm') view = 'vector';
+    if (view !== 'vector' && view !== 'satellite') view = 'vector';
     currentBaseView = view;
+
+    if (view === 'satellite') {
+        pitchBeforeSatellite = map ? map.getPitch() : pitchBeforeSatellite;
+    }
+
+    if (map) {
+        const style = view === 'satellite' ? SATELLITE_STYLE : VECTOR_STYLE_URL;
+        map.setStyle(style);
+        // Custom sources/layers (boundary, route, 3D buildings) are re-added
+        // in ensureCustomStyleLayers() on the style 'load' event.
+    }
+
     applyLabelVisibility();
-    if (persist) localStorage.setItem('kgbMapBaseLayer', view);
+    if (persist) {
+        try { localStorage.setItem('kgbMapBaseLayer', view); } catch (e) {}
+    }
 
     const satelliteToggleCheckbox = document.getElementById('toggle-satellite-checkbox');
     if (satelliteToggleCheckbox) satelliteToggleCheckbox.checked = view === 'satellite';
 }
 
+// Re-adds everything our code owns on top of the base style. Called on every
+// style 'load' (initial + each setStyle switch), since setStyle wipes sources.
+function ensureCustomStyleLayers() {
+    if (!map || !map.isStyleLoaded()) return;
+
+    if (currentBaseView === 'vector') {
+        add3DBuildingsLayer();
+        map.easeTo({ pitch: show3D ? DEFAULT_PITCH_3D : 0, duration: 300 });
+    } else {
+        map.easeTo({ pitch: 0, duration: 300 });
+    }
+
+    ensureBoundaryLayers();
+    ensureRouteLayers(true);
+    ensurePinLayers();
+    applyLabelVisibility();
+}
+
+function add3DBuildingsLayer() {
+    try {
+        if (map.getLayer('3d-buildings')) return;
+        const style = map.getStyle();
+        const layers = (style && style.layers) || [];
+        let labelLayerId = null;
+        for (let i = 0; i < layers.length; i++) {
+            if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) {
+                labelLayerId = layers[i].id;
+                break;
+            }
+        }
+        if (!map.getSource('openfreemap')) {
+            map.addSource('openfreemap', { url: 'https://tiles.openfreemap.org/planet', type: 'vector' });
+        }
+        map.addLayer(
+            {
+                id: '3d-buildings',
+                source: 'openfreemap',
+                'source-layer': 'building',
+                type: 'fill-extrusion',
+                minzoom: 15,
+                filter: ['!=', ['get', 'hide_3d'], true],
+                paint: {
+                    'fill-extrusion-color': [
+                        'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8],
+                        0, '#d9d9d9', 200, '#b0b8c8', 400, '#9fb2d8',
+                    ],
+                    'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, ['coalesce', ['get', 'render_height'], 8]],
+                    'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, ['coalesce', ['get', 'render_min_height'], 0]],
+                    'fill-extrusion-opacity': 0.9,
+                },
+            },
+            labelLayerId || undefined
+        );
+    } catch (err) {
+        console.warn('3D buildings layer failed:', err);
+    }
+}
+
 function applyLabelVisibility() {
-    const activeLabels = currentBaseView === 'satellite' ? satelliteLabelsLayer : regularLabelsLayer;
-    const inactiveLabels = currentBaseView === 'satellite' ? regularLabelsLayer : satelliteLabelsLayer;
+    if (!map || !map.isStyleLoaded()) return;
+    try {
+        if (currentBaseView === 'vector') {
+            // Toggle vector place/road labels (symbol layers), not our HTML markers.
+            const style = map.getStyle();
+            (style.layers || []).forEach(l => {
+                if (l.type === 'symbol') {
+                    map.setLayoutProperty(l.id, 'visibility', showLabels ? 'visible' : 'none');
+                }
+            });
+        } else {
+            // Satellite: toggle the Carto label raster overlay.
+            if (map.getLayer('sat-labels')) {
+                map.setLayoutProperty('sat-labels', 'visibility', showLabels ? 'visible' : 'none');
+            }
+        }
+    } catch (err) {
+        console.warn('applyLabelVisibility failed:', err);
+    }
+}
 
-    if (map.hasLayer(inactiveLabels)) map.removeLayer(inactiveLabels);
-
-    if (showLabels) {
-        if (!map.hasLayer(activeLabels)) activeLabels.addTo(map);
-    } else if (map.hasLayer(activeLabels)) {
-        map.removeLayer(activeLabels);
+function setPitch3D(on, persist) {
+    show3D = !!on;
+    if (persist) {
+        try { localStorage.setItem('kgbMapPitch3D', show3D ? '1' : '0'); } catch (e) {}
+    }
+    const box = document.getElementById('toggle-3d-checkbox');
+    if (box) box.checked = show3D;
+    if (map && currentBaseView === 'vector') {
+        map.easeTo({ pitch: show3D ? DEFAULT_PITCH_3D : 0, duration: 500 });
     }
 }
 
 function setMarkersVisible(visible, persist) {
-    map.getPane('campusMarkerPane').style.display = visible ? '' : 'none';
-    map.getPane('campusTooltipPane').style.display = visible ? '' : 'none';
-    if (persist) localStorage.setItem('kgbMapShowMarkers', visible);
+    markersVisible = !!visible;
+    applyPinVisibility();
+    if (persist) {
+        try { localStorage.setItem('kgbMapShowMarkers', markersVisible); } catch (e) {}
+    }
 }
 
 // ===== GPS POSITIONING (EXPERIMENT) =====
@@ -1509,10 +1767,10 @@ function setUserLocationVisible(visible) {
             { enableHighAccuracy: true }
         );
     } else {
-        if (userLocationWatchId !== null) navigator.geolocation.clearWatch(userLocationWatchId);
+        if (userLocationWatchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(userLocationWatchId);
         userLocationWatchId = null;
-        if (userLocationMarker) { map.removeLayer(userLocationMarker); userLocationMarker = null; }
-        if (userLocationAccuracyCircle) { map.removeLayer(userLocationAccuracyCircle); userLocationAccuracyCircle = null; }
+        if (userLocationMarker) { try { userLocationMarker.remove(); } catch (e) {} userLocationMarker = null; }
+        removeAccuracyCircle();
         currentUserLocation = null;
         // Directions endpoints are coordinate snapshots, not live references —
         // an active two-point route stays valid regardless of watch state.
@@ -1520,29 +1778,64 @@ function setUserLocationVisible(visible) {
     }
 }
 
+// Accuracy circle is a GeoJSON fill polygon (meters-accurate at any zoom).
+function accuracyCircleGeoJSON(lat, lng, radiusMeters) {
+    const points = 64;
+    const coords = [];
+    const latR = radiusMeters / 111320;
+    const lngR = radiusMeters / (111320 * Math.cos(lat * Math.PI / 180));
+    for (let i = 0; i <= points; i++) {
+        const a = (i / points) * Math.PI * 2;
+        coords.push([lng + lngR * Math.cos(a), lat + latR * Math.sin(a)]);
+    }
+    return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] }, properties: {} };
+}
+
+function ensureAccuracyCircleLayers() {
+    if (!map || !map.isStyleLoaded()) return false;
+    try {
+        if (!map.getSource('user-accuracy')) {
+            map.addSource('user-accuracy', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+            map.addLayer({ id: 'user-accuracy-fill', type: 'fill', source: 'user-accuracy', paint: { 'fill-color': '#1967d2', 'fill-opacity': 0.15 } });
+            map.addLayer({ id: 'user-accuracy-line', type: 'line', source: 'user-accuracy', paint: { 'line-color': '#1967d2', 'line-width': 1, 'line-opacity': 0.5 } });
+        }
+        return true;
+    } catch (e) { return false; }
+}
+
+function removeAccuracyCircle() {
+    try {
+        if (map && map.getSource('user-accuracy')) {
+            map.getSource('user-accuracy').setData({ type: 'FeatureCollection', features: [] });
+        }
+    } catch (e) {}
+    userLocationAccuracyCircle = null;
+}
+
 function updateUserLocationMarker(coords) {
+    if (!map) return;
     currentUserLocation = { lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy };
-    const latlng = [coords.latitude, coords.longitude];
+    const lngLat = [coords.longitude, coords.latitude];
     const isFirstFix = !userLocationMarker;
     if (!userLocationMarker) {
-        userLocationMarker = L.marker(latlng, {
-            icon: L.divIcon({ className: 'user-location-dot', iconSize: [16, 16] }),
-            pane: 'userLocationPane',
-        }).addTo(map);
-        userLocationAccuracyCircle = L.circle(latlng, {
-            radius: coords.accuracy,
-            className: 'user-location-accuracy',
-            pane: 'userLocationPane',
-        }).addTo(map);
+        const el = document.createElement('div');
+        el.className = 'user-location-dot';
+        userLocationMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(map);
     } else {
-        userLocationMarker.setLatLng(latlng);
-        userLocationAccuracyCircle.setLatLng(latlng);
-        userLocationAccuracyCircle.setRadius(coords.accuracy);
+        userLocationMarker.setLngLat(lngLat);
+    }
+    if (ensureAccuracyCircleLayers()) {
+        try {
+            map.getSource('user-accuracy').setData({
+                type: 'FeatureCollection',
+                features: [accuracyCircleGeoJSON(coords.latitude, coords.longitude, coords.accuracy || 20)],
+            });
+        } catch (e) {}
     }
     // Focus the map on the very first fix after enabling GPS (mirrors clicking a
     // location in the list) — not on every subsequent watchPosition update, since
     // that would yank the camera around as the user moves.
-    if (isFirstFix) focusMapOnUserLocation(latlng);
+    if (isFirstFix) focusMapOnUserLocation([coords.latitude, coords.longitude]);
 }
 
 // Same camera-focus behavior used when selecting a location from the list/search,
@@ -1557,20 +1850,14 @@ function focusMapOnUserLocation(coords) {
     } else {
         const basePadding = getMapPadding();
         const padding = [100, 100, 100, basePadding[3] || 100];
-        map.flyToBounds([coords], { padding: padding, maxZoom: 19, duration: 1.2 });
+        fitCoordsToMap([coords], { padding, maxZoom: 19, duration: 1200 });
     }
 }
 
-// ===== MY LOCATION BUTTON (desktop + mobile FAB) =====
-
-// Desktop: stack the button directly above Leaflet's live-rendered zoom control,
-// so it reads as part of the same control group regardless of the control's actual size.
+// My-location button sits above MapLibre's nav control via CSS alone
+// (fixed bottom offset) — no JS measuring needed.
 function positionMyLocationButtonDesktop() {
-    const btn = document.getElementById('my-location-btn');
-    const zoomEl = document.querySelector('.leaflet-control-zoom');
-    if (!btn || !zoomEl || window.innerWidth <= 768) return;
-    const rect = zoomEl.getBoundingClientRect();
-    btn.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+    return;
 }
 
 function initMyLocationButton() {
@@ -1620,70 +1907,84 @@ function initFloatingButtonsMobile() {
     updateFloatingButtonsPosition();
 }
 
-// ===== OSRM DIRECTIONS (EXPERIMENT) =====
-// Public OSRM demo server — driving profile only (no foot/walking profile available).
+// ===== FOOT ROUTING (jalan kaki) =====
+// FOSSGIS public OSRM with foot profile — no key, works from static hosting.
+// Campus footpaths come from OSM; where OSM has no footway the route snaps to roads.
+function ensureRouteLayers(restoreData) {
+    if (!map || !map.isStyleLoaded()) return false;
+    try {
+        if (!map.getSource('osrm-route')) {
+            map.addSource('osrm-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+            map.addLayer({ id: 'osrm-route-glow', type: 'line', source: 'osrm-route', paint: { 'line-color': '#1967d2', 'line-width': 10, 'line-opacity': 0.35 } });
+            map.addLayer({ id: 'osrm-route-base', type: 'line', source: 'osrm-route', paint: { 'line-color': '#1967d2', 'line-width': 5, 'line-opacity': 0.9 } });
+            map.addLayer({ id: 'osrm-route-dash', type: 'line', source: 'osrm-route', paint: { 'line-color': '#ffffff', 'line-width': 2.5, 'line-opacity': 0.9, 'line-dasharray': [0.5, 3], 'line-cap': 'round' } });
+        }
+        if (restoreData && routeGeoJSON) {
+            map.getSource('osrm-route').setData(routeGeoJSON);
+        }
+        return true;
+    } catch (e) { return false; }
+}
+
 async function drawOSRMRoute(fromCoords, toCoords) {
     if (!fromCoords || !toCoords) return null;
     clearRoute();
-    const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
+    const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
     try {
         const res = await fetch(url);
         const data = await res.json();
         if (!data.routes || !data.routes.length) return null;
         const route = data.routes[0];
-        const geometry = route.geometry;
+        routeGeoJSON = route.geometry;
 
-        const glowLine = L.geoJSON(geometry, {
-            pane: 'routeLinePane',
-            style: { color: '#1967d2', weight: 10, opacity: 0.45, className: 'osrm-route-glow' },
-        });
-        const baseLine = L.geoJSON(geometry, {
-            pane: 'routeLinePane',
-            style: { color: '#1967d2', weight: 5, opacity: 0.9 },
-        });
-        const dashLine = L.geoJSON(geometry, {
-            pane: 'routeLinePane',
-            style: { color: '#ffffff', weight: 3, opacity: 0.95, dashArray: '1, 14', lineCap: 'round', className: 'osrm-route-dash' },
-        });
-
-        currentRouteLine = L.layerGroup([glowLine, baseLine, dashLine]).addTo(map);
-        map.fitBounds(baseLine.getBounds(), { padding: [60, 60] });
+        if (ensureRouteLayers(false)) {
+            map.getSource('osrm-route').setData(routeGeoJSON);
+            const bounds = new maplibregl.LngLatBounds();
+            const coords = routeGeoJSON.type === 'LineString' ? routeGeoJSON.coordinates : routeGeoJSON.coordinates.flat();
+            coords.forEach(c => bounds.extend(c));
+            map.fitBounds(bounds, { padding: 60, duration: 1000 });
+        }
 
         return { distance: route.distance, duration: route.duration };
     } catch (err) {
-        console.warn('OSRM route fetch failed:', err);
+        console.warn('Foot route fetch failed:', err);
         return null;
     }
 }
 
 function clearRoute() {
-    if (currentRouteLine) { map.removeLayer(currentRouteLine); currentRouteLine = null; }
+    routeGeoJSON = null;
+    try {
+        if (map && map.getSource('osrm-route')) {
+            map.getSource('osrm-route').setData({ type: 'FeatureCollection', features: [] });
+        }
+    } catch (e) {}
+    currentRouteLine = null;
 }
 
 // ===== DIRECTIONS PANEL (TWO-POINT ROUTING) =====
 
 function renderDirectionsPin(field, point) {
+    if (!map || !point.coords) return;
     const isStart = field === 'start';
     const existing = isStart ? directionsStartMarker : directionsEndMarker;
-    if (existing) { map.removeLayer(existing); }
+    if (existing) { try { existing.remove(); } catch (e) {} }
 
-    const marker = L.marker(point.coords, {
-        icon: L.divIcon({
-            html: `<span class="material-symbols-outlined directions-pin directions-pin-${field}">location_on</span>`,
-            className: '',
-            iconSize: [28, 36],
-            iconAnchor: [14, 36],
-        }),
-        pane: 'directionsPinPane',
-    }).addTo(map);
+    const el = document.createElement('div');
+    el.className = 'ml-directions-pin-wrap';
+    el.innerHTML = `<span class="material-symbols-outlined directions-pin directions-pin-${field}">location_on</span>`;
+
+    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([point.coords[1], point.coords[0]])
+        .addTo(map);
 
     if (isStart) directionsStartMarker = marker;
     else directionsEndMarker = marker;
 }
 
 function clearDirectionsPins() {
-    if (directionsStartMarker) { map.removeLayer(directionsStartMarker); directionsStartMarker = null; }
-    if (directionsEndMarker) { map.removeLayer(directionsEndMarker); directionsEndMarker = null; }
+    if (directionsStartMarker) { try { directionsStartMarker.remove(); } catch (e) {} directionsStartMarker = null; }
+    if (directionsEndMarker) { try { directionsEndMarker.remove(); } catch (e) {} directionsEndMarker = null; }
 }
 
 function updateDirectionsRouteInfo(result) {
@@ -1694,7 +1995,7 @@ function updateDirectionsRouteInfo(result) {
     } else if (result === null) {
         infoEl.textContent = '';
     } else {
-        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (memandu)`;
+        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (jalan kaki)`;
     }
 }
 
@@ -1938,73 +2239,54 @@ function initDirectionsPanel() {
 
 function initMap() {
     const isMobileInit = window.innerWidth <= 768;
-    map = L.map('map', { minZoom: 15, maxZoom: 22, zoomControl: false, zoomSnap: 0.5 }).setView(
-        isMobileInit ? [5.4030603222603855, 103.07978857810325] : [5.400403569715876, 103.07990647727662],
-        isMobileInit ? 16 : 14
-    );
+    const savedView = (() => {
+        try { return localStorage.getItem('kgbMapBaseLayer'); } catch (e) { return null; }
+    })();
+    // Default = 3D vector. Legacy 'satellite' choice is respected; legacy 'osm' maps to vector.
+    currentBaseView = savedView === 'satellite' ? 'satellite' : 'vector';
+    try {
+        showLabels = localStorage.getItem('kgbMapShowLabels') !== 'false';
+        show3D = localStorage.getItem('kgbMapPitch3D') !== '0';
+    } catch (e) {}
 
-    // Dedicated panes for campus markers/tooltips so they can be hidden as a group
-    // without affecting explicitly-selected (exempt) markers, which use the default panes
-    map.createPane('campusMarkerPane');
-    map.getPane('campusMarkerPane').style.zIndex = 600;
-    map.createPane('campusTooltipPane');
-    map.getPane('campusTooltipPane').style.zIndex = 650;
-
-    // GPS dot/accuracy circle and OSRM route line panes (experiment)
-    map.createPane('userLocationPane');
-    map.getPane('userLocationPane').style.zIndex = 650;
-    map.createPane('routeLinePane');
-    map.getPane('routeLinePane').style.zIndex = 450; // below campusMarkerPane(600) so route sits under pins
-
-    // Directions start/end pin markers (above campusMarkerPane(600) and userLocationPane(650))
-    map.createPane('directionsPinPane');
-    map.getPane('directionsPinPane').style.zIndex = 700;
-
-    // DEBUG: zoom level indicator
-    const zoomDebug = document.createElement('div');
-    zoomDebug.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.7);color:white;padding:4px 8px;border-radius:4px;font-size:13px;z-index:9999;pointer-events:none;';
-    zoomDebug.textContent = 'Zoom: ' + map.getZoom();
-    document.body.appendChild(zoomDebug);
-    map.on('zoomend', () => { zoomDebug.textContent = 'Zoom: ' + map.getZoom(); });
-    // END DEBUG
-
-    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxNativeZoom: 19,
-        maxZoom: 22,
+    map = new maplibregl.Map({
+        container: 'map',
+        style: currentBaseView === 'satellite' ? SATELLITE_STYLE : VECTOR_STYLE_URL,
+        center: isMobileInit ? [103.07978857810325, 5.4030603222603855] : [103.07990647727662, 5.400403569715876],
+        zoom: isMobileInit ? 16 : 14,
+        pitch: currentBaseView === 'vector' && show3D ? DEFAULT_PITCH_3D : 0,
+        bearing: 0,
+        maxPitch: 70,
+        minZoom: 14,
+        maxZoom: 20,
+        attributionControl: { compact: true },
+        canvasContextAttributes: { antialias: true },
     });
 
-    regularLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        maxNativeZoom: 20,
-        maxZoom: 22,
-    });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: true }), 'bottom-right');
 
-    satelliteLabelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
-        pane: 'shadowPane',
-        maxNativeZoom: 20,
-        maxZoom: 22,
-    });
+    // Custom layers must be (re-)added after every style switch (setStyle wipes them).
+    // NOTE: 'style.load' only — NOT 'styledata' (that fires on every source update
+    // and would yank the camera pitch while the user interacts).
+    map.on('style.load', ensureCustomStyleLayers);
+    map.on('load', ensureCustomStyleLayers);
 
-    regularLabelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
-        pane: 'shadowPane',
-        maxNativeZoom: 20,
-        maxZoom: 22,
-    });
+    // Debug UI (?debug= chip, ?debugpage overlay) replaces the old zoom div.
+    initDebugTools();
 
-    currentBaseView = localStorage.getItem('kgbMapBaseLayer') === 'osm' ? 'osm' : 'satellite';
-    showLabels = localStorage.getItem('kgbMapShowLabels') !== 'false';
-    setBaseView(currentBaseView, false);
-
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-    positionMyLocationButtonDesktop();
-
-    const toggleSatelliteCheckbox = document.getElementById('toggle-satellite-checkbox');
-    if (toggleSatelliteCheckbox) {
-        toggleSatelliteCheckbox.checked = currentBaseView === 'satellite';
-        toggleSatelliteCheckbox.addEventListener('change', (e) => {
-            setBaseView(e.target.checked ? 'satellite' : 'osm', true);
+    // Toggles are wired here; setBaseView applies the actual style.
+    const satelliteToggleCheckbox = document.getElementById('toggle-satellite-checkbox');
+    if (satelliteToggleCheckbox) {
+        satelliteToggleCheckbox.checked = currentBaseView === 'satellite';
+        satelliteToggleCheckbox.addEventListener('change', (e) => {
+            setBaseView(e.target.checked ? 'satellite' : 'vector', true);
         });
+    }
+
+    const pitchToggle = document.getElementById('toggle-3d-checkbox');
+    if (pitchToggle) {
+        pitchToggle.checked = show3D;
+        pitchToggle.addEventListener('change', (e) => setPitch3D(e.target.checked, true));
     }
 
     const showMarkersInit = localStorage.getItem('kgbMapShowMarkers') !== 'false';
@@ -2027,51 +2309,47 @@ function initMap() {
         });
     }
 
-    // ===== MAP TEXT LABELS =====
+    // ===== MAP TEXT LABELS (HTML markers, MapLibre) =====
     mapLabels.forEach(({ coords, text, fontSize, minZoom }) => {
-        const marker = L.marker(coords, {
-            icon: L.divIcon({
-                className: '',
-                html: `<div class="map-text-label">${text}</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0],
-            }),
-            interactive: false,
-            zIndexOffset: -1000,
-        }).addTo(map);
-        mapLabelRefs.push({ marker, fontSize: fontSize || 13, minZoom: minZoom || 16 });
+        const el = document.createElement('div');
+        el.className = 'map-text-label';
+        el.innerHTML = text;
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([coords[1], coords[0]])
+            .addTo(map);
+        mapLabelRefs.push({ marker, el, fontSize: fontSize || 13, minZoom: minZoom || 16 });
     });
 
     function updateMapTextLabels() {
+        if (!map) return;
         const zoom = map.getZoom();
-        mapLabelRefs.forEach(({ marker, fontSize, minZoom }) => {
-            const el = marker.getElement();
+        mapLabelRefs.forEach(({ el, fontSize, minZoom }) => {
             if (!el) return;
-            const label = el.querySelector('.map-text-label');
-            if (!label) return;
             if (zoom < minZoom) {
-                label.style.opacity = '0';
-                label.style.pointerEvents = 'none';
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
             } else {
                 // Scale font from 60% at minZoom up to 100% at minZoom+3
                 const t = (zoom - minZoom) / 3;
                 const scale = 0.6 + 0.4 * Math.min(t, 1);
-                label.style.fontSize = (fontSize * scale).toFixed(1) + 'px';
-                label.style.opacity = '1';
+                el.style.fontSize = (fontSize * scale).toFixed(1) + 'px';
+                el.style.opacity = '1';
             }
         });
     }
 
     map.on('zoomend', function() {
         updateMapTextLabels();
-        updateMarkerModes();
+        refreshPinTiers();
     });
     updateMapTextLabels();
     // ===== END MAP TEXT LABELS =====
 
+    initPinInteractions();
+
+    // Pins handle their own clicks (stopPropagation) — this is empty-map taps only.
     map.on('click', function() {
-        markers.forEach(m => { m._tooltipSticky = false; });
-        document.querySelectorAll('.custom-tooltip-popup').forEach(tp => tp.classList.remove('expanded', 'tooltip-visible'));
+        hidePinPopup();
         setMarkerHighlight(null);
         if (window.innerWidth <= 768 && sheetElement && sheetState !== 'peek') {
             sheetElement.style.height = '';
@@ -2079,87 +2357,16 @@ function initMap() {
         }
     });
 
-    // ===== MOBILE ZOOM GESTURES (replaces Leaflet double-tap on mobile) =====
-    // - Double tap (one finger, quick)          → zoom in at tap position
-    // - Hold one finger + tap with second finger → zoom out
-    if (window.innerWidth <= 768) {
-        map.doubleClickZoom.disable();
+    // MapLibre has native mobile gestures (pinch, double-tap zoom, two-finger
+    // pitch) — no custom touch handlers needed.
 
-        let lastTapTime = 0;
-        let lastTapX = 0, lastTapY = 0;
-        let doubleTapTimer = null;
-        let secondTapLatLng = null;
-        let firstFingerDownTime = 0;
-        let secondFingerDownTime = 0;
-
-        const mapEl = document.getElementById('map');
-
-        mapEl.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                const now = Date.now();
-                const dx = touch.clientX - lastTapX;
-                const dy = touch.clientY - lastTapY;
-                firstFingerDownTime = now;
-                secondFingerDownTime = 0;
-
-                if (now - lastTapTime < 300 && Math.hypot(dx, dy) < 40) {
-                    secondTapLatLng = map.containerPointToLatLng(
-                        L.point(touch.clientX, touch.clientY)
-                    );
-                    doubleTapTimer = setTimeout(() => {
-                        doubleTapTimer = null;
-                        secondTapLatLng = null;
-                    }, 300);
-                    lastTapTime = 0;
-                } else {
-                    lastTapTime = now;
-                    lastTapX = touch.clientX;
-                    lastTapY = touch.clientY;
-                }
-            } else if (e.touches.length === 2) {
-                secondFingerDownTime = Date.now();
-                if (doubleTapTimer) {
-                    clearTimeout(doubleTapTimer);
-                    doubleTapTimer = null;
-                    secondTapLatLng = null;
-                }
-            }
-        }, { passive: true });
-
-        mapEl.addEventListener('touchend', (e) => {
-            const now = Date.now();
-
-            // Quick double-tap → zoom in
-            if (doubleTapTimer !== null) {
-                clearTimeout(doubleTapTimer);
-                doubleTapTimer = null;
-                if (secondTapLatLng) {
-                    map.setZoomAround(secondTapLatLng, map.getZoom() + 1);
-                    secondTapLatLng = null;
-                }
-                return;
-            }
-
-            // Hold one finger + tap second finger → zoom out
-            // Detects: 2→1 transition where second finger was tapped quickly (<300ms)
-            // and first finger was held before second joined (>150ms gap)
-            if (e.touches.length === 1 && secondFingerDownTime > 0) {
-                const secondFingerDuration = now - secondFingerDownTime;
-                const firstFingerHeldBefore = secondFingerDownTime - firstFingerDownTime;
-                if (secondFingerDuration < 300 && firstFingerHeldBefore > 150) {
-                    map.zoomOut(1);
-                }
-                secondFingerDownTime = 0;
-            }
-        });
-    }
-    // ===== END MOBILE ZOOM GESTURES =====
+    // ===== END MAP INIT EVENTS =====
 
     fetch(`https://raw.githubusercontent.com/unija-info/unija-map/refs/heads/main/kgb/data/kgb-map/kgb-map.json?v=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
             mapData = processData(data);
+            dlog('[pins-html] locations loaded:', mapData.length);
             const countEl = document.getElementById('location-count');
             if (countEl) countEl.textContent = mapData.length;
             const menuCountEl = document.getElementById('menu-location-count');
@@ -2167,6 +2374,15 @@ function initMap() {
             renderGroupedList();
             showAllLocations(true, false);
             handleDeepLink();
+            updateDebugChip();
+            renderDebugPage();
+            // Settle log: prove how many markers are actually on the map.
+            setTimeout(() => {
+                try {
+                    const withCoords = mapData.filter(l => l.coords).length;
+                    dlog(`[pins-html] settle — markers mounted: ${pinMarkers.length}, locations with coords: ${withCoords}`);
+                } catch (e) {}
+            }, 4000);
         })
         .catch(err => {
             console.error('Failed to load map data:', err);
@@ -2177,24 +2393,32 @@ function initMap() {
     loadCampusBoundary();
 }
 
-// ===== CAMPUS BOUNDARY =====
+// ===== CAMPUS BOUNDARY (GeoJSON source, survives style switches) =====
+
+function ensureBoundaryLayers() {
+    if (!map || !map.isStyleLoaded() || !campusBoundaryData) return false;
+    try {
+        if (!map.getSource('campus-boundary')) {
+            map.addSource('campus-boundary', { type: 'geojson', data: campusBoundaryData });
+            map.addLayer({ id: 'campus-boundary-fill', type: 'fill', source: 'campus-boundary', paint: { 'fill-color': '#1967d2', 'fill-opacity': 0.07 } });
+            map.addLayer({ id: 'campus-boundary-line', type: 'line', source: 'campus-boundary', paint: { 'line-color': '#1967d2', 'line-width': 2.5, 'line-opacity': 0.8 } });
+        } else {
+            map.getSource('campus-boundary').setData(campusBoundaryData);
+        }
+        return true;
+    } catch (e) { return false; }
+}
 
 function loadCampusBoundary() {
     // Coordinates sourced from OSM Way 1120569731 (UniSZA KGB campus) and stored locally
     // to avoid dependency on the unreliable Overpass API.
-    const style = {
-        color: '#1967d2',
-        weight: 2.5,
-        opacity: 100,
-        fillColor: '#1967d2',
-        fillOpacity: 0,
-        interactive: false,
-    };
-
     fetch('/kgb/data/campus-boundary.json')
         .then(res => res.json())
         .then(coords => {
-            L.polygon(coords, style).addTo(map);
+            // Stored as [[lat,lng],...] — convert to GeoJSON [lng,lat] ring.
+            const ring = coords.map(c => [c[1], c[0]]);
+            campusBoundaryData = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} };
+            ensureBoundaryLayers();
         })
         .catch(err => {
             console.warn('Campus boundary fetch failed:', err);
@@ -2309,6 +2533,10 @@ window.onload = function() {
 
 window.addEventListener('resize', function() {
     const sidebar = document.getElementById('sidebar');
+
+    // Pin dot/badge zoom tier follows the mobile/desktop breakpoint.
+    refreshPinTiers();
+    positionPinPopup();
 
     if (window.innerWidth <= 768) {
         initBottomSheet();
