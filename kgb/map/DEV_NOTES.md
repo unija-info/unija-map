@@ -104,6 +104,18 @@ Tired but warm. This was the hardest debugging session in this file's history an
 
 ---
 
+## Session 2026-10-19, part 3 — detail overlays (footpaths/sports/parking) on 3D vector (beta, UNPUSHED)
+
+Owner: reference image was spec for detail density, not exact look — "just want to see footpath, parking and else, now no footpath". Root cause: `bright` base paints `transportation/class=path` as faint `#cba` dashed and styles NO `landuse` pitch/track/stadium/playground or parking layers (verified against live style JSON), so campus walkways and courts were invisible.
+
+Shipped: `addDetailLayers()` in `script.js` (reddish `detail-path`, green `detail-sport-fill/line`, pink `detail-parking` for `service=parking_aisle`), called in `ensureCustomStyleLayers()` before buildings + mask so extrusions stay on top and outside dim still covers; `detail:{...}` knobs in `config.json` with type-checked fallbacks; `?v=html20` bump; CHANGELOG/feature.md updated. Verified: `node --check` clean, served 200 + config fetch, harness ALL GREEN (harness stub has no vector source so details skip silently — no coverage there yet).
+
+Open threads: road-contrast (dark casings like ref) deliberately NOT done — say so if asked. Still unpushed on `beta` — don't push unless asked.
+
+Update (same day, later): pink `detail-parking` removed per owner (it painted internal driveways pink) — layer block + `parking`/`parkingColor` knobs deleted from `script.js`/`config.json`, with one-time live-session cleanup; bumped `?v=html21`. Then opacity knobs added per owner: `pathOpacity`/`sportOpacity`/`sportLineOpacity` (owner had hand-set path to 0.5 mid-session — kept as default). Then running `track` split from sport green into own tartan `detail-track-fill` (`trackColor`/`trackOpacity`); bumped `?v=html23`. All verified `node --check` + harness ALL GREEN each round. Owner closed with "good". Parked clean.
+
+---
+
 ## Session 2026-10-19, part 2 — mask saga, stems, config, debug tools, parking (beta, UNPUSHED)
 
 ### The one-line summary

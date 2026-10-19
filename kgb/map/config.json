@@ -45,5 +45,18 @@
     "dimColor": "#868c96",
     "restrictPanning": true,
     "panBuffer": 0.02
+  },
+  "detail": {
+    "_note": "High-contrast overlays on the bright base (paths are faint #cba there, pitches/parking unstyled). All read from the same openmaptiles planet source.",
+    "footpaths": true,
+    "sports": true,
+    "sportColor": "#7fd08a",
+    "sportLine": "#ffffff",
+    "pathColor": "#a34d4d",
+    "pathOpacity": 0.5,
+    "sportOpacity": 0.85,
+    "sportLineOpacity": 0.9,
+    "trackColor": "#c26a5a",
+    "trackOpacity": 0.9
   }
 }

@@ -13,6 +13,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 * **Putar & condongkan**: gunakan dua jari (cubit + putar) di telefon. Di komputer, butang kompas di penjuru kanan bawah.
 * Nak kembali ke pandangan asal? **Tekan butang kompas** — peta terus rata menghadap utara.
 * Tak suka 3D? Buka **menu ☰ → Paparan Peta → matikan "Peta 3D"** untuk peta rata biasa.
+* Laluan kaki (garis putus-putus), padang/gelanggang (hijau) dan lorong parkir (merah jambu) dilukis di atas peta vektor — zum dekat untuk melihatnya dengan jelas.
 
 ## 2. Tukar Paparan Satelit
 

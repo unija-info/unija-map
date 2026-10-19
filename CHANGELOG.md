@@ -13,6 +13,7 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Markers overhauled after a cascade-ordering bug (`.ml-marker{position:relative}` beat MapLibre's own rule → index-marched pins); final form is badge-only HTML pins with pitch-gated float stems
 - Debug tooling: `?debug=1` live camera chip, `?debugpage` full debug overlay; old always-on zoom indicator removed
 - `config.json` tuning file, campus focus mask (outside dim + pan restriction), `feature.md` Malay user guide, root `AGENTS.md`, and first headless harness (`kgb/map/harness.debug.js`) as regression tool
+- Detail overlays on the 3D vector view: footpaths (reddish dashed) and sports grounds (green) — previously invisible under the `bright` base style (a pink parking-aisle overlay shipped briefly, then removed — it recolored the internal driveways)
 
 ---
 

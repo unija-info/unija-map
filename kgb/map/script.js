@@ -56,6 +56,7 @@ const CONFIG_DEFAULTS = {
     },
     base: { default: 'vector' },
     mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02 },
+    detail: { footpaths: true, sports: true, sportColor: '#7fd08a', sportLine: '#ffffff', pathColor: '#a34d4d', pathOpacity: 0.5, sportOpacity: 0.85, sportLineOpacity: 0.9, trackColor: '#c26a5a', trackOpacity: 0.9 },
 };
 const CONFIG = JSON.parse(JSON.stringify(CONFIG_DEFAULTS));
 
@@ -98,6 +99,15 @@ function applyAppConfig(json) {
         }
         if (typeof mk.restrictPanning === 'boolean') CONFIG.mask.restrictPanning = mk.restrictPanning;
         CONFIG.mask.panBuffer = numOr(mk.panBuffer, CONFIG.mask.panBuffer);
+        const dt = json.detail || {};
+        if (typeof dt.footpaths === 'boolean') CONFIG.detail.footpaths = dt.footpaths;
+        if (typeof dt.sports === 'boolean') CONFIG.detail.sports = dt.sports;
+        ['sportColor', 'sportLine', 'pathColor', 'trackColor'].forEach(k => {
+            if (typeof dt[k] === 'string' && /^#[0-9a-f]{6}$/i.test(dt[k])) CONFIG.detail[k] = dt[k];
+        });
+        ['pathOpacity', 'sportOpacity', 'sportLineOpacity', 'trackOpacity'].forEach(k => {
+            if (typeof dt[k] === 'number' && isFinite(dt[k])) CONFIG.detail[k] = Math.min(1, Math.max(0, dt[k]));
+        });
         const root = document.documentElement.style;
         root.setProperty('--pin-stem-height', `${CONFIG.pins.stem.heightPx}px`);
         root.setProperty('--pin-badge-px', `${CONFIG.pins.badgePx}px`);
@@ -159,8 +169,8 @@ let directionsEndMarker = null;        // L.marker pin for the chosen end point
 // ===== ZOOM-BASED MARKER TIERS =====
 // Defaults live in CONFIG (kgb/map/config.json) — these constants are the
 // fallback when the file is missing. Always read via CONFIG at use sites.
-const ZOOM_FULL_DESKTOP   = 17.5;
-const ZOOM_FULL_MOBILE    = 17;
+const ZOOM_FULL_DESKTOP = 17.5;
+const ZOOM_FULL_MOBILE = 17;
 const PRIORITY_CATEGORIES = [
     'PENTADBIRAN & PTJ',
     'BLOK AKADEMIK & KELAS',
@@ -274,7 +284,7 @@ function createPinMarker(location, exempt = false) {
 }
 
 function removePinMarkers() {
-    pinMarkers.forEach(r => { try { if (r.marker) r.marker.remove(); } catch (e) {} });
+    pinMarkers.forEach(r => { try { if (r.marker) r.marker.remove(); } catch (e) { } });
     pinMarkers = [];
     highlightedPinId = null;
 }
@@ -391,23 +401,23 @@ function initPinInteractions() {
     map.on('move', () => {
         try {
             document.body.classList.toggle('is-pitched', map.getPitch() > CONFIG.pins.stem.minPitch);
-        } catch (e) {}
+        } catch (e) { }
         positionPinPopup();
     });
 }
 
 // ===== CATEGORY COLOR SYSTEM =====
 const CATEGORY_COLORS = {
-    'PENTADBIRAN & PTJ':              { bg: '#2b8a8f', text: 'white' },
-    'BLOK AKADEMIK & KELAS':          { bg: '#205c8c', text: 'white' },
+    'PENTADBIRAN & PTJ': { bg: '#2b8a8f', text: 'white' },
+    'BLOK AKADEMIK & KELAS': { bg: '#205c8c', text: 'white' },
     'BLOK FAKULTI & PUSAT PENGAJIAN': { bg: '#d4a000', text: 'black' },
-    'KOLEJ KEDIAMAN':                 { bg: '#ecaa2b', text: 'black' },
-    'PUSAT AKTIVITI':                 { bg: '#e0468a', text: 'black' },
-    'SUKAN & REKREASI':               { bg: '#8A2BE2', text: 'white' },
-    'CAFE & MAKANAN':                 { bg: '#b0a020', text: 'black' },
-    'KESIHATAN':                      { bg: '#DC143C', text: 'white' },
-    'IBADAH':                         { bg: '#32CD32', text: 'black' },
-    'FASILITI & KEMUDAHAN':           { bg: '#8f9ce2', text: 'black' },
+    'KOLEJ KEDIAMAN': { bg: '#ecaa2b', text: 'black' },
+    'PUSAT AKTIVITI': { bg: '#e0468a', text: 'black' },
+    'SUKAN & REKREASI': { bg: '#8A2BE2', text: 'white' },
+    'CAFE & MAKANAN': { bg: '#b0a020', text: 'black' },
+    'KESIHATAN': { bg: '#DC143C', text: 'white' },
+    'IBADAH': { bg: '#32CD32', text: 'black' },
+    'FASILITI & KEMUDAHAN': { bg: '#8f9ce2', text: 'black' },
 };
 
 const DESIRED_ORDER = [
@@ -424,16 +434,16 @@ const DESIRED_ORDER = [
 ];
 
 const CATEGORY_SLUG = {
-    'PENTADBIRAN & PTJ':              'pentadbiran',
-    'BLOK AKADEMIK & KELAS':          'akademik',
+    'PENTADBIRAN & PTJ': 'pentadbiran',
+    'BLOK AKADEMIK & KELAS': 'akademik',
     'BLOK FAKULTI & PUSAT PENGAJIAN': 'fakulti',
-    'KOLEJ KEDIAMAN':                 'kolej-kediaman',
-    'PUSAT AKTIVITI':                 'aktiviti',
-    'SUKAN & REKREASI':               'sukan',
-    'CAFE & MAKANAN':                 'cafe',
-    'KESIHATAN':                      'kesihatan',
-    'IBADAH':                         'ibadah',
-    'FASILITI & KEMUDAHAN':           'fasiliti',
+    'KOLEJ KEDIAMAN': 'kolej-kediaman',
+    'PUSAT AKTIVITI': 'aktiviti',
+    'SUKAN & REKREASI': 'sukan',
+    'CAFE & MAKANAN': 'cafe',
+    'KESIHATAN': 'kesihatan',
+    'IBADAH': 'ibadah',
+    'FASILITI & KEMUDAHAN': 'fasiliti',
 };
 
 function getCategoryColor(lt) {
@@ -1239,12 +1249,12 @@ function initDesktopSidebar() {
 
     if (!sidebar || !collapseBtn || !expandBtn) return;
 
-    collapseBtn.addEventListener('click', function(e) {
+    collapseBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         toggleDesktopSidebar(true);
     });
 
-    expandBtn.addEventListener('click', function(e) {
+    expandBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         toggleDesktopSidebar(false);
     });
@@ -1371,7 +1381,7 @@ function initSearchDropdown() {
 
     if (!searchBar || !resultsContainer) return;
 
-    searchBar.addEventListener('input', function(e) {
+    searchBar.addEventListener('input', function (e) {
         renderSearchResults(e.target.value.trim());
         // Expand bottom sheet on mobile when typing
         if (window.innerWidth <= 768 && sheetElement && sheetState === 'peek') {
@@ -1380,7 +1390,7 @@ function initSearchDropdown() {
         }
     });
 
-    resultsContainer.addEventListener('click', function(e) {
+    resultsContainer.addEventListener('click', function (e) {
         const item = e.target.closest('.search-result-item');
         if (!item) return;
 
@@ -1420,13 +1430,13 @@ function initSearchDropdown() {
         if (clearBtn) clearBtn.style.display = 'none';
     });
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (!e.target.closest('.search-container')) {
             renderSearchResults('');
         }
     });
 
-    searchBar.addEventListener('keydown', function(e) {
+    searchBar.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
             searchBar.value = '';
             renderSearchResults('');
@@ -1566,11 +1576,11 @@ function initClearSearchButton() {
     const clearBtn = document.getElementById('clear-search');
 
     if (searchBar && clearBtn) {
-        searchBar.addEventListener('input', function() {
+        searchBar.addEventListener('input', function () {
             clearBtn.style.display = this.value.length > 0 ? 'block' : 'none';
         });
 
-        clearBtn.addEventListener('click', function() {
+        clearBtn.addEventListener('click', function () {
             searchBar.value = '';
             renderSearchResults('');
             this.style.display = 'none';
@@ -1662,7 +1672,7 @@ function debugSnapshot() {
                 maskRestricted: CONFIG.mask.restrictPanning,
             };
         } catch (e) { snap.boundary = '(error)'; }
-    } catch (e) {}
+    } catch (e) { }
     return snap;
 }
 
@@ -1684,7 +1694,7 @@ function renderDebugPage() {
     try {
         const sel = window.getSelection();
         if (sel && !sel.isCollapsed && debugPageEl.contains(sel.anchorNode)) return;
-    } catch (e) {}
+    } catch (e) { }
     const s = debugSnapshot();
     const pre = debugPageEl.querySelector('#debug-page-body');
     if (pre) pre.textContent = JSON.stringify(s, null, 1);
@@ -1758,7 +1768,7 @@ function initDebugTools() {
             try {
                 ['kgbMapBaseLayer', 'kgbMapShowMarkers', 'kgbMapShowLabels', 'kgbMapPitch3D']
                     .forEach(k => localStorage.removeItem(k));
-            } catch (e) {}
+            } catch (e) { }
             window.location.reload();
         });
         debugPageEl.querySelector('#debug-reload').addEventListener('click', () => window.location.reload());
@@ -1790,7 +1800,7 @@ function setBaseView(view, persist) {
 
     applyLabelVisibility();
     if (persist) {
-        try { localStorage.setItem('kgbMapBaseLayer', view); } catch (e) {}
+        try { localStorage.setItem('kgbMapBaseLayer', view); } catch (e) { }
     }
 
     const satelliteToggleCheckbox = document.getElementById('toggle-satellite-checkbox');
@@ -1803,6 +1813,7 @@ function ensureCustomStyleLayers() {
     if (!map || !map.isStyleLoaded()) return;
 
     if (currentBaseView === 'vector') {
+        addDetailLayers();
         add3DBuildingsLayer();
         map.easeTo({ pitch: show3D ? CONFIG.view.pitch3D : 0, duration: 300 });
     } else {
@@ -1816,6 +1827,93 @@ function ensureCustomStyleLayers() {
     ensureMaskLayers();
     applyPanRestriction();
     applyLabelVisibility();
+}
+
+// Detail overlays: footpaths, sports grounds, parking aisles. The bright
+// base style draws paths faint (#cba) and has no pitch/parking layers, so
+// campus footpaths and courts vanish. These re-assert them from the same
+// openmaptiles planet source (no extra requests). Called before buildings
+// so extrusions stay on top, and before the mask so outside dim covers them.
+function detailSource() {
+    try {
+        if (map.getSource('openmaptiles')) return 'openmaptiles';
+        if (map.getSource('openfreemap')) return 'openfreemap';
+    } catch (e) { }
+    return null;
+}
+
+function addDetailLayers() {
+    try {
+        const src = detailSource();
+        if (!src) return;
+        // One-time cleanup: drop the removed pink parking overlay from live sessions.
+        try { if (map.getLayer('detail-parking')) map.removeLayer('detail-parking'); } catch (e) { }
+        const style = map.getStyle();
+        const layers = (style && style.layers) || [];
+        let beforeId = null;
+        for (let i = 0; i < layers.length; i++) {
+            if (layers[i].type === 'symbol' && layers[i].layout && layers[i].layout['text-field']) { beforeId = layers[i].id; break; }
+        }
+        const before = (map.getLayer('3d-buildings') && '3d-buildings') || beforeId || undefined;
+        if (CONFIG.detail.sports) {
+            if (!map.getLayer('detail-sport-fill')) {
+                map.addLayer({
+                    id: 'detail-sport-fill',
+                    type: 'fill',
+                    source: src,
+                    'source-layer': 'landuse',
+                    minzoom: 14,
+                    filter: ['match', ['get', 'class'], ['pitch', 'stadium', 'playground'], true, false],
+                    paint: { 'fill-color': CONFIG.detail.sportColor, 'fill-opacity': CONFIG.detail.sportOpacity },
+                }, before);
+            }
+            if (!map.getLayer('detail-sport-line')) {
+                map.addLayer({
+                    id: 'detail-sport-line',
+                    type: 'line',
+                    source: src,
+                    'source-layer': 'landuse',
+                    minzoom: 14,
+                    filter: ['match', ['get', 'class'], ['pitch', 'stadium', 'playground'], true, false],
+                    paint: { 'line-color': CONFIG.detail.sportLine, 'line-width': 1.5, 'line-opacity': CONFIG.detail.sportLineOpacity },
+                }, before);
+            }
+            if (!map.getLayer('detail-track-fill')) {
+                map.addLayer({
+                    id: 'detail-track-fill',
+                    type: 'fill',
+                    source: src,
+                    'source-layer': 'landuse',
+                    minzoom: 14,
+                    filter: ['==', ['get', 'class'], 'track'],
+                    paint: { 'fill-color': CONFIG.detail.trackColor, 'fill-opacity': CONFIG.detail.trackOpacity },
+                }, before);
+            }
+        }
+        if (CONFIG.detail.footpaths) {
+            if (!map.getLayer('detail-path')) {
+                map.addLayer({
+                    id: 'detail-path',
+                    type: 'line',
+                    source: src,
+                    'source-layer': 'transportation',
+                    minzoom: 14,
+                    filter: ['all',
+                        ['match', ['geometry-type'], ['LineString', 'MultiLineString'], true, false],
+                        ['==', ['get', 'class'], 'path']],
+                    layout: { 'line-cap': 'round', 'line-join': 'round' },
+                    paint: {
+                        'line-color': CONFIG.detail.pathColor,
+                        'line-width': ['interpolate', ['exponential', 1.2], ['zoom'], 15, 1.5, 20, 5],
+                        'line-dasharray': [2, 1.5],
+                        'line-opacity': CONFIG.detail.pathOpacity,
+                    },
+                }, before);
+            }
+        }
+    } catch (err) {
+        console.warn('detail layers failed:', err);
+    }
 }
 
 function add3DBuildingsLayer() {
@@ -1883,7 +1981,7 @@ function applyLabelVisibility() {
 function setPitch3D(on, persist) {
     show3D = !!on;
     if (persist) {
-        try { localStorage.setItem('kgbMapPitch3D', show3D ? '1' : '0'); } catch (e) {}
+        try { localStorage.setItem('kgbMapPitch3D', show3D ? '1' : '0'); } catch (e) { }
     }
     const box = document.getElementById('toggle-3d-checkbox');
     if (box) box.checked = show3D;
@@ -1896,7 +1994,7 @@ function setMarkersVisible(visible, persist) {
     markersVisible = !!visible;
     applyPinVisibility();
     if (persist) {
-        try { localStorage.setItem('kgbMapShowMarkers', markersVisible); } catch (e) {}
+        try { localStorage.setItem('kgbMapShowMarkers', markersVisible); } catch (e) { }
     }
 }
 
@@ -1917,7 +2015,7 @@ function setUserLocationVisible(visible) {
     } else {
         if (userLocationWatchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(userLocationWatchId);
         userLocationWatchId = null;
-        if (userLocationMarker) { try { userLocationMarker.remove(); } catch (e) {} userLocationMarker = null; }
+        if (userLocationMarker) { try { userLocationMarker.remove(); } catch (e) { } userLocationMarker = null; }
         removeAccuracyCircle();
         currentUserLocation = null;
         // Directions endpoints are coordinate snapshots, not live references —
@@ -1956,7 +2054,7 @@ function removeAccuracyCircle() {
         if (map && map.getSource('user-accuracy')) {
             map.getSource('user-accuracy').setData({ type: 'FeatureCollection', features: [] });
         }
-    } catch (e) {}
+    } catch (e) { }
     userLocationAccuracyCircle = null;
 }
 
@@ -1978,7 +2076,7 @@ function updateUserLocationMarker(coords) {
                 type: 'FeatureCollection',
                 features: [accuracyCircleGeoJSON(coords.latitude, coords.longitude, coords.accuracy || 20)],
             });
-        } catch (e) {}
+        } catch (e) { }
     }
     // Focus the map on the very first fix after enabling GPS (mirrors clicking a
     // location in the list) — not on every subsequent watchPosition update, since
@@ -2106,7 +2204,7 @@ function clearRoute() {
         if (map && map.getSource('osrm-route')) {
             map.getSource('osrm-route').setData({ type: 'FeatureCollection', features: [] });
         }
-    } catch (e) {}
+    } catch (e) { }
     currentRouteLine = null;
 }
 
@@ -2116,7 +2214,7 @@ function renderDirectionsPin(field, point) {
     if (!map || !point.coords) return;
     const isStart = field === 'start';
     const existing = isStart ? directionsStartMarker : directionsEndMarker;
-    if (existing) { try { existing.remove(); } catch (e) {} }
+    if (existing) { try { existing.remove(); } catch (e) { } }
 
     const el = document.createElement('div');
     el.className = 'ml-directions-pin-wrap';
@@ -2131,8 +2229,8 @@ function renderDirectionsPin(field, point) {
 }
 
 function clearDirectionsPins() {
-    if (directionsStartMarker) { try { directionsStartMarker.remove(); } catch (e) {} directionsStartMarker = null; }
-    if (directionsEndMarker) { try { directionsEndMarker.remove(); } catch (e) {} directionsEndMarker = null; }
+    if (directionsStartMarker) { try { directionsStartMarker.remove(); } catch (e) { } directionsStartMarker = null; }
+    if (directionsEndMarker) { try { directionsEndMarker.remove(); } catch (e) { } directionsEndMarker = null; }
 }
 
 function updateDirectionsRouteInfo(result) {
@@ -2394,11 +2492,11 @@ function initMap() {
     // legacy 'osm' maps to vector.
     currentBaseView = savedView === 'satellite' ? 'satellite'
         : savedView === 'vector' ? 'vector'
-        : (CONFIG.base.default === 'satellite' ? 'satellite' : 'vector');
+            : (CONFIG.base.default === 'satellite' ? 'satellite' : 'vector');
     try {
         showLabels = localStorage.getItem('kgbMapShowLabels') !== 'false';
         show3D = localStorage.getItem('kgbMapPitch3D') !== '0';
-    } catch (e) {}
+    } catch (e) { }
 
     map = new maplibregl.Map({
         container: 'map',
@@ -2513,7 +2611,7 @@ function initMap() {
         });
     }
 
-    map.on('zoomend', function() {
+    map.on('zoomend', function () {
         updateMapTextLabels();
         refreshPinTiers();
     });
@@ -2523,7 +2621,7 @@ function initMap() {
     initPinInteractions();
 
     // Pins handle their own clicks (stopPropagation) — this is empty-map taps only.
-    map.on('click', function() {
+    map.on('click', function () {
         hidePinPopup();
         setMarkerHighlight(null);
         if (window.innerWidth <= 768 && sheetElement && sheetState !== 'peek') {
@@ -2556,7 +2654,7 @@ function initMap() {
                 try {
                     const withCoords = mapData.filter(l => l.coords).length;
                     dlog(`[pins-html] settle — markers mounted: ${pinMarkers.length}, locations with coords: ${withCoords}`);
-                } catch (e) {}
+                } catch (e) { }
             }, 4000);
         })
         .catch(err => {
@@ -2598,7 +2696,7 @@ function buildingFilter() {
 
 function applyBuildingMask() {
     if (!map || !map.isStyleLoaded() || !map.getLayer('3d-buildings')) return;
-    try { map.setFilter('3d-buildings', buildingFilter()); } catch (e) {}
+    try { map.setFilter('3d-buildings', buildingFilter()); } catch (e) { }
 }
 
 function ensureMaskLayers() {
@@ -2663,7 +2761,7 @@ function applyPanRestriction() {
             if (c[1] > maxLat) maxLat = c[1];
         });
         map.setMaxBounds([[minLng - buf, minLat - buf], [maxLng + buf, maxLat + buf]]);
-    } catch (e) {}
+    } catch (e) { }
 }
 
 // ===== CAMPUS BOUNDARY (GeoJSON source, survives style switches) =====
@@ -2707,7 +2805,7 @@ function loadCampusBoundary() {
                         console.warn('[boundary] layers missing after settle — re-ensuring');
                         ensureBoundaryLayers();
                     }
-                } catch (e) {}
+                } catch (e) { }
             }, 4000);
         })
         .catch(err => {
@@ -2721,20 +2819,20 @@ async function fetchMapDataInfo() {
     const HARI = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
 
     function formatTarikhMalay(date) {
-        const day  = HARI[date.getDay()];
-        const dd   = String(date.getDate()).padStart(2, '0');
-        const mm   = String(date.getMonth() + 1).padStart(2, '0');
+        const day = HARI[date.getDay()];
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
         const yyyy = date.getFullYear();
         return `${day} ${dd}/${mm}/${yyyy}`;
     }
 
     function timeAgoMalay(date) {
-        const diffMs   = Date.now() - date.getTime();
+        const diffMs = Date.now() - date.getTime();
         const diffMins = Math.floor(diffMs / 60000);
-        const diffHrs  = Math.floor(diffMs / 3600000);
+        const diffHrs = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
         if (diffDays >= 1) return `${diffDays} hari lalu`;
-        if (diffHrs  >= 1) {
+        if (diffHrs >= 1) {
             const remMins = diffMins % 60;
             return remMins > 0
                 ? `${diffHrs} jam ${remMins} minit lalu`
@@ -2755,7 +2853,7 @@ async function fetchMapDataInfo() {
             .then(commits => commits.length > 0 ? new Date(commits[0].commit.committer.date) : null)
     ]);
 
-    const versionEl   = document.getElementById('map-version');
+    const versionEl = document.getElementById('map-version');
     const kemaskiniEl = document.getElementById('map-kemaskini');
 
     if (versionResult.status === 'fulfilled' && versionResult.value) {
@@ -2803,7 +2901,7 @@ function closeInfoMenu() {
 
 // ===== INIT =====
 
-window.onload = function() {
+window.onload = function () {
     document.getElementById('show-all').onclick = showAllLocations;
     document.getElementById('toggle-all-groups').onclick = toggleAllGroups;
     document.getElementById('info-menu-btn').addEventListener('click', openInfoMenu);
@@ -2830,7 +2928,7 @@ function bootApp() {
     fetchMapDataInfo();
 }
 
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
     const sidebar = document.getElementById('sidebar');
 
     // Pin dot/badge zoom tier follows the mobile/desktop breakpoint.
