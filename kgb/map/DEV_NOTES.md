@@ -2,7 +2,38 @@
 
 Not documentation. This is a note to my next self, written right as context is about to run out. If you're reading this, you're me, a few hours or days later, with no memory of any of this. Read it like you're catching up with yourself, not onboarding onto a stranger's code.
 
-> **Session log, 2026-10-19 — the MapLibre 3D migration + marker saga.** Appended below. Everything above this line is older context, still worth reading once.
+> **Session log, 2026-10-20 — route-animation saga: lock lift, marching ants → walker dots, walk/drive, curved tails.** Everything above this line is older context, still worth reading once.
+
+---
+
+## Checkpoint — 2026-10-20 (route-animation saga → walker dots; lock lift; walk/drive; curved tails)
+
+Branch `beta`, everything below UNCOMMITTED and unpushed (6 modified files, ~460 added lines, mostly `script.js`). Nothing deployed — smoke only via local `python -m http.server` (200s) + `node --check` + harness ALL GREEN each round. Owner tests on real Android Chrome via Five Server; actual user, terse messages, screenshots + `?debugpage` pastes as ground truth.
+
+Headspace: this was the longest blind-debug arc in this file. Plan mode flipped on/off ~4 times mid-session (system reminders, not owner choice) — "go" always meant implement now. Owner cooperates with decisive asks: once pointed at `?debugpage`, they pasted JSON unprompted every round, and that JSON (not my theories) cracked each step. When I asked "which looks weird" with options they answered "i will show" and sent 4 screenshots — better than any option. Match that: ask for the artifact, not the interpretation.
+
+What shipped (all local, `?v=html24→html39`, style `html12→html16`):
+- Campus lock lifts on demand (MaxBounds drops when GPS/route outside, restores inside)
+- Route animation v1: white dash crawl → too fine/slow → bigger/faster → dash layer missing on-device → per-layer heal → full registry rebuild (fresh id) → still silent no-op → walker dots (HTML markers) → dot train → rotation ticks → back to small slow dots (final: 7px flat, ~12m, ~14s loop)
+- `config.json route:{loopSeconds,dotSpacingM,dotMax,dotMaxSpeedMps}` + `?testroute=1` demo route
+- Speed cap (fixed loop scaled speed with distance; far GPS teleported)
+- Walk/Drive toggle (`routed-car` driving profile, persisted, readout `(memandu)`)
+- Curved dotted tails: bezier lead-in/out, blue line ends at snap, dots flow over tail path
+- Debug proof plumbing: `APP_VERSION`, `state.route{anim,dashLayer,dashArray,missFrames,heals,verify,addErr,dot,speedMps,tailsM,loopS,spacingM}`, boot counter
+
+Bugs + lessons:
+1. **Canvas dash silent no-op (UNRESOLVED, biggest item):** `addLayer` for the dash id never threw yet the layer was absent on immediate sync re-read — across two ids, through full source+layer teardown/rebuild, while sibling solid layers rendered. Cause never found. Lesson carved: when a canvas primitive fails silently on-device, reroute through a proven renderer (HTML markers) after ONE verify round — do not spend six rounds on layer surgery. Always add immediate-verify (`!!getLayer` right after add) + debug counters BEFORE theorizing; the `addErr:"(silent no-op…)"` readout ended all guessing in one paste.
+2. **Ticks twist in 3D:** screen-space billboards + map-plane bearing math breaks under pitch. Rotation-invariant markers (dots) dodge the entire class — prefer them whenever orientation isn't load-bearing.
+3. **Poller `tries:34` vs 12-cap:** impossible in current code with single init; boot counter added (`?debugpage` `boot`) to settle multi-init — owner hasn't reported it yet. Don't chase without that number.
+4. **Fixed loop time ⇒ speed scales with distance:** cap speed, not time (`dotMaxSpeedMps`).
+5. **CHANGELOG discipline:** replace-instead-of-append slip happened TWICE this session (walk/drive and speed-cap bullets ate the previous entry; both restored). Append-only, re-read after every docs edit.
+6. **Stale-snapshot trap (twice):** owner's `?debugpage` paste once predated their route draw (`route:false` + blue line visible), and `state.route` reads `false`/empty until a route is actually drawn. Always confirm the snapshot was taken with the subject on screen.
+
+Open threads (owner-side vs next-build):
+- NOTHING pushed — offer commit/push of beta pile; owner hasn't asked.
+- Canvas dash creation bug still open (low priority now; dots carry the animation).
+- Boot-count + `tries` mystery open, pending owner's `?debugpage` `boot` readout.
+- Frustum/rAF performance audit from before: still parked, still low-payoff at ~110 markers.
 
 ---
 

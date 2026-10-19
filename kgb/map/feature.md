@@ -20,7 +20,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 * Dalam **menu ☰ → Paparan Peta**, hidupkan **"Paparan Satelit"** untuk melihat foto udara sebenar kampus.
 * Matikannya untuk kembali ke peta vektor 3D yang lebih ringan dan jelas.
 * Pilihan anda **disimpan automatik** — buka semula nanti, paparan yang sama dikekalkan.
-* Kawasan di luar sempadan kampus (garis biru) dipaparkan sedikit pudar supaya tumpuan kekal di dalam kampus, dan peta tidak boleh diseret terlalu jauh keluar.
+* Kawasan di luar sempadan kampus (garis biru) dipaparkan sedikit pudar supaya tumpuan kekal di dalam kampus, dan peta tidak boleh diseret terlalu jauh keluar — kecuali lokasi anda atau laluan berada di luar kampus, kunci dibuka automatik supaya anda tetap nampak.
 
 ## 3. Mencari Lokasi
 
@@ -40,11 +40,12 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 * Butang **"Buka di Google Maps"** membuka lokasi itu dalam aplikasi Google Maps.
 * Butang **"Salin Pautan"** menyalin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut.
 
-## 6. Dapatkan Arah Jalan Kaki
+## 6. Dapatkan Arah (Jalan Kaki / Memandu)
 
 * Dalam kad maklumat, tekan **"Dapatkan Arah"** — panel arah dibuka dengan titik mula = lokasi anda dan destinasi = tempat itu.
 * Anda juga boleh membuka panel arah dari ikon **🧭 arah** dan memilih mana-mana dua tempat (lokasi kampus, tasik/padang, atau lokasi GPS anda) sebagai mula dan destinasi.
-* Peta melukis **laluan berjalan kaki** beserta jarak dan anggaran masa. Nota: laluan adalah anggaran mengikut jalan yang tercatat dalam peta — jalan pintas kaki yang tiada dalam peta mungkin tidak diambil kira.
+* Pilih **🚶 jalan kaki atau 🚗 memandu** di bahagian atas panel — laluan dan anggaran masa mengikut pilihan (pilihan diingati untuk lawatan seterusnya).
+* Peta melukis **garisan biru** beserta jarak dan anggaran masa, dengan **titik-titik putih bergerak** menunjukkan arah perjalanan. Jika destinasi terletak jauh dari jalan (dalam bangunan/padang), titik-titik melengkung dari hujung jalan tepat ke pin. Nota: laluan adalah anggaran mengikut jalan yang tercatat dalam peta — jalan pintas kaki yang tiada dalam peta mungkin tidak diambil kira.
 
 ## 7. Lokasi Saya (GPS)
 

@@ -58,5 +58,12 @@
     "sportLineOpacity": 0.9,
     "trackColor": "#c26a5a",
     "trackOpacity": 0.9
+  },
+  "route": {
+    "_note": "Walker-dot animation: loopSeconds = full start→end travel time on short routes, dotSpacingM = meters between dots, dotMax = DOM-marker cap, dotMaxSpeedMps = speed cap so far routes drift instead of teleporting.",
+    "loopSeconds": 20,
+    "dotSpacingM": 8,
+    "dotMax": 100,
+    "dotMaxSpeedMps": 80
   }
 }

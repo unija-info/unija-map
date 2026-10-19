@@ -14,6 +14,9 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Debug tooling: `?debug=1` live camera chip, `?debugpage` full debug overlay; old always-on zoom indicator removed
 - `config.json` tuning file, campus focus mask (outside dim + pan restriction), `feature.md` Malay user guide, root `AGENTS.md`, and first headless harness (`kgb/map/harness.debug.js`) as regression tool
 - Detail overlays on the 3D vector view: footpaths (reddish dashed) and sports grounds (green) — previously invisible under the `bright` base style (a pink parking-aisle overlay shipped briefly, then removed — it recolored the internal driveways)
+- Campus lock lifts on demand (GPS/route outside campus frees `MaxBounds`, restores inside); off-campus users and town→campus routes frame correctly
+- Animated route guidance: walker dots stream start→end (HTML markers, after canvas dash layers silently refused creation on-device); speed/spacing/cap tunable in `config.json route:{...}`, `?testroute=1` demo route, speed capped for long distances
+- Walk/Drive toggle in the Directions panel (persisted), curved dotted tails bridging road-snap gaps to off-road pins
 
 ---
 

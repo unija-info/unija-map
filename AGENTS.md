@@ -47,3 +47,5 @@ Never set positioning properties (`position`, and by extension layout-affecting 
 - Log happy paths too (`[pins-html] mounted: N`) — silent success told us nothing for a full round once.
 - `?debug=1` (camera chip) and `?debugpage` (full state overlay) exist for exactly this — point the owner at them instead of guessing.
 - Headless harness: `node kgb/map/harness.debug.js` runs the real boot flow against a fake map (both load orderings). Kept deliberately — extend it before guessing at ordering bugs.
+- When a canvas primitive fails silently on a real device, reroute through a proven renderer (HTML markers) after one immediate-verify round (`!!getLayer` right after add + debug counters) — never spend rounds on layer surgery blind. Rotation-invariant markers dodge all pitch/bearing math.
+- CHANGELOG edits are append-only: re-read the section after every edit (replace-instead-of-append slipped twice).

@@ -57,6 +57,7 @@ const CONFIG_DEFAULTS = {
     base: { default: 'vector' },
     mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02 },
     detail: { footpaths: true, sports: true, sportColor: '#7fd08a', sportLine: '#ffffff', pathColor: '#a34d4d', pathOpacity: 0.5, sportOpacity: 0.85, sportLineOpacity: 0.9, trackColor: '#c26a5a', trackOpacity: 0.9 },
+    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20 },
 };
 const CONFIG = JSON.parse(JSON.stringify(CONFIG_DEFAULTS));
 
@@ -108,6 +109,11 @@ function applyAppConfig(json) {
         ['pathOpacity', 'sportOpacity', 'sportLineOpacity', 'trackOpacity'].forEach(k => {
             if (typeof dt[k] === 'number' && isFinite(dt[k])) CONFIG.detail[k] = Math.min(1, Math.max(0, dt[k]));
         });
+        const rt = json.route || {};
+        CONFIG.route.loopSeconds = Math.min(120, Math.max(1, numOr(rt.loopSeconds, CONFIG.route.loopSeconds)));
+        CONFIG.route.dotSpacingM = Math.min(200, Math.max(2, numOr(rt.dotSpacingM, CONFIG.route.dotSpacingM)));
+        CONFIG.route.dotMax = Math.round(Math.min(200, Math.max(1, numOr(rt.dotMax, CONFIG.route.dotMax))));
+        CONFIG.route.dotMaxSpeedMps = Math.min(200, Math.max(1, numOr(rt.dotMaxSpeedMps, CONFIG.route.dotMaxSpeedMps)));
         const root = document.documentElement.style;
         root.setProperty('--pin-stem-height', `${CONFIG.pins.stem.heightPx}px`);
         root.setProperty('--pin-badge-px', `${CONFIG.pins.badgePx}px`);
@@ -163,6 +169,8 @@ let directionsModeActive = false;      // is the Directions panel open
 let directionsStart = null;            // { type:'location'|'maplabel'|'gps', id?, coords:[lat,lng]|null, label }
 let directionsEnd = null;              // same shape
 let directionsActiveField = null;      // 'start' | 'end' | null — which field the shared dropdown feeds
+let directionsTravelMode = 'walk';     // 'walk' | 'drive' — persisted in localStorage
+try { if (localStorage.getItem('kgbMapTravelMode') === 'drive') directionsTravelMode = 'drive'; } catch (e) { }
 let directionsStartMarker = null;      // L.marker pin for the chosen start point
 let directionsEndMarker = null;        // L.marker pin for the chosen end point
 
@@ -673,6 +681,7 @@ function showAllLocations(animate = true, updateUrl = true) {
         sheetElement.style.height = '';
         setSheetState('peek');
     }
+    updatePanRestrictionForState();
 }
 
 function filterByCategory(categoryName) {
@@ -1557,6 +1566,32 @@ function clearMarkers() {
     hidePinPopup();
 }
 
+// ?testroute=1 — debug helper: draws a demo foot route on load so the
+// walker-dot animation can be tested without tapping through Directions.
+// Survives in-map navigation like ?debug=1 (updateURL only touches ?type=/#hash).
+function maybeTestRoute() {
+    try {
+        if (!new URLSearchParams(window.location.search).has('testroute')) return;
+        const withCoords = mapData.filter(l => l.coords);
+        if (withCoords.length < 2) { dlog('[route] test route: not enough coords'); return; }
+        const a = withCoords[0], b = withCoords[withCoords.length - 1];
+        dlog('[route] test route queued:', a.place, '→', b.place);
+        let tries = 0;
+        const t = setInterval(() => {
+            tries++;
+            try {
+                if (map && map.isStyleLoaded()) {
+                    clearInterval(t);
+                    drawOSRMRoute(a.coords, b.coords);
+                } else if (tries > 20) {
+                    clearInterval(t);
+                    dlog('[route] test route: style never ready');
+                }
+            } catch (e) { clearInterval(t); }
+        }, 500);
+    } catch (e) { }
+}
+
 function createClearSearchButton() {
     const searchContainer = document.querySelector('.search-container');
     if (!searchContainer) return;
@@ -1595,6 +1630,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
+const APP_VERSION = 'html39'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -1606,7 +1642,7 @@ let debugPageTimer = null;
 let debugPagePaused = false;
 
 function debugSnapshot() {
-    const snap = { camera: null, data: null, pins: null, state: null, prefs: null };
+    const snap = { version: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?'), boot: (typeof window !== 'undefined' && window.__kgbBootCount) || 1, camera: null, data: null, pins: null, state: null, prefs: null };
     try {
         if (map) {
             const c = map.getCenter();
@@ -1647,8 +1683,26 @@ function debugSnapshot() {
             directions: directionsModeActive ? {
                 start: directionsStart && directionsStart.label,
                 end: directionsEnd && directionsEnd.label,
+                mode: directionsTravelMode,
             } : false,
             gps: showUserLocation ? currentUserLocation : false,
+            route: {
+                active: !!routeGeoJSON,
+                anim: !!routeAnimFrame,
+                dashLayer: !!(map && map.getLayer && map.getLayer('osrm-route-ants')),
+                dashArray: (() => { try { return map.getPaintProperty('osrm-route-ants', 'line-dasharray'); } catch (e) { return '(error)'; } })(),
+                missFrames: routeDashMissFrames,
+                heals: routeHealCount,
+                lastHeal: routeLastHeal,
+                addErr: routeLastAddError,
+                verify: routeDashVerify,
+                dot: routeDotMarkers.length,
+                loopS: CONFIG.route.loopSeconds,
+                spacingM: CONFIG.route.dotSpacingM,
+                speedMps: +routeDotSpeed.toFixed(1),
+                tailsM: routeTailLens,
+                givenUp: routeDashGivenUp,
+            },
             labels: showLabels,
             markersVisible,
         };
@@ -2021,6 +2075,7 @@ function setUserLocationVisible(visible) {
         // Directions endpoints are coordinate snapshots, not live references —
         // an active two-point route stays valid regardless of watch state.
         if (!directionsModeActive) clearRoute();
+        updatePanRestrictionForState();
     }
 }
 
@@ -2081,6 +2136,7 @@ function updateUserLocationMarker(coords) {
     // Focus the map on the very first fix after enabling GPS (mirrors clicking a
     // location in the list) — not on every subsequent watchPosition update, since
     // that would yank the camera around as the user moves.
+    updatePanRestrictionForState();
     if (isFirstFix) focusMapOnUserLocation([coords.latitude, coords.longitude]);
 }
 
@@ -2159,11 +2215,32 @@ function initFloatingButtonsMobile() {
 function ensureRouteLayers(restoreData) {
     if (!map || !map.isStyleLoaded()) return false;
     try {
+        // One-time cleanup: legacy dash id from before the rebuild. If it
+        // ever exists it is removed in favor of ROUTE_DASH_ID.
+        try { if (map.getLayer('osrm-route-dash')) map.removeLayer('osrm-route-dash'); } catch (e) { }
+        // Per-layer idempotency (same lesson as mask-dim): the source existing
+        // must never imply the layers exist — a stranded source without all
+        // three layers once left the route blue with no marching dots and no
+        // self-heal. Guard each component on itself.
         if (!map.getSource('osrm-route')) {
             map.addSource('osrm-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        }
+        if (!map.getLayer('osrm-route-glow')) {
             map.addLayer({ id: 'osrm-route-glow', type: 'line', source: 'osrm-route', paint: { 'line-color': '#1967d2', 'line-width': 10, 'line-opacity': 0.35 } });
+        }
+        if (!map.getLayer('osrm-route-base')) {
             map.addLayer({ id: 'osrm-route-base', type: 'line', source: 'osrm-route', paint: { 'line-color': '#1967d2', 'line-width': 5, 'line-opacity': 0.9 } });
-            map.addLayer({ id: 'osrm-route-dash', type: 'line', source: 'osrm-route', paint: { 'line-color': '#ffffff', 'line-width': 2.5, 'line-opacity': 0.9, 'line-dasharray': [0.5, 3], 'line-cap': 'round' } });
+        }
+        if (!map.getLayer('osrm-route-ants')) {
+            try {
+                map.addLayer({ id: 'osrm-route-ants', type: 'line', source: 'osrm-route', paint: { 'line-color': '#ffffff', 'line-width': 2.5, 'line-opacity': 0.9, 'line-dasharray': [2, 2], 'line-cap': 'round' } });
+            } catch (e) {
+                routeLastAddError = String((e && e.message) || e);
+                throw e;
+            }
+            routeDashVerify = !!map.getLayer('osrm-route-ants');
+            routeLastAddError = routeDashVerify ? null : (routeLastAddError || '(silent no-op: addLayer did not throw but layer is absent on immediate re-read)');
+            dlog('[route] healed missing layer(s), verify:', routeDashVerify, routeLastAddError);
         }
         if (restoreData && routeGeoJSON) {
             map.getSource('osrm-route').setData(routeGeoJSON);
@@ -2172,33 +2249,273 @@ function ensureRouteLayers(restoreData) {
     } catch (e) { return false; }
 }
 
+// Full teardown + rebuild for the route layers. Per-layer patching proved
+// insufficient: on-device, addLayer for the dash id silently no-ops (no
+// throw, absent on immediate re-read). A clean registry + fresh layer id
+// sidesteps whatever wedged state causes that.
+function rebuildRouteLayers() {
+    if (!map || !map.isStyleLoaded()) return false;
+    try {
+        [ROUTE_DASH_ID, 'osrm-route-dash', 'osrm-route-glow', 'osrm-route-base'].forEach(id => {
+            try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) { }
+        });
+        try { if (map.getSource('osrm-route')) map.removeSource('osrm-route'); } catch (e) { }
+    } catch (e) { }
+    dlog('[route] registry rebuilt, recreating layers…');
+    return ensureRouteLayers(true);
+}
+
+// Lead-in/out legs, Google-style: the router snaps to the road network, so
+// when the requested point is off-road the tail is drawn as a curved dotted
+// path from the snap point to the exact pin. Curve = sampled quadratic
+// bezier (control at midpoint + perpendicular bow, capped at 80m). Dots =
+// the existing walker markers flowing over the tail path — no canvas dash
+// layer involved, since those will not instantiate on-device. The solid blue
+// line itself ends at the snap points; gaps under 5m are snapping noise.
+let routeTailLens = [0, 0]; // [leadInM, leadOutM] for debug
+
+function routePointDistM(a, b) {
+    const lat0 = ((a[1] + b[1]) / 2) * Math.PI / 180;
+    const dx = (a[0] - b[0]) * 111320 * Math.cos(lat0);
+    const dy = (a[1] - b[1]) * 111320;
+    return Math.hypot(dx, dy);
+}
+
+function curvedLeg(a, b) {
+    // a → b as [lng,lat] pairs; returns sampled curve incl. endpoints.
+    const lat0 = ((a[1] + b[1]) / 2) * Math.PI / 180;
+    const kx = 111320 * Math.cos(lat0), ky = 111320;
+    const dx = (b[0] - a[0]) * kx, dy = (b[1] - a[1]) * ky;
+    const len = Math.hypot(dx, dy);
+    if (len < 5) return [a, b];
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const bow = Math.min(len * 0.25, 80);
+    const cx = mx + (-dy / len) * bow / kx;
+    const cy = my + (dx / len) * bow / ky;
+    const N = 16, pts = [];
+    for (let i = 0; i <= N; i++) {
+        const t = i / N, u = 1 - t;
+        pts.push([u * u * a[0] + 2 * u * t * cx + t * t * b[0], u * u * a[1] + 2 * u * t * cy + t * t * b[1]]);
+    }
+    return pts;
+}
+
+function buildRoutePath(geom, fromLL, toLL) {
+    // Returns { main, path }: main = router geometry for the blue line;
+    // path = lead-in curve + main + lead-out curve for bounds + walker dots.
+    const fallback = { main: geom, path: geom && geom.type === 'LineString' ? geom.coordinates : (geom && geom.type === 'MultiLineString' ? geom.coordinates.flat() : []) };
+    try {
+        if (!geom || geom.type !== 'LineString' || !geom.coordinates || geom.coordinates.length < 2) return fallback;
+        if (!fromLL || !toLL) return fallback;
+        const from = [fromLL[1], fromLL[0]], to = [toLL[1], toLL[0]]; // [lat,lng] → [lng,lat]
+        const line = geom.coordinates;
+        let path = line.slice();
+        let headLen = 0, tailLen = 0;
+        if (routePointDistM(line[0], from) > 5) {
+            const head = curvedLeg(from, line[0]);
+            headLen = curveLenM(head);
+            path = head.concat(path.slice(1));
+        }
+        if (routePointDistM(line[line.length - 1], to) > 5) {
+            const tail = curvedLeg(line[line.length - 1], to);
+            tailLen = curveLenM(tail);
+            path = path.concat(tail.slice(1));
+        }
+        routeTailLens = [Math.round(headLen), Math.round(tailLen)];
+        if (headLen || tailLen) dlog('[route] tails:', routeTailLens[0] + 'm +', routeTailLens[1] + 'm');
+        return { main: geom, path };
+    } catch (e) { return fallback; }
+}
+
+function curveLenM(pts) {
+    let acc = 0;
+    for (let i = 1; i < pts.length; i++) acc += routePointDistM(pts[i - 1], pts[i]);
+    return acc;
+}
+
 async function drawOSRMRoute(fromCoords, toCoords) {
     if (!fromCoords || !toCoords) return null;
     clearRoute();
-    const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
+    const isDrive = directionsTravelMode === 'drive';
+    const profile = isDrive ? 'routed-car/route/v1/driving' : 'routed-foot/route/v1/foot';
+    const url = `https://routing.openstreetmap.de/${profile}/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
     try {
         const res = await fetch(url);
         const data = await res.json();
         if (!data.routes || !data.routes.length) return null;
         const route = data.routes[0];
-        routeGeoJSON = route.geometry;
+        const built = buildRoutePath(route.geometry, fromCoords, toCoords);
+        routeGeoJSON = built.main;
 
         if (ensureRouteLayers(false)) {
             map.getSource('osrm-route').setData(routeGeoJSON);
             const bounds = new maplibregl.LngLatBounds();
-            const coords = routeGeoJSON.type === 'LineString' ? routeGeoJSON.coordinates : routeGeoJSON.coordinates.flat();
-            coords.forEach(c => bounds.extend(c));
+            built.path.forEach(c => bounds.extend(c));
             map.fitBounds(bounds, { padding: 60, duration: 1000 });
+            startRouteAnimation();
+            buildRouteDot(built.path);
         }
 
-        return { distance: route.distance, duration: route.duration };
+        return { distance: route.distance, duration: route.duration, mode: isDrive ? 'drive' : 'walk' };
     } catch (err) {
-        console.warn('Foot route fetch failed:', err);
+        console.warn('Route fetch failed:', err);
         return null;
     }
 }
 
+// Marching-ants crawl on the white dash overlay. MapLibre has no dash-offset,
+// so the phase is faked by rewriting line-dasharray each frame: shifting the
+// pattern by s over one full period (dash+gap) reads as forward motion and
+// wraps seamlessly. rAF pauses in background tabs; loop dies with the route.
+let routeAnimFrame = null;
+let routeAnimPhase = 0;
+let routeAnimLast = 0;
+let routeDashMissFrames = 0; // consecutive ticks without the dash layer (debug)
+let routeHealCount = 0;      // self-heal recreations this session (debug)
+let routeLastHeal = null;    // ISO time of last heal (debug)
+let routeLastAddError = null; // error (or silent-no-op note) from last dash addLayer (debug)
+let routeDashVerify = null;   // immediate re-read after last dash addLayer (debug)
+const ROUTE_DASH = 2, ROUTE_GAP = 2, ROUTE_PERIOD = ROUTE_DASH + ROUTE_GAP, ROUTE_SPEED = 5;
+const ROUTE_DASH_ID = 'osrm-route-ants'; // fresh id after the old dash id silently refused creation on-device
+
+// Moving-dot fallback: HTML markers provably render on-device, so the route
+// animation rides markers when the dash layer will not exist.
+let routeDotMarkers = []; // [{marker, off}]
+let routeDotPts = null;   // [[lng,lat,cumMeters],...]
+let routeDotTotal = 0;
+let routeDotPhase = 0;
+let routeDotSpeed = 0; // m/s actually used (loop speed capped — debug)
+let routeDashGivenUp = false; // heal cap reached; dots carry the animation
+// Speed/spacing/max come from CONFIG.route (config.json) — validated numbers.
+
+function routeLineCoords() {
+    if (!routeGeoJSON) return null;
+    const g = routeGeoJSON;
+    if (g.type === 'LineString') return g.coordinates;
+    if (g.type === 'MultiLineString') return g.coordinates.flat();
+    return null;
+}
+
+function buildRouteDot(pathCoords) {
+    clearRouteDot();
+    try {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) { }
+    const coords = (pathCoords && pathCoords.length >= 2) ? pathCoords : routeLineCoords();
+    if (!coords || coords.length < 2 || !map || typeof maplibregl === 'undefined') return;
+    // Equirectangular meters — fine at campus scale.
+    const lat0 = coords[0][1] * Math.PI / 180;
+    const kx = 111320 * Math.cos(lat0), ky = 111320;
+    let acc = 0;
+    routeDotPts = [[coords[0][0], coords[0][1], 0]];
+    for (let i = 1; i < coords.length; i++) {
+        const dx = (coords[i][0] - coords[i - 1][0]) * kx;
+        const dy = (coords[i][1] - coords[i - 1][1]) * ky;
+        acc += Math.hypot(dx, dy);
+        routeDotPts.push([coords[i][0], coords[i][1], acc]);
+    }
+    if (acc <= 0) { routeDotPts = null; return; }
+    routeDotTotal = acc;
+    routeDotPhase = 0;
+    // Fixed loop time means speed scales with distance (far GPS = teleport).
+    // Cap the speed so long routes drift at a constant max instead.
+    routeDotSpeed = Math.min(acc / CONFIG.route.loopSeconds, CONFIG.route.dotMaxSpeedMps);
+    const everyM = CONFIG.route.dotSpacingM, maxN = CONFIG.route.dotMax;
+    const n = Math.max(3, Math.min(maxN, Math.max(1, Math.round(acc / everyM))));
+    for (let i = 0; i < n; i++) {
+        const el = document.createElement('div');
+        el.className = 'route-walker-dot';
+        let m = null;
+        try { m = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([coords[0][0], coords[0][1]]).addTo(map); } catch (e) { }
+        if (m) routeDotMarkers.push({ marker: m, off: (i / n) * acc });
+    }
+    dlog('[route] walker dots built:', routeDotMarkers.length, 'length m:', Math.round(acc));
+}
+
+function clearRouteDot() {
+    routeDotMarkers.forEach(d => { try { d.marker.remove(); } catch (e) { } });
+    routeDotMarkers = [];
+    routeDotPts = null; routeDotTotal = 0; routeDotPhase = 0;
+}
+
+function stepRouteDot(dt) {
+    if (!routeDotMarkers.length || !routeDotPts || routeDotTotal <= 0 || routeDotSpeed <= 0) return;
+    routeDotPhase = (routeDotPhase + dt * routeDotSpeed) % routeDotTotal;
+    const pts = routeDotPts;
+    for (const d of routeDotMarkers) {
+        const dist = (routeDotPhase + d.off) % routeDotTotal;
+        let lo = 0, hi = pts.length - 1;
+        while (lo < hi - 1) { const m = (lo + hi) >> 1; if (pts[m][2] <= dist) lo = m; else hi = m; }
+        const a = pts[lo], b = pts[hi], span = (b[2] - a[2]) || 1;
+        const t = (dist - a[2]) / span;
+        try { d.marker.setLngLat([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); } catch (e) { }
+    }
+}
+
+function routeDashArray(s) {
+    s = ((s % ROUTE_PERIOD) + ROUTE_PERIOD) % ROUTE_PERIOD;
+    if (s <= ROUTE_DASH) return [ROUTE_DASH - s, ROUTE_GAP, Math.max(s, 0.001)];
+    const off = s - ROUTE_DASH;
+    return [0.001, off, ROUTE_DASH, Math.max(ROUTE_GAP - off, 0.001)];
+}
+
+function startRouteAnimation() {
+    stopRouteAnimation();
+    if (typeof requestAnimationFrame !== 'function') return;
+    try {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (e) { }
+    routeAnimLast = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    dlog('[route] animation started');
+    const tick = (now) => {
+        if (!routeGeoJSON) { routeAnimFrame = null; return; }
+        const t = now || routeAnimLast;
+        const dt = Math.min(0.1, Math.max(0, (t - routeAnimLast) / 1000));
+        routeAnimLast = t;
+        routeAnimPhase = (routeAnimPhase + dt * ROUTE_SPEED) % ROUTE_PERIOD;
+        try {
+            if (map && map.getLayer && map.getLayer('osrm-route-ants')) {
+                if (routeDashMissFrames > 0) dlog('[route] dash layer back after', routeDashMissFrames, 'frames');
+                routeDashMissFrames = 0;
+                map.setPaintProperty('osrm-route-ants', 'line-dasharray', routeDashArray(routeAnimPhase));
+            } else if (map) {
+                // Self-heal: the dash layer can go missing after creation
+                // (observed live: blue route present, dash gone, loop
+                // running, addLayer silently no-ops). Rebuild a few times,
+                // then give up — the walker dot carries the animation.
+                routeDashMissFrames++;
+                if (routeDashMissFrames === 1 || routeDashMissFrames % 120 === 0) {
+                    if (routeHealCount < 5) {
+                        dlog('[route] dash layer missing, rebuilding…');
+                        if (rebuildRouteLayers()) {
+                            routeHealCount++;
+                            routeLastHeal = new Date().toISOString();
+                        }
+                    } else if (!routeDashGivenUp) {
+                        routeDashGivenUp = true;
+                        dlog('[route] dash heal cap reached, walker dot carries the animation');
+                    }
+                }
+            }
+        } catch (e) { }
+        stepRouteDot(dt);
+        routeAnimFrame = requestAnimationFrame(tick);
+    };
+    routeAnimFrame = requestAnimationFrame(tick);
+}
+
+function stopRouteAnimation() {
+    if (routeAnimFrame && typeof cancelAnimationFrame === 'function') {
+        try { cancelAnimationFrame(routeAnimFrame); } catch (e) { }
+    }
+    routeAnimFrame = null;
+    routeAnimPhase = 0;
+    dlog('[route] animation stopped');
+}
+
 function clearRoute() {
+    stopRouteAnimation();
+    clearRouteDot();
     routeGeoJSON = null;
     try {
         if (map && map.getSource('osrm-route')) {
@@ -2209,6 +2526,21 @@ function clearRoute() {
 }
 
 // ===== DIRECTIONS PANEL (TWO-POINT ROUTING) =====
+
+function setTravelMode(mode) {
+    if (mode !== 'walk' && mode !== 'drive') return;
+    directionsTravelMode = mode;
+    try { localStorage.setItem('kgbMapTravelMode', mode); } catch (e) { }
+    updateTravelModeButtons();
+    dlog('[route] travel mode:', mode);
+    maybeComputeRoute();
+}
+
+function updateTravelModeButtons() {
+    document.querySelectorAll('.directions-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === directionsTravelMode);
+    });
+}
 
 function renderDirectionsPin(field, point) {
     if (!map || !point.coords) return;
@@ -2241,7 +2573,7 @@ function updateDirectionsRouteInfo(result) {
     } else if (result === null) {
         infoEl.textContent = '';
     } else {
-        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (jalan kaki)`;
+        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (${result.mode === 'drive' ? 'memandu' : 'jalan kaki'})`;
     }
 }
 
@@ -2272,11 +2604,12 @@ function setDirectionsField(field, value) {
         renderDirectionsPin(field, value);
     } else {
         const existing = field === 'start' ? directionsStartMarker : directionsEndMarker;
-        if (existing) { map.removeLayer(existing); }
+        if (existing) { try { existing.remove(); } catch (e) { } }
         if (field === 'start') directionsStartMarker = null;
         else directionsEndMarker = null;
     }
 
+    updatePanRestrictionForState();
     maybeComputeRoute();
 }
 
@@ -2382,6 +2715,7 @@ function openDirectionsPanel({ start, end } = {}) {
 
     setDirectionsField('start', null);
     setDirectionsField('end', null);
+    updateTravelModeButtons();
 
     if (start) {
         if (start.type === 'gps' && !start.coords) {
@@ -2413,6 +2747,7 @@ function closeDirectionsPanel() {
 
     const dropdown = document.getElementById('directions-dropdown');
     if (dropdown) { dropdown.classList.remove('active'); dropdown.innerHTML = ''; }
+    updatePanRestrictionForState();
 }
 
 function toggleDirectionsPanel() {
@@ -2437,6 +2772,11 @@ function initDirectionsPanel() {
     closeBtn.addEventListener('click', closeDirectionsPanel);
 
     swapBtn.addEventListener('click', swapDirectionsFields);
+
+    document.querySelectorAll('.directions-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => setTravelMode(btn.dataset.mode));
+    });
+    updateTravelModeButtons();
 
     [['start', startInput], ['end', endInput]].forEach(([field, input]) => {
         input.addEventListener('focus', () => {
@@ -2647,6 +2987,7 @@ function initMap() {
             renderGroupedList();
             showAllLocations(true, false);
             handleDeepLink();
+            maybeTestRoute();
             updateDebugChip();
             renderDebugPage();
             // Settle log: prove how many markers are actually on the map.
@@ -2761,6 +3102,48 @@ function applyPanRestriction() {
             if (c[1] > maxLat) maxLat = c[1];
         });
         map.setMaxBounds([[minLng - buf, minLat - buf], [maxLng + buf, maxLat + buf]]);
+    } catch (e) { }
+}
+
+function campusMaxBounds() {
+    const ring = campusRingLngLat();
+    if (!ring) return null;
+    const buf = CONFIG.mask.panBuffer || 0;
+    let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+    ring.forEach(c => {
+        if (c[0] < minLng) minLng = c[0];
+        if (c[1] < minLat) minLat = c[1];
+        if (c[0] > maxLng) maxLng = c[0];
+        if (c[1] > maxLat) maxLat = c[1];
+    });
+    return [[minLng - buf, minLat - buf], [maxLng + buf, maxLat + buf]];
+}
+
+// Campus coords are [lat, lng]. True when the point falls outside the lock box.
+function coordsOutsideCampus(lat, lng) {
+    const b = campusMaxBounds();
+    if (!b) return false;
+    return lng < b[0][0] || lng > b[1][0] || lat < b[0][1] || lat > b[1][1];
+}
+
+// Lift-on-demand: keep the campus lock for browsing, but drop MaxBounds when
+// live state (GPS dot or a directions endpoint) sits outside it — otherwise
+// MapLibre clamps flyTo/fitBounds and an off-campus user can never be framed.
+// Restores the lock as soon as everything is back inside.
+function updatePanRestrictionForState() {
+    if (!map || !CONFIG.mask.restrictPanning) return;
+    try {
+        const pts = [];
+        if (currentUserLocation) pts.push([currentUserLocation.lat, currentUserLocation.lng]);
+        if (directionsStart && directionsStart.coords) pts.push(directionsStart.coords);
+        if (directionsEnd && directionsEnd.coords) pts.push(directionsEnd.coords);
+        const outside = pts.some(c => coordsOutsideCampus(c[0], c[1]));
+        if (outside) {
+            map.setMaxBounds(null);
+            dlog('[mask] lock lifted for outside point');
+        } else {
+            applyPanRestriction();
+        }
     } catch (e) { }
 }
 
@@ -2916,6 +3299,7 @@ window.onload = function () {
 };
 
 function bootApp() {
+    window.__kgbBootCount = (window.__kgbBootCount || 0) + 1;
     initMap();
     initBottomSheet();
     initDesktopSidebar();

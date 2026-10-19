@@ -324,6 +324,35 @@ body, html {
     position: relative;
 }
 
+.directions-mode {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.directions-mode-btn {
+    flex: 1;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f6368;
+}
+
+.directions-mode-btn .material-symbols-outlined {
+    font-size: 22px;
+}
+
+.directions-mode-btn.active {
+    background: #e8f0fe;
+    border-color: #1967d2;
+    color: #1967d2;
+}
+
 .directions-field {
     display: flex;
     align-items: center;
@@ -1631,6 +1660,18 @@ body, html {
     background: #4285f4;
     border: 2px solid #fff;
     box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.35), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Walker dots: small flat circles drifting along the route. Plain HTML
+   markers, same mechanism as pins. Rotation-invariant, so nothing twists
+   at 3D pitch. */
+.route-walker-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #1967d2;
+    pointer-events: none;
 }
 
 .user-location-accuracy {
