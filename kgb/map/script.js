@@ -31,6 +31,93 @@ const SATELLITE_STYLE = {
 };
 const DEFAULT_PITCH_3D = 30;
 
+// ===== APP CONFIG (kgb/map/config.json — all tuning knobs, safe fallbacks) =====
+const CONFIG_DEFAULTS = {
+    view: {
+        center: [103.07990647727662, 5.400403569715876],
+        mobileCenter: [103.07978857810325, 5.4030603222603855],
+        zoom: { desktop: 16.3, mobile: 15.5 },
+        pitch3D: 30,
+        bearing: 0,
+        minZoom: 14,
+        maxZoom: 20,
+        maxPitch: 70,
+    },
+    pins: {
+        dotZoom: { desktop: 17.5, mobile: 17 },
+        priorityCategories: [
+            'PENTADBIRAN & PTJ',
+            'BLOK AKADEMIK & KELAS',
+            'BLOK FAKULTI & PUSAT PENGAJIAN',
+        ],
+        stem: { minPitch: 5, heightPx: 26 },
+        badgePx: 25,
+        dotPx: 12,
+    },
+    base: { default: 'vector' },
+    mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02 },
+};
+const CONFIG = JSON.parse(JSON.stringify(CONFIG_DEFAULTS));
+
+function numOr(v, fb) {
+    return (typeof v === 'number' && isFinite(v)) ? v : fb;
+}
+
+function applyAppConfig(json) {
+    if (!json || typeof json !== 'object') return;
+    try {
+        const v = json.view || {};
+        if (Array.isArray(v.center) && v.center.length === 2) CONFIG.view.center = [numOr(v.center[0], CONFIG.view.center[0]), numOr(v.center[1], CONFIG.view.center[1])];
+        if (Array.isArray(v.mobileCenter) && v.mobileCenter.length === 2) CONFIG.view.mobileCenter = [numOr(v.mobileCenter[0], CONFIG.view.mobileCenter[0]), numOr(v.mobileCenter[1], CONFIG.view.mobileCenter[1])];
+        CONFIG.view.zoom.desktop = numOr(v.zoom && v.zoom.desktop, CONFIG.view.zoom.desktop);
+        CONFIG.view.zoom.mobile = numOr(v.zoom && v.zoom.mobile, CONFIG.view.zoom.mobile);
+        CONFIG.view.pitch3D = numOr(v.pitch3D, CONFIG.view.pitch3D);
+        CONFIG.view.bearing = numOr(v.bearing, CONFIG.view.bearing);
+        CONFIG.view.minZoom = numOr(v.minZoom, CONFIG.view.minZoom);
+        CONFIG.view.maxZoom = numOr(v.maxZoom, CONFIG.view.maxZoom);
+        CONFIG.view.maxPitch = numOr(v.maxPitch, CONFIG.view.maxPitch);
+        const p = json.pins || {};
+        CONFIG.pins.dotZoom.desktop = numOr(p.dotZoom && p.dotZoom.desktop, CONFIG.pins.dotZoom.desktop);
+        CONFIG.pins.dotZoom.mobile = numOr(p.dotZoom && p.dotZoom.mobile, CONFIG.pins.dotZoom.mobile);
+        if (Array.isArray(p.priorityCategories) && p.priorityCategories.every(c => typeof c === 'string')) {
+            CONFIG.pins.priorityCategories = p.priorityCategories;
+        }
+        CONFIG.pins.stem.minPitch = numOr(p.stem && p.stem.minPitch, CONFIG.pins.stem.minPitch);
+        CONFIG.pins.stem.heightPx = numOr(p.stem && p.stem.heightPx, CONFIG.pins.stem.heightPx);
+        CONFIG.pins.badgePx = numOr(p.badgePx, CONFIG.pins.badgePx);
+        CONFIG.pins.dotPx = numOr(p.dotPx, CONFIG.pins.dotPx);
+        if (json.base && (json.base.default === 'vector' || json.base.default === 'satellite')) {
+            CONFIG.base.default = json.base.default;
+        }
+        const mk = json.mask || {};
+        if (typeof mk.dimOutside === 'number' && isFinite(mk.dimOutside)) {
+            CONFIG.mask.dimOutside = Math.min(1, Math.max(0, mk.dimOutside));
+        }
+        if (typeof mk.dimColor === 'string' && /^#[0-9a-f]{6}$/i.test(mk.dimColor)) {
+            CONFIG.mask.dimColor = mk.dimColor;
+        }
+        if (typeof mk.restrictPanning === 'boolean') CONFIG.mask.restrictPanning = mk.restrictPanning;
+        CONFIG.mask.panBuffer = numOr(mk.panBuffer, CONFIG.mask.panBuffer);
+        const root = document.documentElement.style;
+        root.setProperty('--pin-stem-height', `${CONFIG.pins.stem.heightPx}px`);
+        root.setProperty('--pin-badge-px', `${CONFIG.pins.badgePx}px`);
+        root.setProperty('--pin-dot-px', `${CONFIG.pins.dotPx}px`);
+        dlog('[config] applied', CONFIG);
+    } catch (e) {
+        console.warn('[config] invalid file, using defaults:', e);
+    }
+}
+
+function loadAppConfig() {
+    return fetch('/kgb/map/config.json')
+        .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(applyAppConfig)
+        .catch(() => dlog('[config] missing/unreadable, using built-in defaults'));
+}
+
 // ===== STATE =====
 let map;
 let mapData = [];
@@ -51,6 +138,10 @@ let markersVisible = true;
 let show3D = true;
 let pitchBeforeSatellite = DEFAULT_PITCH_3D;
 let campusBoundaryData = null;   // GeoJSON coords cached for re-add after setStyle
+let maskLastRun = null;          // ISO time of last ensureMaskLayers run (debug)
+let maskLastError = null;        // last ensureMaskLayers error string (debug)
+let maskPollTries = 0;           // mask poller attempts (debug)
+let maskPollError = null;        // last mask poller error string (debug)
 let routeGeoJSON = null;         // active route geometry cached for re-add after setStyle
 let currentUserLocation = null;        // {lat, lng, accuracy}
 let userLocationMarker = null;         // L.marker (blue dot)
@@ -66,6 +157,8 @@ let directionsStartMarker = null;      // L.marker pin for the chosen start poin
 let directionsEndMarker = null;        // L.marker pin for the chosen end point
 
 // ===== ZOOM-BASED MARKER TIERS =====
+// Defaults live in CONFIG (kgb/map/config.json) — these constants are the
+// fallback when the file is missing. Always read via CONFIG at use sites.
 const ZOOM_FULL_DESKTOP   = 17.5;
 const ZOOM_FULL_MOBILE    = 17;
 const PRIORITY_CATEGORIES = [
@@ -94,7 +187,9 @@ function setMarkerHighlight(locationIdOrNull) {
 // ===== HTML PIN ENGINE v2 (badge-only markers, shared popup) =====
 
 function pinZoomThreshold() {
-    return window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
+    const mobile = window.innerWidth <= 768;
+    const t = mobile ? CONFIG.pins.dotZoom.mobile : CONFIG.pins.dotZoom.desktop;
+    return (typeof t === 'number' && isFinite(t)) ? t : (mobile ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP);
 }
 
 // Circle/dot HTML for a pin element. Full mode is badge-on-stem (floating pin);
@@ -111,7 +206,7 @@ function pinBadgeHTML(location, mode) {
 }
 
 function pinModeFor(location) {
-    if (PRIORITY_CATEGORIES.includes(location.locationType)) return 'full';
+    if (CONFIG.pins.priorityCategories.includes(location.locationType)) return 'full';
     if (map && map.getZoom() >= pinZoomThreshold()) return 'full';
     if (currentSelectedLocationId !== null && location.id === currentSelectedLocationId) return 'full';
     if (currentActiveCategory !== null && location.locationType === currentActiveCategory) return 'full';
@@ -235,7 +330,10 @@ function positionPinPopup() {
     const p = map.project([loc.coords[1], loc.coords[0]]);
     const r = map.getContainer().getBoundingClientRect();
     // Badge floats above the stem when pitched — lift the popup accordingly.
-    const lift = document.body.classList.contains('is-pitched') ? 58 : 32;
+    // stem height + badge height + gap, all in screen px.
+    const stemH = CONFIG.pins.stem.heightPx;
+    const badgeH = CONFIG.pins.badgePx;
+    const lift = document.body.classList.contains('is-pitched') ? stemH + badgeH + 7 : badgeH + 7;
     pinPopupEl.style.left = `${r.left + p.x}px`;
     pinPopupEl.style.top = `${r.top + p.y - lift}px`;
 }
@@ -292,7 +390,7 @@ function initPinInteractions() {
     // pitched state (stems render only when tilted).
     map.on('move', () => {
         try {
-            document.body.classList.toggle('is-pitched', map.getPitch() > 5);
+            document.body.classList.toggle('is-pitched', map.getPitch() > CONFIG.pins.stem.minPitch);
         } catch (e) {}
         positionPinPopup();
     });
@@ -528,7 +626,7 @@ function fitCoordsToMap(coords, { paddingTopLeft, paddingBottomRight, padding, m
 
 function flyToMarker(coords, duration = 0.8) {
     if (!map) return;
-    const zoomThreshold = window.innerWidth <= 768 ? ZOOM_FULL_MOBILE : ZOOM_FULL_DESKTOP;
+    const zoomThreshold = pinZoomThreshold();
     const zoom = Math.max(map.getZoom(), zoomThreshold);
     // Offset the center downward so the marker sits above the bottom sheet
     const p = map.project([coords[1], coords[0]]);
@@ -550,13 +648,13 @@ function showAllLocations(animate = true, updateUrl = true) {
 
     if (coords.length > 0) {
         const isMobile = window.innerWidth <= 768;
-        const mobileCenter = [103.07981725897017, 5.40105971093413];
-        const desktopCenter = [103.08008886748964, 5.402700026344124];
-        const pitch = (show3D && currentBaseView === 'vector') ? DEFAULT_PITCH_3D : 0;
+        const mobileCenter = CONFIG.view.mobileCenter;
+        const desktopCenter = CONFIG.view.center;
+        const pitch = (show3D && currentBaseView === 'vector') ? CONFIG.view.pitch3D : 0;
         if (animate) {
-            map.flyTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? 15.5 : 16.3, pitch, duration: 1200 });
+            map.flyTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? CONFIG.view.zoom.mobile : CONFIG.view.zoom.desktop, pitch, duration: 1200 });
         } else {
-            map.jumpTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? 15 : 17.5, pitch });
+            map.jumpTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? CONFIG.view.zoom.mobile : CONFIG.view.zoom.desktop, pitch });
         }
     }
 
@@ -1495,6 +1593,7 @@ function dlog(...args) {
 let debugChipEl = null;
 let debugPageEl = null;
 let debugPageTimer = null;
+let debugPagePaused = false;
 
 function debugSnapshot() {
     const snap = { camera: null, data: null, pins: null, state: null, prefs: null };
@@ -1547,6 +1646,22 @@ function debugSnapshot() {
         ['kgbMapBaseLayer', 'kgbMapShowMarkers', 'kgbMapShowLabels', 'kgbMapPitch3D'].forEach(k => {
             try { snap.prefs[k] = localStorage.getItem(k); } catch (e) { snap.prefs[k] = '(unavailable)'; }
         });
+        try {
+            const ring = campusBoundaryData && campusBoundaryData.geometry && campusBoundaryData.geometry.coordinates[0];
+            snap.boundary = {
+                points: ring ? ring.length : 0,
+                source: !!(map && map.isStyleLoaded() && map.getSource('campus-boundary')),
+                fillLayer: !!(map && map.getLayer && map.getLayer('campus-boundary-fill')),
+                lineLayer: !!(map && map.getLayer && map.getLayer('campus-boundary-line')),
+                maskDim: CONFIG.mask.dimOutside,
+                maskDimLayer: !!(map && map.getLayer && map.getLayer('mask-dim')),
+                maskDimSource: !!(map && map.isStyleLoaded() && map.getSource('mask-dim')),
+                maskLastRun,
+                maskLastError,
+                maskPoll: { tries: maskPollTries, lastError: maskPollError },
+                maskRestricted: CONFIG.mask.restrictPanning,
+            };
+        } catch (e) { snap.boundary = '(error)'; }
     } catch (e) {}
     return snap;
 }
@@ -1563,6 +1678,13 @@ function updateDebugChip() {
 
 function renderDebugPage() {
     if (!debugPageEl) return;
+    if (debugPagePaused) return;
+    // Don't rewrite mid-selection — the 750ms refresh would destroy the
+    // user's text selection before they can copy it.
+    try {
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed && debugPageEl.contains(sel.anchorNode)) return;
+    } catch (e) {}
     const s = debugSnapshot();
     const pre = debugPageEl.querySelector('#debug-page-body');
     if (pre) pre.textContent = JSON.stringify(s, null, 1);
@@ -1586,24 +1708,47 @@ function initDebugTools() {
                 <strong>Debug (?debugpage)</strong>
                 <span class="debug-page-actions">
                     <button id="debug-copy">Copy JSON</button>
+                    <button id="debug-pause">⏸ Pause</button>
                     <button id="debug-prefs">Clear prefs + reload</button>
                     <button id="debug-reload">Reload data</button>
+                    <button id="debug-hide">« Hide</button>
                     <button id="debug-close">× Close</button>
                 </span>
             </div>
             <pre id="debug-page-body">{loading…}</pre>`;
         document.body.appendChild(debugPageEl);
+        const expandBtn = document.createElement('button');
+        expandBtn.id = 'debug-expand-btn';
+        expandBtn.textContent = 'Debug »';
+        document.body.appendChild(expandBtn);
+        const collapse = () => {
+            debugPageEl.classList.add('collapsed');
+            expandBtn.classList.add('visible');
+        };
+        const expand = () => {
+            debugPageEl.classList.remove('collapsed');
+            expandBtn.classList.remove('visible');
+            renderDebugPage();
+        };
+        expandBtn.addEventListener('click', expand);
         const close = () => {
             if (debugPageTimer) clearInterval(debugPageTimer);
             debugPageTimer = null;
+            expandBtn.remove();
             debugPageEl.remove();
             debugPageEl = null;
         };
+        debugPageEl.querySelector('#debug-hide').addEventListener('click', collapse);
+        const pauseBtn = debugPageEl.querySelector('#debug-pause');
+        pauseBtn.addEventListener('click', () => {
+            debugPagePaused = !debugPagePaused;
+            pauseBtn.textContent = debugPagePaused ? '▶ Resume' : '⏸ Pause';
+            if (!debugPagePaused) renderDebugPage();
+        });
         debugPageEl.querySelector('#debug-close').addEventListener('click', close);
         document.addEventListener('keydown', function esc(e) {
-            if (e.key === 'Escape' && debugPageEl) {
-                close();
-                document.removeEventListener('keydown', esc);
+            if (e.key === 'Escape' && debugPageEl && !debugPageEl.classList.contains('collapsed')) {
+                collapse();
             }
         });
         debugPageEl.querySelector('#debug-copy').addEventListener('click', () => {
@@ -1659,7 +1804,7 @@ function ensureCustomStyleLayers() {
 
     if (currentBaseView === 'vector') {
         add3DBuildingsLayer();
-        map.easeTo({ pitch: show3D ? DEFAULT_PITCH_3D : 0, duration: 300 });
+        map.easeTo({ pitch: show3D ? CONFIG.view.pitch3D : 0, duration: 300 });
     } else {
         map.easeTo({ pitch: 0, duration: 300 });
     }
@@ -1667,6 +1812,9 @@ function ensureCustomStyleLayers() {
     ensureBoundaryLayers();
     ensureRouteLayers(true);
     ensurePinLayers();
+    dlog('[style] custom layers: boundary/route/pins done → mask');
+    ensureMaskLayers();
+    applyPanRestriction();
     applyLabelVisibility();
 }
 
@@ -1692,7 +1840,7 @@ function add3DBuildingsLayer() {
                 'source-layer': 'building',
                 type: 'fill-extrusion',
                 minzoom: 15,
-                filter: ['!=', ['get', 'hide_3d'], true],
+                filter: buildingFilter(),
                 paint: {
                     'fill-extrusion-color': [
                         'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8],
@@ -1740,7 +1888,7 @@ function setPitch3D(on, persist) {
     const box = document.getElementById('toggle-3d-checkbox');
     if (box) box.checked = show3D;
     if (map && currentBaseView === 'vector') {
-        map.easeTo({ pitch: show3D ? DEFAULT_PITCH_3D : 0, duration: 500 });
+        map.easeTo({ pitch: show3D ? CONFIG.view.pitch3D : 0, duration: 500 });
     }
 }
 
@@ -2242,8 +2390,11 @@ function initMap() {
     const savedView = (() => {
         try { return localStorage.getItem('kgbMapBaseLayer'); } catch (e) { return null; }
     })();
-    // Default = 3D vector. Legacy 'satellite' choice is respected; legacy 'osm' maps to vector.
-    currentBaseView = savedView === 'satellite' ? 'satellite' : 'vector';
+    // Default = config base (usually 3D vector). Saved localStorage wins;
+    // legacy 'osm' maps to vector.
+    currentBaseView = savedView === 'satellite' ? 'satellite'
+        : savedView === 'vector' ? 'vector'
+        : (CONFIG.base.default === 'satellite' ? 'satellite' : 'vector');
     try {
         showLabels = localStorage.getItem('kgbMapShowLabels') !== 'false';
         show3D = localStorage.getItem('kgbMapPitch3D') !== '0';
@@ -2252,13 +2403,13 @@ function initMap() {
     map = new maplibregl.Map({
         container: 'map',
         style: currentBaseView === 'satellite' ? SATELLITE_STYLE : VECTOR_STYLE_URL,
-        center: isMobileInit ? [103.07978857810325, 5.4030603222603855] : [103.07990647727662, 5.400403569715876],
-        zoom: isMobileInit ? 16 : 14,
-        pitch: currentBaseView === 'vector' && show3D ? DEFAULT_PITCH_3D : 0,
-        bearing: 0,
-        maxPitch: 70,
-        minZoom: 14,
-        maxZoom: 20,
+        center: isMobileInit ? CONFIG.view.mobileCenter : CONFIG.view.center,
+        zoom: isMobileInit ? CONFIG.view.zoom.mobile : CONFIG.view.zoom.desktop,
+        pitch: currentBaseView === 'vector' && show3D ? CONFIG.view.pitch3D : 0,
+        bearing: CONFIG.view.bearing,
+        maxPitch: CONFIG.view.maxPitch,
+        minZoom: CONFIG.view.minZoom,
+        maxZoom: CONFIG.view.maxZoom,
         attributionControl: { compact: true },
         canvasContextAttributes: { antialias: true },
     });
@@ -2273,6 +2424,30 @@ function initMap() {
 
     // Debug UI (?debug= chip, ?debugpage overlay) replaces the old zoom div.
     initDebugTools();
+
+    // Mask poller: event-order-proof creation. Every second (12 tries), if the
+    // style is loaded, boundary data is present, and mask-dim is missing, build
+    // it and record the outcome for ?debugpage. Goes quiet after success.
+    let maskPollCount = 0;
+    const maskPollTimer = setInterval(() => {
+        maskPollCount++;
+        maskPollTries = maskPollCount;
+        try {
+            if (!map || !map.isStyleLoaded() || !campusRingLngLat()) return;
+            if (map.getLayer('mask-dim')) {
+                clearInterval(maskPollTimer);
+                return;
+            }
+            ensureMaskLayers();
+            if (map.getLayer('mask-dim')) {
+                dlog('[mask] poller created mask-dim on try', maskPollCount);
+                clearInterval(maskPollTimer);
+            }
+        } catch (e) {
+            maskPollError = String((e && e.message) || e);
+        }
+        if (maskPollCount >= 12) clearInterval(maskPollTimer);
+    }, 1000);
 
     // Toggles are wired here; setBaseView applies the actual style.
     const satelliteToggleCheckbox = document.getElementById('toggle-satellite-checkbox');
@@ -2393,6 +2568,104 @@ function initMap() {
     loadCampusBoundary();
 }
 
+// ===== CAMPUS MASK (hide/fade outside world, restrict panning) =====
+// All driven by CONFIG.mask; boundary data comes from campus-boundary.json.
+
+function campusRingLngLat() {
+    try {
+        const ring = campusBoundaryData && campusBoundaryData.geometry && campusBoundaryData.geometry.coordinates[0];
+        return Array.isArray(ring) && ring.length > 2 ? ring : null;
+    } catch (e) { return null; }
+}
+
+function signedRingArea(ring) {
+    let a = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+        a += (ring[i][0] * ring[i + 1][1]) - (ring[i + 1][0] * ring[i][1]);
+    }
+    return a / 2;
+}
+
+// Filter for the 3D-buildings layer.
+// NOTE: MapLibre `within` only evaluates Point/LineString features — building
+// POLYGONS always return false (verified in maplibre-gl-style-spec source,
+// Within.evaluate: Point → pointsWithinPolygons, LineString →
+// linesWithinPolygons, else false). So outside-buildings cannot be filtered
+// out this way; the dim overlay + pan restriction carry the focus effect.
+function buildingFilter() {
+    return ['!=', ['get', 'hide_3d'], true];
+}
+
+function applyBuildingMask() {
+    if (!map || !map.isStyleLoaded() || !map.getLayer('3d-buildings')) return;
+    try { map.setFilter('3d-buildings', buildingFilter()); } catch (e) {}
+}
+
+function ensureMaskLayers() {
+    if (!map || !map.isStyleLoaded()) return;
+    const dim = CONFIG.mask.dimOutside;
+    const ring = campusRingLngLat();
+    dlog('[mask] ensure: dim =', dim, '| ring points =', ring ? ring.length : null);
+    maskLastRun = new Date().toISOString();
+    maskLastError = null;
+    try {
+        if (!dim || dim <= 0 || !ring) {
+            if (map.getLayer('mask-dim')) map.removeLayer('mask-dim');
+            if (map.getSource('mask-dim')) map.removeSource('mask-dim');
+            return;
+        }
+        // World shell (CCW) with campus hole (CW) — enforce winding per spec.
+        let outer = [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]];
+        let hole = ring.slice();
+        if (signedRingArea(outer) < 0) outer.reverse();
+        if (signedRingArea(hole) > 0) hole.reverse();
+        const data = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [outer, hole] }, properties: {} };
+        // Per-component idempotency (same lesson as pins): source existing must
+        // never imply the layer exists — ensure each independently.
+        if (!map.getSource('mask-dim')) {
+            map.addSource('mask-dim', { type: 'geojson', data });
+        } else {
+            map.getSource('mask-dim').setData(data);
+        }
+        if (!map.getLayer('mask-dim')) {
+            const style = map.getStyle();
+            const layers = (style && style.layers) || [];
+            let beforeId = null;
+            for (let i = 0; i < layers.length; i++) {
+                if (layers[i].type === 'symbol') { beforeId = layers[i].id; break; }
+            }
+            map.addLayer({ id: 'mask-dim', type: 'fill', source: 'mask-dim', paint: { 'fill-color': CONFIG.mask.dimColor, 'fill-opacity': dim } }, beforeId || undefined);
+            dlog('[mask] created mask-dim layer, before:', beforeId);
+        } else {
+            map.setPaintProperty('mask-dim', 'fill-opacity', dim);
+            map.setPaintProperty('mask-dim', 'fill-color', CONFIG.mask.dimColor);
+        }
+    } catch (e) {
+        maskLastError = String((e && e.message) || e);
+        console.warn('[mask] dim overlay failed:', e);
+    }
+}
+
+function applyPanRestriction() {
+    if (!map) return;
+    try {
+        const ring = campusRingLngLat();
+        if (!CONFIG.mask.restrictPanning || !ring) {
+            if (CONFIG.mask.restrictPanning === false) map.setMaxBounds(null);
+            return;
+        }
+        const buf = CONFIG.mask.panBuffer || 0;
+        let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+        ring.forEach(c => {
+            if (c[0] < minLng) minLng = c[0];
+            if (c[1] < minLat) minLat = c[1];
+            if (c[0] > maxLng) maxLng = c[0];
+            if (c[1] > maxLat) maxLat = c[1];
+        });
+        map.setMaxBounds([[minLng - buf, minLat - buf], [maxLng + buf, maxLat + buf]]);
+    } catch (e) {}
+}
+
 // ===== CAMPUS BOUNDARY (GeoJSON source, survives style switches) =====
 
 function ensureBoundaryLayers() {
@@ -2413,15 +2686,32 @@ function loadCampusBoundary() {
     // Coordinates sourced from OSM Way 1120569731 (UniSZA KGB campus) and stored locally
     // to avoid dependency on the unreliable Overpass API.
     fetch('/kgb/data/campus-boundary.json')
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
         .then(coords => {
             // Stored as [[lat,lng],...] — convert to GeoJSON [lng,lat] ring.
             const ring = coords.map(c => [c[1], c[0]]);
             campusBoundaryData = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} };
+            dlog('[boundary] loaded points:', coords.length);
             ensureBoundaryLayers();
+            applyBuildingMask();
+            ensureMaskLayers();
+            applyPanRestriction();
+            // Retry once after settle — covers style-not-ready races silently.
+            setTimeout(() => {
+                try {
+                    if (map && map.isStyleLoaded() && campusBoundaryData &&
+                        (!map.getLayer('campus-boundary-line') || !map.getLayer('campus-boundary-fill'))) {
+                        console.warn('[boundary] layers missing after settle — re-ensuring');
+                        ensureBoundaryLayers();
+                    }
+                } catch (e) {}
+            }, 4000);
         })
         .catch(err => {
-            console.warn('Campus boundary fetch failed:', err);
+            console.warn('[boundary] fetch failed (check server root serves /kgb/data/):', err);
         });
 }
 
@@ -2519,6 +2809,15 @@ window.onload = function() {
     document.getElementById('info-menu-btn').addEventListener('click', openInfoMenu);
     document.getElementById('info-menu-close').addEventListener('click', closeInfoMenu);
     document.getElementById('info-menu-backdrop').addEventListener('click', closeInfoMenu);
+    // Config first (fast same-origin file, 2.5s cap so a hang never blocks the map),
+    // then the map reads it for the initial camera.
+    Promise.race([
+        loadAppConfig(),
+        new Promise(resolve => setTimeout(resolve, 2500)),
+    ]).finally(bootApp);
+};
+
+function bootApp() {
     initMap();
     initBottomSheet();
     initDesktopSidebar();
@@ -2529,7 +2828,7 @@ window.onload = function() {
     createClearSearchButton();
     initClearSearchButton();
     fetchMapDataInfo();
-};
+}
 
 window.addEventListener('resize', function() {
     const sidebar = document.getElementById('sidebar');

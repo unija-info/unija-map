@@ -98,6 +98,37 @@ Tired but warm. This was the hardest debugging session in this file's history an
 
 1. **Await owner test results**: tilted P1 stem check (does 26px clear the roof?), `?debugpage` camera readout at the bad angle, A13/A14-vs-A9 order check.
 2. **If stems fall short on tall roofs**: phase 2 = height-aware lift from `render_height` per pin (scoped in chat, not built).
-3. **Offer to commit + push `beta`** (or squash first — 1000-line uncommitted diff; ask which).
-4. **Stale docs flagged, not all fixed**: root `CLAUDE.md` still describes Leaflet architecture; `kgb/map/README.md` Features/Tech Stack still say Leaflet/satellite-default (only CHANGELOG + CLAUDE header note were updated). If touching docs next session, README is next in line.
+3. **Offer to commit + push `beta`** (or squash first — 1000-line uncommitted diff; ask which). → DONE 2026-10-19 (push `9259df2`); parking commit for the mask/config/stems/debug/docs pile is item 1 of part 2 below.
+4. **Stale docs flagged, not all fixed** → DONE 2026-10-19: root `CLAUDE.md` beta pointer, `kgb/map/README.md` features/tech-stack refresh, root `AGENTS.md`, `kgb/map/feature.md`, root `CHANGELOG.md` beta section.
 5. Open threads from before this session (§1–3 above) are still open.
+
+---
+
+## Session 2026-10-19, part 2 — mask saga, stems, config, debug tools, parking (beta, UNPUSHED)
+
+### The one-line summary
+
+Pins verified on buildings, boundary verified, dim veil verified working via `?debugpage` (`maskDimLayer: true`) + screenshot. Everything below that point in this file held up; what follows is what happened after.
+
+### Mask: `within` is unusable for polygons (proven, not theorized)
+
+Wanted: hide 3D extrusions outside the boundary. Used `['within', campusPolygon]` on the fill-extrusion layer — inside buildings went flat while outside ones kept extruding, exactly inverted from intent. Installed `@maplibre/maplibre-gl-style-spec` locally and read the implementation (`Within.evaluate`): Point → check, LineString → check, **everything else → `return false`**. Building polygons can never match. Verified empirically too (evaluated an inside point: false — then found the harness was fine and the implementation was the answer). Reverted the filter to plain `hide_3d`, removed the dead `hideOutsideBuildings` knob from `config.json` and code, kept dim + pan restriction as the achievable focus effect. If anyone proposes `within` again, point here.
+
+### The dim that wouldn't appear (and what actually fixed it)
+
+First veil (near-white `#f4f1ec` @ 0.35) was camouflage on an already-paper map — switched to grey `#868c96` @ 0.45 plus a `dimColor` knob. Then `maskDimLayer: false` persisted across rounds *despite correct code*: layers 6/6-style checks passed, data present, no errors. Root-caused as partial-state creation (source exists ⇒ layer creation skipped forever) — fixed with per-component idempotent ensure, same lesson as pins. When that still read false, added `maskLastRun`/`maskLastError` + a 1s×12 poller that builds the layer the moment creation is possible and reports `maskPoll: {tries, lastError}`. The poller caught it on try 1. Lesson generalized: **any create-if-missing guarded on a *different* object's existence will strand partial states** — guard each component on itself.
+
+### Headless harness (`kgb/map/harness.debug.js`, KEPT)
+
+First real test in this repo: executes the actual `script.js` boot against a fake Map + DOM stubs, both load orderings (style-first and data-first), asserting boundary/mask/pins creation. ALL GREEN on the code the owner couldn't get working — which proved the bug was environmental/ordering on-device, not logic. Kept as a regression tool (see AGENTS.md). Its own stub bug found along the way: Node ≥22 has getter-only `navigator`, and `window.location` needs an explicit `hash` or `handleDeepLink` throws — both fixed in-file.
+
+### Stems + pitch default + config (all live, owner-verified pattern as usual)
+
+- Default pitch 45 → **30** (less parallax drama, still clearly 3D).
+- Floating pins: badge-on-stem, stem only when `body.is-pitched` (threshold from config), popup lift adapts. Open question carried forward: 26px stem vs tall roofs — phase 2 height-aware lift scoped, not built.
+- `kgb/map/config.json` now owns view/pins/stem/base/mask knobs, fetched pre-boot with type-checked merge + 2.5s cap. Always verify with `python3 -c json.load` + serve-fetch after editing.
+- `?debug` chip + `?debugpage` overlay (slide-hide, top-right tab, pausable/selectable JSON, Esc collapses). Old zoom div deleted. Asset cache-busts now at `?v=html19` — bump on every shipped asset change, phones cache aggressively.
+
+### Status at park
+
+Owner confirmed via screenshot + `?debugpage`: pins on buildings, boundary visible, dim veil visible outside the blue line. Uncommitted pile on `beta` since push `9259df2`: mask/dim/poller/config/stems/debug/docs. Next session starts with owner tuning impressions (`dimOutside`/`dimColor` taste), NOT with theories.

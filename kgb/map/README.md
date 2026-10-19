@@ -27,6 +27,9 @@ Displays ~110 campus locations as colored markers on a 3D vector map — buildin
 - **Directions panel (Experiment)** — Google-Maps-style Start/End routing: pick any campus location, map label, or "Lokasi Saya (GPS)" for either point, get a walking-route preview with distance/duration and colored start/end pins on the map. Opened via the directions icon in the search bar, or via "Dapatkan Arah" in a location's info overlay (pre-fills Start = GPS, End = that location). Foot profile via FOSSGIS `routed-foot` — campus footpaths come from OSM, so treat routes as an approximation. The same point can't be picked for both Start and End
 - **Live GPS positioning (Experiment)** — a dedicated "My Location" button (stacked above the zoom control on desktop, a floating button on mobile) shows your live position as a blue dot with an accuracy circle and centers the map on it, independent of the Directions panel
 - **Responsive** — bottom sheet UI on mobile, collapsible sidebar on desktop
+- **Campus focus** — areas outside the campus boundary dim down and panning is gently kept near campus (tunable in `config.json`)
+- **Tuning file** — `config.json` next to the app owns the default view, pin tiers, stem behavior and mask; safe to edit, invalid entries fall back to defaults
+- **Debug flags** — `?debug=1` live camera chip and `?debugpage` full debug overlay for troubleshooting
 
 ---
 

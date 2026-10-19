@@ -46,3 +46,4 @@ Never set positioning properties (`position`, and by extension layout-affecting 
 - Prefer decisive console tests over code changes: one `map.resize()`, one `getLayer` check, one `getLngLat` triple answers more than three theory edits.
 - Log happy paths too (`[pins-html] mounted: N`) — silent success told us nothing for a full round once.
 - `?debug=1` (camera chip) and `?debugpage` (full state overlay) exist for exactly this — point the owner at them instead of guessing.
+- Headless harness: `node kgb/map/harness.debug.js` runs the real boot flow against a fake map (both load orderings). Kept deliberately — extend it before guessing at ordering bugs.

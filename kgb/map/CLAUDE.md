@@ -1,6 +1,10 @@
 # CLAUDE.md — kgb/map/
 
-> **Engine (beta): MapLibre GL JS on OpenFreeMap `bright` 3D vector (default), Esri satellite as toggle.** Leaflet was removed. Markers are HTML (`ml-marker` + `ml-popup`, same badge/dot UX), boundary/route/GPS-accuracy are GeoJSON sources re-added on `style.load`, foot routing via FOSSGIS `routed-foot`. See CHANGELOG `[Unreleased] — MapLibre 3D Vector + Walk Routing`. Much of the detail below still describes UI logic correctly but any `L.*`/pane/`setIcon` reference is stale.
+> **Engine (beta): MapLibre GL JS on OpenFreeMap `bright` 3D vector (default), Esri satellite as toggle.** Leaflet was removed. Markers are badge-only HTML (`ml-marker` must stay `position: absolute` — see below) with pitch-gated float stems, shared external popup, foot routing via FOSSGIS `routed-foot`, tuning in `config.json`, debug via `?debug`/`?debugpage`. See CHANGELOG `[Unreleased] — MapLibre 3D Vector + Walk Routing`. Much of the detail below still describes UI logic correctly but any `L.*`/pane/`setIcon` reference is stale.
+>
+> **Two hard lessons from 2026-10 (do not repeat):**
+> 1. Never set `position` on `.ml-marker` — equal-specificity `position: relative` once beat MapLibre's own rule and index-marched all 110 pins with zero console errors. Canonical check: A13/A14 render north of A9.
+> 2. MapLibre `within` only evaluates Point/LineString — building polygons always return false (verified in style-spec source). Outside-3D hiding via filter is impossible; dim + pan restriction instead.
 
 This file provides guidance to Claude Code when working with the `kgb/map/` sub-project.
 

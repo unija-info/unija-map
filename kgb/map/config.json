@@ -1,0 +1,49 @@
+{
+  "_note": "Tuning knobs for kgb/map. Every value is optional and type-checked — missing or invalid entries fall back to built-in defaults, so this file can never break the map. Coordinates are [lng, lat].",
+  "view": {
+    "center": [
+      103.07857,
+      5.39963
+    ],
+    "mobileCenter": [
+      103.07978857810325,
+      5.4030603222603855
+    ],
+    "zoom": {
+      "desktop": 17,
+      "mobile": 15.5
+    },
+    "pitch3D": 70,
+    "bearing": -27.2,
+    "minZoom": 14,
+    "maxZoom": 20,
+    "maxPitch": 70
+  },
+  "pins": {
+    "dotZoom": {
+      "desktop": 17.5,
+      "mobile": 17
+    },
+    "priorityCategories": [
+      "PENTADBIRAN & PTJ",
+      "BLOK AKADEMIK & KELAS",
+      "BLOK FAKULTI & PUSAT PENGAJIAN"
+    ],
+    "stem": {
+      "minPitch": 5,
+      "heightPx": 26
+    },
+    "badgePx": 25,
+    "dotPx": 12
+  },
+  "base": {
+    "default": "vector"
+  },
+  "mask": {
+    "_note": "Focus the map on campus. dimOutside fades the outside world 0-1 (0 = off) using dimColor; restrictPanning keeps the camera near campus (panBuffer in degrees). NOTE: hiding outside 3D buildings via a within-filter is NOT possible — MapLibre within() only evaluates Point/LineString features, building polygons always return false.",
+    "dimOutside": 0.45,
+    "dimColor": "#868c96",
+    "restrictPanning": true,
+    "panBuffer": 0.02
+  }
+}

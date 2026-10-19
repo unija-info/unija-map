@@ -10,6 +10,10 @@
     --cat-kesihatan:     #DC143C;
     --cat-ibadah:        #32CD32;
     --cat-other:         #778899;
+    /* Pin sizes (overridden from kgb/map/config.json at boot) */
+    --pin-stem-height: 26px;
+    --pin-badge-px: 25px;
+    --pin-dot-px: 12px;
 }
 
 /* Google Maps-Style Layout */
@@ -2184,8 +2188,8 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 25px;
-    height: 25px;
+    width: var(--pin-badge-px, 25px);
+    height: var(--pin-badge-px, 25px);
     font-size: 11px;
     font-weight: 700;
     font-family: 'Google Sans', sans-serif;
@@ -2196,8 +2200,8 @@ body, html {
     user-select: none;
 }
 .ml-dot {
-    width: 12px;
-    height: 12px;
+    width: var(--pin-dot-px, 12px);
+    height: var(--pin-dot-px, 12px);
     border-radius: 50%;
     border: 2px solid white;
     box-shadow: 0 1px 3px rgba(0,0,0,0.4);
@@ -2214,7 +2218,7 @@ body, html {
 .ml-stem {
     display: none;
     width: 3px;
-    height: 26px;
+    height: var(--pin-stem-height, 26px);
     border-radius: 2px;
     background: linear-gradient(to bottom, rgba(95,99,104,0.9), rgba(95,99,104,0.5));
 }
@@ -2283,7 +2287,28 @@ body.is-pitched .ml-stem { display: block; }
     display: flex;
     flex-direction: column;
     font-family: monospace;
+    transition: transform 0.25s ease;
 }
+#debug-page.collapsed {
+    transform: translateX(105%);
+}
+/* Floating tab to re-expand the hidden debug panel. */
+#debug-expand-btn {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    z-index: 3002;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: rgba(18,20,24,0.9);
+    color: #fff;
+    cursor: pointer;
+    display: none;
+}
+#debug-expand-btn.visible { display: block; }
 .debug-page-head {
     display: flex;
     align-items: center;

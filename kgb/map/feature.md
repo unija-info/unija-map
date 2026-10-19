@@ -19,6 +19,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 * Dalam **menu ☰ → Paparan Peta**, hidupkan **"Paparan Satelit"** untuk melihat foto udara sebenar kampus.
 * Matikannya untuk kembali ke peta vektor 3D yang lebih ringan dan jelas.
 * Pilihan anda **disimpan automatik** — buka semula nanti, paparan yang sama dikekalkan.
+* Kawasan di luar sempadan kampus (garis biru) dipaparkan sedikit pudar supaya tumpuan kekal di dalam kampus, dan peta tidak boleh diseret terlalu jauh keluar.
 
 ## 3. Mencari Lokasi
 

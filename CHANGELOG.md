@@ -12,6 +12,7 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Leaflet replaced by MapLibre GL JS on OpenFreeMap `bright` 3D vector tiles (default view); Esri satellite kept as a toggle; foot routing via FOSSGIS `routed-foot`
 - Markers overhauled after a cascade-ordering bug (`.ml-marker{position:relative}` beat MapLibre's own rule → index-marched pins); final form is badge-only HTML pins with pitch-gated float stems
 - Debug tooling: `?debug=1` live camera chip, `?debugpage` full debug overlay; old always-on zoom indicator removed
+- `config.json` tuning file, campus focus mask (outside dim + pan restriction), `feature.md` Malay user guide, root `AGENTS.md`, and first headless harness (`kgb/map/harness.debug.js`) as regression tool
 
 ---
 
