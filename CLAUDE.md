@@ -77,7 +77,8 @@ python -m http.server 8000
     "googleMapLink": "https://maps.google.com/?q=LAT,LNG",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
-    "details": "Optional extra info"
+    "details": "Optional extra info",
+    "alias": "Old/variant names, comma-separated — search-only"
   }
 ]
 ```
@@ -100,11 +101,11 @@ See `kgb/bus-stop/CLAUDE.md` for full schema and architecture details.
 Google Sheet  →  code.gs (Apps Script)  →  GitHub API  →  kgb-map.json  →  Live map
 ```
 
-**Sheet**: [Google Sheet (JSON DATA tab)](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing) — columns: `number | place | googleMapLink | locationType | shortForm | details`
+**Sheet**: [Google Sheet (JSON DATA tab)](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing) — columns: `number | place | googleMapLink | locationType | shortForm | details | alias` (+ optional human `No` counter column, ignored). `alias` = comma-separated old/variant names, search-only; matched nickname shows as `Anda maksudkan 'X'?`.
 
-**Script**: `kgb/data/code.gs` runs inside the sheet as a Google Apps Script. It adds a **"Campus Map Guide → Update Website Data"** menu. When triggered:
+**Script**: `kgb/data/code.gs` (mirrored at `kgb/data/gsheetscript/kgb-map/code.gs`, script v1.3.1) runs inside the sheet as a Google Apps Script. It adds a **"Campus Map Guide → Update Website Data"** menu. When triggered:
 1. Reads all rows from the "JSON DATA" tab
-2. Maps only the 6 required columns (extra sheet columns are ignored)
+2. Maps only the 7 required columns (extra sheet columns like human `No` are ignored)
 3. Skips blank rows, serializes to JSON
 4. Calls the GitHub Contents API (`PUT`) to commit the new file to `main` — fetches the current file `sha` first (required by GitHub to update without conflict)
 5. The GitHub Personal Access Token is stored in **Apps Script Script Properties** (never hardcoded)

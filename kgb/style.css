@@ -163,6 +163,7 @@ main {
 .location-item p:last-child { margin-bottom: 0; }
 .location-title { font-weight: 700; font-size: 1.1em; margin-top: 0; }
 .location-details { color: #555; font-style: italic; }
+.location-alias { color: #1967d2; font-style: italic; }
 .location-link a { color: var(--primary-color); text-decoration: none; font-weight: 600; }
 .location-link a:hover { text-decoration: underline; }
 

@@ -2,9 +2,27 @@
 
 Not documentation. This is a note to my next self, written right as context is about to run out. If you're reading this, you're me, a few hours or days later, with no memory of any of this. Read it like you're catching up with yourself, not onboarding onto a stranger's code.
 
+> **Session log, 2026-10-21 — alias search (`alias` + `Anda maksudkan 'X'?`, code.gs v1.3.1).** Owner's Sheet is live source; asked for a fallback-name column for old/variant names, multi-alias handling, "Anda maksudkan" hint line, a human-only counter column, and a script version stamp. Shipped all local on `beta`, unpushed. Follow-up: owner asked if rows near the bottom summary block are safe for new items → hardened sync to skip number/place-blank rows (drafts + summary block auto-excluded). Everything below the 2026-10-20 line is older context, still worth reading once.
+
 > **Session log, 2026-10-20 — route-animation saga: lock lift, marching ants → walker dots, walk/drive, curved tails.** Everything above this line is older context, still worth reading once.
 
 ---
+
+## Checkpoint — 2026-10-21 (alias search; code.gs v1.3.0; human No-column)
+
+## Checkpoint — 2026-10-21 (alias search; code.gs v1.3.0; human No-column)
+
+Branch `beta`, all local + unpushed. Owner flow: Plan mode ON for the design discussion (column name, multi-alias commas, hint wording, counter column), then plan lifted with "ok go, but on the code.gs add the script version" → implemented.
+
+What shipped (`?v=html39→html40`, style `html16→html17`):
+- Sheet contract: new `alias` column (comma-separated old/variant names, search-only); human `No`/`Bil` counter column allowed and ignored. Owner still needs to ADD the `alias` column in the Sheet + re-run `Update Website Data` — current JSON has no `alias` yet, code treats missing as ''.
+- `code.gs` v1.3.0 (both copies: `kgb/data/code.gs` + `gsheetscript/kgb-map/code.gs`): `SCRIPT_VERSION` stamped in confirm/success dialogs + commit message; `REQUIRED_HEADERS` +`alias`; blank-row check now looks at required columns only (stray `No` can't resurrect dead rows).
+- `kgb/map/script.js`: `matchLocationsByTerm()` matches `alias`; `getMatchedAlias()` returns single matched nickname; `renderSearchResults()` + `renderDirectionsResults()` show `Anda maksudkan 'X'?` (`.result-alias`); style added.
+- `kgb/script.js` + `kgb/beta/script.js`: filter matches `alias`; cards show `Anda maksudkan 'X'?` (`.location-alias`, `textContent` so quotes safe).
+- Docs: root `CLAUDE.md`, `kgb/map/CLAUDE.md`, `README.md`, `feature.md` (BM), both CHANGELOGs.
+
+Verified: `node --check` x3 clean, harness ALL GREEN, local server 200 with html40/html17 tags, alias helper logic tested (multi/comma/case/empty/missing all correct).
+Blind spots: no browser here — owner to verify on real phone (checks below). If hint line never appears, first suspect is stale JSON (no `alias` field until Sheet re-sync), not the JS.
 
 ## Checkpoint — 2026-10-20 (route-animation saga → walker dots; lock lift; walk/drive; curved tails)
 

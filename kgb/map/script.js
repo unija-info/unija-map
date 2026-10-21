@@ -1306,8 +1306,22 @@ function matchLocationsByTerm(term) {
         (loc.place || '').toLowerCase().includes(lowerTerm) ||
         (loc.shortForm || '').toLowerCase().includes(lowerTerm) ||
         (loc.details || '').toLowerCase().includes(lowerTerm) ||
+        (loc.alias || '').toLowerCase().includes(lowerTerm) ||
         (loc.locationType || '').toLowerCase().includes(lowerTerm)
     );
+}
+
+// alias holds comma-separated old/variant names ("FKI lama, Blok E lama").
+// Returns the single matched nickname (trimmed) or '' when none matches.
+function getMatchedAlias(loc, term) {
+    if (!loc || !loc.alias || !term) return '';
+    const lowerTerm = term.toLowerCase();
+    const parts = String(loc.alias).split(',');
+    for (const p of parts) {
+        const name = p.trim();
+        if (name && name.toLowerCase().includes(lowerTerm)) return name;
+    }
+    return '';
 }
 
 function renderSearchResults(term) {
@@ -1323,7 +1337,7 @@ function renderSearchResults(term) {
     const lowerTerm = term.toLowerCase();
     let html = '';
 
-    // Search locations by number, place, shortForm, details, locationType
+    // Search locations by number, place, shortForm, details, alias, locationType
     const matchingLocations = matchLocationsByTerm(term);
 
     // Search map text labels (lakes, fields, etc.)
@@ -1352,12 +1366,14 @@ function renderSearchResults(term) {
 
     // Render location results
     matchingLocations.slice(0, 12).forEach(loc => {
+        const matchedAlias = getMatchedAlias(loc, term);
         html += `
             <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                 <div class="result-content">
                     <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                     <div class="result-subtitle">${loc.locationType || ''}</div>
                     ${loc.details ? `<div class="result-detail">${loc.details}</div>` : ''}
+                    ${matchedAlias ? `<div class="result-alias">Anda maksudkan '${matchedAlias}'?</div>` : ''}
                 </div>
             </div>
         `;
@@ -2673,11 +2689,13 @@ function renderDirectionsResults(term, field) {
         const matchingLocations = matchLocationsByTerm(term).filter(loc => loc.coords);
         matchingLocations.slice(0, 12).forEach(loc => {
             if (otherField && otherField.type === 'location' && otherField.id === loc.id) return;
+            const matchedAlias = getMatchedAlias(loc, term);
             html += `
                 <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                     <div class="result-content">
                         <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                         <div class="result-subtitle">${loc.locationType || ''}</div>
+                        ${matchedAlias ? `<div class="result-alias">Anda maksudkan '${matchedAlias}'?</div>` : ''}
                     </div>
                 </div>
             `;

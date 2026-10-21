@@ -47,10 +47,14 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
     "googleMapLink": "https://maps.google.com/?q=5.4012,103.0801",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
-    "details": "Optional extra info"
+    "details": "Optional extra info",
+    "alias": "Old/variant names, comma-separated — search-only"
   }
 ]
 ```
+
+**Key points:**
+- `alias` (new) holds comma-separated old/variant names, matched by `matchLocationsByTerm()`; `getMatchedAlias(loc, term)` returns the single matched nickname for the `Anda maksudkan 'X'?` line (`.result-alias`). Missing/empty = no change.
 
 **Key points:**
 - `number` uses category prefix codes: `P` = Pentadbiran, `A`/`B` = Akademik, `K` = Kolej Kediaman, `F` = Fakulti, etc.
@@ -338,7 +342,7 @@ Sheet auto-collapses to `peek` when a location or category is selected from the 
 
 ### 11. Search Dropdown
 
-Real-time search filters both locations and categories. Results appear as dropdown below the search input. Each location result shows three lines: place name + number, category (`.result-subtitle`), and `details` if non-empty (`.result-detail`, truncated with ellipsis). Clicking a result:
+Real-time search filters both locations and categories. Results appear as dropdown below the search input. Each location result shows place name + number, category (`.result-subtitle`), `details` if non-empty (`.result-detail`, truncated with ellipsis), and the matched old name as `Anda maksudkan 'X'?` (`.result-alias`, via `getMatchedAlias()`) when the `alias` column matches. Clicking a result:
 - Locations with coords: calls `filterByLocation()` (desktop) or `showLocationOnMap()` (mobile) + `showLocationInfoOverlay()`
 - Locations without coords: calls `showLocationInfoOverlay()` only
 - Categories: calls `filterByCategory()`
@@ -422,6 +426,7 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 - **Mobile info overlay**: `top: 24px` offset leaves handle bar visible
 - **No-coords items**: `.no-coords` class — `opacity: 0.55; cursor: default`
 - **Search result detail line**: `.result-detail` — 11px, `#80868b`, `text-overflow: ellipsis`; shown only when `loc.details` is non-empty
+- **Search result alias line**: `.result-alias` — 11px italic, `#1967d2`, ellipsis; shown only when `getMatchedAlias()` finds a nickname match
 - **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`; fetched from `/kgb/data/campus-boundary.json` (absolute path — relative path breaks on Vercel `cleanUrls`)
 - **Dot marker**: 12×12px, `border-radius: 50%`, category bg color, `2px solid white` border, `box-shadow: 0 1px 3px rgba(0,0,0,0.4)`
 - **Sidebar nav footer**: `.sidebar-nav-footer` — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text; globally `display: none` (superseded by info menu panel)
@@ -610,7 +615,7 @@ Data is fetched from `../data/kgb-map.json` (relative path), so it works immedia
 
 **To add or edit a location:**
 1. Open the [Google Sheet](https://docs.google.com/spreadsheets/d/13pyAleVZXs57ox8okhuyt6Rj8EEUx2TZkTzq_JEM7bE/edit?usp=sharing) and edit the **"JSON DATA"** tab
-2. Add a row with these columns: `number | place | googleMapLink | locationType | shortForm | details`
+2. Add a row with these columns: `number | place | googleMapLink | locationType | shortForm | details | alias` (`alias` = comma-separated old/variant names; optional human `No` counter column is ignored)
 3. Get coordinates from Google Maps (right-click on location → copy coordinates) and put them in `googleMapLink` as `https://maps.google.com/?q=LAT,LNG`
 4. Click **Campus Map Guide → Update Website Data** in the sheet menu to push to GitHub
 5. The live map reflects the change within seconds

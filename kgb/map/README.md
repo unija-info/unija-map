@@ -22,7 +22,7 @@ Displays ~110 campus locations as colored markers on a 3D vector map — buildin
 - **Info overlay** — detailed panel with location photo (or placeholder if unavailable), location name, category, short form, notes, and Google Maps link; back (`←`) or close (`×`) button restores full map view
 - **Animated intro** — map flies in from a wide view to campus zoom on first load
 - **Map area labels** — static text labels on the map for landmarks and open areas (e.g. Tasik UniSZA, Padang New Zealand); zoom-responsive with configurable visibility threshold
-- **Real-time search** — search by location name, number code, short form, details, or area label
+- **Real-time search** — search by location name, number code, short form, details, old/variant names (`alias`), or area label; alias matches show `Anda maksudkan 'X'?`
 - **Info menu panel** — hamburger button in the search bar opens a panel (full-screen slide-in on mobile, popup card on desktop) with campus hero image, navigation links, feedback buttons, and version/update info
 - **Directions panel (Experiment)** — Google-Maps-style Start/End routing: pick any campus location, map label, or "Lokasi Saya (GPS)" for either point, get a walking-route preview with distance/duration and colored start/end pins on the map. Opened via the directions icon in the search bar, or via "Dapatkan Arah" in a location's info overlay (pre-fills Start = GPS, End = that location). Foot profile via FOSSGIS `routed-foot` — campus footpaths come from OSM, so treat routes as an approximation. The same point can't be picked for both Start and End
 - **Live GPS positioning (Experiment)** — a dedicated "My Location" button (stacked above the zoom control on desktop, a floating button on mobile) shows your live position as a blue dot with an accuracy circle and centers the map on it, independent of the Directions panel
@@ -72,7 +72,8 @@ Each entry follows this schema:
   "googleMapLink": "https://maps.google.com/?q=5.4012,103.0801",
   "locationType": "PENTADBIRAN & PTJ",
   "shortForm": "",
-  "details": ""
+  "details": "",
+  "alias": "Old/variant names, comma-separated — search-only"
 }
 ```
 

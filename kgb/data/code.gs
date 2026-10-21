@@ -1,5 +1,6 @@
 // ------------------ USER CONFIGURATION ------------------
 // (1) FILL IN YOUR DETAILS HERE
+const SCRIPT_VERSION = '1.3.1 (2026-10-21: +alias, human No-column safe, skip number/place-blank rows)';
 const USER_CONFIG = {
   GITHUB_USERNAME: "unija-info", // Your GitHub username
   REPO_NAME: "unija-map", // The name of your GitHub repository
@@ -24,7 +25,7 @@ function onOpen() {
 function showUpdateConfirmation() {
   const ui = SpreadsheetApp.getUi();
   const response = ui.alert(
-    'Confirm Update',
+    'Confirm Update (script ' + SCRIPT_VERSION + ')',
     'This will send the latest data from this sheet to the GitHub repository. Continue?',
     ui.ButtonSet.YES_NO
   );
@@ -38,8 +39,10 @@ function updateGitHubFile() {
   const ui = SpreadsheetApp.getUi();
   
   // --- NEW: Define the exact headers we need for the JSON output ---
+  // NOTE: human counter column (e.g. "No"/"Bil") and any other extra
+  // columns are ignored. Only these headers are exported.
   const REQUIRED_HEADERS = [
-    'number', 'place', 'googleMapLink', 'locationType', 'shortForm', 'details'
+    'number', 'place', 'googleMapLink', 'locationType', 'shortForm', 'details', 'alias'
   ];
   
   const GITHUB_TOKEN = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
@@ -71,8 +74,13 @@ function updateGitHubFile() {
 
     // --- NEW LOGIC: Build the JSON array by selectively picking data ---
     const jsonArray = data.map(row => {
-      // Skip empty rows to keep the JSON clean
-      if (row.join('').trim() === '') return null;
+      const get = h => String(row[headerMap[h]] ?? '').trim();
+      // Skip rows without a location code + name. This covers fully blank
+      // rows, rows with only the human "No" counter filled, half-filled
+      // drafts, and the manual summary block at the bottom of the sheet
+      // ("19 Lokasi" etc.) — mirrors processData()'s filter in the app,
+      // so only rows the map can actually use are exported.
+      if (get('number') === '' || get('place') === '') return null;
 
       let obj = {};
       REQUIRED_HEADERS.forEach(header => {
@@ -80,7 +88,7 @@ function updateGitHubFile() {
         obj[header] = row[columnIndex];
       });
       return obj;
-    }).filter(obj => obj !== null); // Remove any empty rows we skipped
+    }).filter(obj => obj !== null); // Remove any rows we skipped
     // --- END OF NEW LOGIC ---
 
     const jsonString = JSON.stringify(jsonArray, null, 2);
@@ -105,7 +113,7 @@ function updateGitHubFile() {
     }
     
     const payload = {
-      message: `[Automated] Update map data from Google Sheet at ${new Date().toISOString()}`,
+      message: `[Automated] Update map data from Google Sheet (script ${SCRIPT_VERSION}) at ${new Date().toISOString()}`,
       content: encodedContent,
       sha: sha
     };
@@ -120,7 +128,7 @@ function updateGitHubFile() {
     const response = UrlFetchApp.fetch(apiUrl, options);
     
     if (response.getResponseCode() === 200 || response.getResponseCode() === 201) {
-      ui.alert('Success!', 'The website data has been successfully updated.', ui.ButtonSet.OK);
+      ui.alert('Success! (script ' + SCRIPT_VERSION + ')', 'The website data has been successfully updated.', ui.ButtonSet.OK);
     } else {
       throw new Error(`GitHub API Error: ${response.getResponseCode()}\n${response.getContentText()}`);
     }

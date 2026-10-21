@@ -167,6 +167,16 @@ body, html {
     text-overflow: ellipsis;
 }
 
+.result-alias {
+    font-size: 11px;
+    color: #1967d2;
+    font-style: italic;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .search-results .no-results {
     padding: 24px 16px;
     text-align: center;

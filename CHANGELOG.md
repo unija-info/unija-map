@@ -8,7 +8,6 @@ High-level project history. For technical detail see:
 ## Unreleased — `beta` branch (unmerged work, not yet on `main`)
 
 MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`](kgb/map/CHANGELOG.md):
-
 - Leaflet replaced by MapLibre GL JS on OpenFreeMap `bright` 3D vector tiles (default view); Esri satellite kept as a toggle; foot routing via FOSSGIS `routed-foot`
 - Markers overhauled after a cascade-ordering bug (`.ml-marker{position:relative}` beat MapLibre's own rule → index-marched pins); final form is badge-only HTML pins with pitch-gated float stems
 - Debug tooling: `?debug=1` live camera chip, `?debugpage` full debug overlay; old always-on zoom indicator removed
@@ -17,6 +16,7 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Campus lock lifts on demand (GPS/route outside campus frees `MaxBounds`, restores inside); off-campus users and town→campus routes frame correctly
 - Animated route guidance: walker dots stream start→end (HTML markers, after canvas dash layers silently refused creation on-device); speed/spacing/cap tunable in `config.json route:{...}`, `?testroute=1` demo route, speed capped for long distances
 - Walk/Drive toggle in the Directions panel (persisted), curved dotted tails bridging road-snap gaps to off-road pins
+- Alias search: Sheet/JSON `alias` column (comma-separated old names, `code.gs` v1.3.1) with `Anda maksudkan 'X'?` hint in map search, directions, and hub list
 - Hidden `/osm-status` page (unlinked, `noindex`): bilingual BM/EN live map-data status — active TileJSON version, OSM `osm_date` snapshot, next Sunday cutoff + Tuesday release with MYT-first display and countdowns; `osm_date` read via first-party `api/osm-date.js` proxy (btrfs sends no CORS headers; third-party proxies proven unreliable), build-ID-derived estimate as last resort
 
 ---

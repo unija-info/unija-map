@@ -87,7 +87,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     (loc.number || '').toString().toLowerCase().includes(query) ||
                     (loc.place || '').toLowerCase().includes(query) ||
                     (loc.shortForm || '').toLowerCase().includes(query) ||
-                    (loc.details || '').toLowerCase().includes(query)
+                    (loc.details || '').toLowerCase().includes(query) ||
+                    (loc.alias || '').toLowerCase().includes(query)
                 );
             });
         }
@@ -122,6 +123,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function getMatchedAlias(loc, term) {
+        if (!loc || !loc.alias || !term) return '';
+        const lowerTerm = term.toLowerCase();
+        const parts = String(loc.alias).split(',');
+        for (const p of parts) {
+            const name = p.trim();
+            if (name && name.toLowerCase().includes(lowerTerm)) return name;
+        }
+        return '';
+    }
+
     function createLocationElement(loc) {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'location-item';
@@ -140,6 +152,13 @@ document.addEventListener("DOMContentLoaded", () => {
             // Gunakan innerHTML untuk memasukkan tag <br> (line break)
             details.innerHTML = `Info Tambahan:<br>${loc.details.trim()}`;
             itemDiv.appendChild(details);
+        }
+        const matchedAlias = getMatchedAlias(loc, searchQuery);
+        if (matchedAlias) {
+            const aliasEl = document.createElement('p');
+            aliasEl.className = 'location-alias';
+            aliasEl.textContent = `Anda maksudkan '${matchedAlias}'?`;
+            itemDiv.appendChild(aliasEl);
         }
         const mapLink = document.createElement('p');
         mapLink.className = 'location-link';

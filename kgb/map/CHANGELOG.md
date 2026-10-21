@@ -7,6 +7,7 @@ All notable changes to `kgb/map/` are documented here.
 ## [Unreleased] — MapLibre 3D Vector + Walk Routing
 
 ### Added
+- **Alias search (`alias` + `Anda maksudkan 'X'?`)** — new Sheet/JSON column `alias` (comma-separated old/variant names, search-only, `code.gs` v1.3.1); `matchLocationsByTerm()` + hub list filters match it, and search/directions results plus hub cards show the single matched nickname as `Anda maksudkan 'X'?` via `getMatchedAlias()` (`.result-alias` / `.location-alias`) — old names stay findable without renaming places; sync skips rows with blank `number`/`place`, so drafts and the manual summary block never pollute the JSON
 - **3D vector map (default)** — engine swapped from Leaflet raster to MapLibre GL JS on OpenFreeMap `bright` vector style; campus buildings extrude in 3D (`fill-extrusion`, `pitch: 45`) with a compass/pitch NavigationControl. New `Peta 3D (bangunan)` toggle in the hamburger `Paparan Peta` section (`localStorage.kgbMapPitch3D`)
 - **Satellite kept as toggle** — Esri World Imagery + Carto labels now a MapLibre style switched via the existing `Paparan Satelit` checkbox (unchecked = 3D vector default); legacy `kgbMapBaseLayer === 'osm'` migrates to vector
 - **Walk routing (jalan kaki)** — Directions panel now routes via FOSSGIS `routed-foot` (`routing.openstreetmap.de`, foot profile, no key); readout is `X.X km · Y minit (jalan kaki)`; route renders as glow/base/dash line layers that drape over the 3D map

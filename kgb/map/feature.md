@@ -24,7 +24,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 ## 3. Mencari Lokasi
 
-* Taip di kotak carian, contohnya: `perpustakaan`, `P1`, `surau`, `cafe`.
+* Taip di kotak carian, contohnya: `perpustakaan`, `P1`, `surau`, `cafe` — nama lama juga boleh (contoh nama lama bangunan), dan hasil akan menunjukkan `Anda maksudkan 'nama lama'?`.
 * Hasil muncul serta-merta — tekan mana-mana hasil untuk terbang ke lokasi tersebut.
 * Setiap lokasi ada **lencana berwarna**: warna menunjukkan kategori (pentadbiran, akademik, kolej kediaman, cafe, sukan, kesihatan, ibadah dan lagi).
 
