@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Kemas Kini Peta / Map Update Status — UniSZA</title>
+    <meta name="description" content="Status kemas kini data peta OpenFreeMap/OSM: versi aktif, cutoff Ahad, release Selasa, dan panduan suntingan. / OpenFreeMap/OSM data update status: active version, Sunday cutoff, Tuesday release, and editing guide.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" href="/media/favicon/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/svg+xml" href="/media/favicon/favicon.svg">
+    <link rel="shortcut icon" href="/media/favicon/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/media/favicon/apple-touch-icon.png">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="./status.css?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <img src="https://view.unija.info/media/logo/unija-info.png" alt="Unija Info Logo">
+        <h1 data-ms="Status Kemas Kini Peta" data-en="Map Update Status">Status Kemas Kini Peta</h1>
+        <div class="lang-toggle" role="group" aria-label="Language / Bahasa">
+            <button type="button" id="btn-ms" class="active">BM</button>
+            <button type="button" id="btn-en">EN</button>
+        </div>
+    </header>
+
+    <main class="status-wrap">
+        <p class="lede" data-ms="Halaman ini menunjukkan versi data peta yang sedang live, deadline mingguan, dan anggaran bila suntingan OpenStreetMap (OSM) anda akan muncul di peta." data-en="This page shows the live map data version, the weekly deadline, and an estimate of when your OpenStreetMap (OSM) edit will appear on the map.">Halaman ini menunjukkan versi data peta yang sedang live, deadline mingguan, dan anggaran bila suntingan OpenStreetMap (OSM) anda akan muncul di peta.</p>
+
+        <section class="cards">
+            <div class="card">
+                <h2 data-ms="Versi tile aktif" data-en="Active tile version">Versi tile aktif</h2>
+                <p class="big" id="v-version">…</p>
+                <p class="sub" id="v-version-sub" data-ms="Menyemak…" data-en="Checking…">Menyemak…</p>
+            </div>
+            <div class="card">
+                <h2 data-ms="Snapshot data OSM (osm_date)" data-en="OSM data snapshot (osm_date)">Snapshot data OSM (osm_date)</h2>
+                <p class="big" id="v-osmdate">…</p>
+                <p class="sub" id="v-osmdate-sub" data-ms="Tarikh sebenar dump OSM yang digunakan untuk build ini. Lazimnya 5–7 hari lebih awal daripada ID build." data-en="The actual OSM dump date used for this build. Usually 5–7 days earlier than the build ID.">Tarikh sebenar dump OSM yang digunakan untuk build ini. Lazimnya 5–7 hari lebih awal daripada ID build.</p>
+            </div>
+            <div class="card">
+                <h2 data-ms="Cutoff Ahad seterusnya" data-en="Next Sunday cutoff">Cutoff Ahad seterusnya</h2>
+                <p class="big" id="v-cutoff">…</p>
+                <p class="utc" id="v-cutoff-utc">…</p>
+                <p class="sub" id="v-cutoff-sub">…</p>
+            </div>
+            <div class="card">
+                <h2 data-ms="Release Selasa seterusnya" data-en="Next Tuesday release">Release Selasa seterusnya</h2>
+                <p class="big" id="v-release">…</p>
+                <p class="utc" id="v-release-utc">…</p>
+                <p class="sub" id="v-release-sub">…</p>
+            </div>
+        </section>
+
+        <section class="card rule">
+            <h2 data-ms="Peraturan mudah" data-en="Simple rule">Peraturan mudah</h2>
+            <ul>
+                <li data-ms="Sunting SEBELUM Ahad 08:00 UTC (16:00 MYT) → live Selasa minggu yang sama." data-en="Edit BEFORE Sunday 08:00 UTC (16:00 MYT) → live that same Tuesday.">Sunting SEBELUM Ahad 08:00 UTC (16:00 MYT) → live Selasa minggu yang sama.</li>
+                <li data-ms="Sunting SELEPAS cutoff Ahad → tunggu Selasa minggu berikutnya." data-en="Edit AFTER the Sunday cutoff → wait for the following Tuesday.">Sunting SELEPAS cutoff Ahad → tunggu Selasa minggu berikutnya.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2 data-ms="Jadual mingguan" data-en="Weekly schedule">Jadual mingguan</h2>
+            <table class="sched">
+                <thead>
+                    <tr>
+                        <th data-ms="Masa (UTC / MYT)" data-en="Time (UTC / MYT)">Masa (UTC / MYT)</th>
+                        <th data-ms="Peringkat" data-en="Stage">Peringkat</th>
+                        <th data-ms="Penerangan" data-en="Description">Penerangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ahad / Sun 08:00 UTC<br>16:00 MYT</td>
+                        <td data-ms="Cutoff & mula build" data-en="Cutoff & build start">Cutoff & mula build</td>
+                        <td data-ms="Suntikan planet OSM terkini ditarik dan kompilasi bermula. Suntingan OSM mesti sudah komit sebelum masa ini." data-en="Latest OSM planet extract is pulled and compilation starts. OSM edits must be committed before this time.">Suntikan planet OSM terkini ditarik dan kompilasi bermula. Suntingan OSM mesti sudah komit sebelum masa ini.</td>
+                    </tr>
+                    <tr>
+                        <td>Selasa / Tue 08:00 UTC<br>16:00 MYT</td>
+                        <td data-ms="Promosi versi" data-en="Version promotion">Promosi versi</td>
+                        <td data-ms="Build baharu ditandakan aktif dan nod produksi bertukar ke dataset baharu (sekitar 08:00–09:00 UTC)." data-en="New build is flagged active and production nodes cut over to the new dataset (around 08:00–09:00 UTC).">Build baharu ditandakan aktif dan nod produksi bertukar ke dataset baharu (sekitar 08:00–09:00 UTC).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2 data-ms="Semakan teknikal" data-en="Technical check">Semakan teknikal</h2>
+            <ol class="tech">
+                <li><code>https://tiles.openfreemap.org/planet</code> → <span data-ms="ambil ID build daripada" data-en="take build ID from">ambil ID build daripada</span> <code>.tiles[0]</code></li>
+                <li><code>https://btrfs.openfreemap.com/areas/planet/${VERSION}/osm_date</code> → <span data-ms="tarikh snapshot OSM sebenar" data-en="actual OSM snapshot date">tarikh snapshot OSM sebenar</span></li>
+                <li><span data-ms="Jika masa suntingan < osm_date → sudah live; jika tidak → menunggu release Selasa 08:00 UTC berikutnya." data-en="If edit time < osm_date → already live; otherwise → pending next Tuesday 08:00 UTC release.">Jika masa suntingan &lt; osm_date → sudah live; jika tidak → menunggu release Selasa 08:00 UTC berikutnya.</span></li>
+            </ol>
+            <p class="sub" data-ms="Nota: jika semakan live gagal (CORS/rangkaian), halaman ini tetap memaparkan anggaran jadual daripada jam peranti anda." data-en="Note: if the live check fails (CORS/network), this page still shows the schedule estimate from your device clock.">Nota: jika semakan live gagal (CORS/rangkaian), halaman ini tetap memaparkan anggaran jadual daripada jam peranti anda.</p>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 | Projek Komuniti oleh <a href="https://unija.info" target="_blank">unija.info</a></p>
+    </footer>
+
+    <script src="./status.js?v=4" defer></script>
+</body>
+</html>
