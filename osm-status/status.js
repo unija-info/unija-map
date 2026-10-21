@@ -21,10 +21,9 @@
       checking: "Menyemak…",
       liveFail: "Tidak dapat disemak (rangkaian/CORS) — anggaran jadual di bawah.",
       liveOk: "Versi live daripada TileJSON.",
-      osmDirect: "Nilai live, diambil terus daripada storan OpenFreeMap.",
-      osmProxy: "Nilai live, diambil melalui proksi fallback (storannya sekat bacaan pelayar).",
+      osmApi: "Nilai live, diambil melalui proksi /api tapak ini.",
       osmEstimate: "* Anggaran daripada ID build (corak: dump Isnin, ~6 hari sebelum build). Boleh tersasar 1–2 hari.",
-      osmFail: "Storannya sekat bacaan pelayar (tiada CORS) dan proksi fallback gagal — memaparkan anggaran ID build sahaja.",
+      osmFail: "Proksi /api gagal dicapai — tiada nilai atau anggaran dapat dipaparkan.",
       inH: function (d, h, m) { return "Lagi " + d + "h " + hj(h) + "j " + m + "m"; },
       now: "Sekarang"
     },
@@ -32,10 +31,9 @@
       checking: "Checking…",
       liveFail: "Unavailable (network/CORS) — schedule estimate below.",
       liveOk: "Live version from TileJSON.",
-      osmDirect: "Live value, fetched directly from OpenFreeMap storage.",
-      osmProxy: "Live value, fetched via fallback proxy (direct storage blocks browser reads).",
+      osmApi: "Live value, fetched via this site's /api proxy.",
       osmEstimate: "* Estimate from build ID (pattern: Monday dump, ~6 days before build). May be off by 1–2 days.",
-      osmFail: "Direct storage blocks browser reads (no CORS) and the fallback proxy failed — showing build-ID estimate only.",
+      osmFail: "Could not reach the /api proxy — no value or estimate to show.",
       inH: function (d, h, m) { return "In " + d + "d " + h + "h " + m + "m"; },
       now: "now"
     }
@@ -101,9 +99,9 @@
     elReleaseSub.textContent = countdown(release, now);
   }
 
-  // btrfs.openfreemap.com sends no CORS headers, so browsers block direct
-  // reads. Fall back to public CORS proxies; verified 2026-10-21.
-  // Timeouts included so a hanging proxy fails fast instead of leaving "…".
+  // Browser reads go through this site's /api proxy (same-origin, no CORS
+  // issue). OSM_DATE_TPL documents the upstream endpoint for reference.
+  var API_URL_TPL = "/api/osm-date?version=VERSION";
   function fetchTextTimeout(url, ms) {
     if (typeof AbortController !== "undefined") {
       var ctl = new AbortController();
@@ -123,20 +121,7 @@
       .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.text(); });
   }
 
-  function firstSuccess(promises) {
-    return new Promise(function (resolve, reject) {
-      var pending = promises.length;
-      if (!pending) { reject(new Error("all failed")); return; }
-      promises.forEach(function (p) {
-        Promise.resolve(p).then(resolve, function () {
-          if (--pending === 0) reject(new Error("all failed"));
-        });
-      });
-    });
-  }
-
-  // Observed 2026-10: osm_date is always the Monday 6 days before the
-  // Sunday build ID (20261011->10-05, 20261018->10-12). Estimate only.
+  // Monday dump, 6 days before Sunday build ID (20261011->10-05, 20261018->10-12).
   function estimateOsmDate(version) {
     var m = /^(20\d\d)(\d\d)(\d\d)_/.exec(version || "");
     if (!m) return null;
@@ -146,18 +131,9 @@
   }
 
   function fetchOsmDate(version) {
-    var direct = OSM_DATE_TPL.replace("VERSION", version);
-    var proxies = [
-      "https://api.allorigins.win/raw?url=" + encodeURIComponent(direct),
-      "https://api.cors.lol/?url=" + encodeURIComponent(direct)
-    ];
-    return fetchTextTimeout(direct, 6000)
-      .then(function (t) { return { value: t.trim(), via: "direct" }; })
-      .catch(function () {
-        return firstSuccess(proxies.map(function (u) {
-          return fetchTextTimeout(u, 10000).then(function (t) { return t.trim(); });
-        })).then(function (value) { return { value: value, via: "proxy" }; });
-      })
+    var url = API_URL_TPL.replace("VERSION", encodeURIComponent(version));
+    return fetchTextTimeout(url, 10000)
+      .then(function (t) { return { value: t.trim(), via: "api" }; })
       .then(function (res) {
         if (res.value) return res;
         var est = estimateOsmDate(version);
@@ -174,8 +150,7 @@
   function setOsmNote(via) {
     if (!elOsmDateSub) return;
     var L = lang();
-    if (via === "direct") elOsmDateSub.textContent = STR[L].osmDirect;
-    else if (via === "proxy") elOsmDateSub.textContent = STR[L].osmProxy;
+    if (via === "api") elOsmDateSub.textContent = STR[L].osmApi;
     else if (via === "estimate") elOsmDateSub.textContent = STR[L].osmEstimate;
     else elOsmDateSub.textContent = STR[L].osmFail;
   }
