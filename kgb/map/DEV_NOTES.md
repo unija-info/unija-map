@@ -23,6 +23,10 @@ What shipped (`?v=html39→html40`, style `html16→html17`):
 
 Verified: `node --check` x3 clean, harness ALL GREEN, local server 200 with html40/html17 tags, alias helper logic tested (multi/comma/case/empty/missing all correct).
 Blind spots: no browser here — owner to verify on real phone (checks below). If hint line never appears, first suspect is stale JSON (no `alias` field until Sheet re-sync), not the JS.
+Shipped: committed `be31fe2`, pushed `beta` (16 files). `main` untouched — nothing live. Sheet steps still owner-side: paste `code.gs` v1.3.1, add `alias` column, `Update Website Data` (JSON lands on `main`, beta map reads it from there).
+
+## NEXT — faculty column (owner: "i want to add column faculy")
+- New Sheet/JSON column for faculty (likely `fakulti`, e.g. FBK/FSSG/FPP values currently buried in `details`). Open design Qs for next session: exact header name, free text vs dropdown, where it shows (search? info overlay row? filter?), whether `details` keeps the faculty text too. Same pipeline as alias: header → REQUIRED_HEADERS → predicates → docs → `?v=` bump.
 
 ## Checkpoint — 2026-10-20 (route-animation saga → walker dots; lock lift; walk/drive; curved tails)
 
