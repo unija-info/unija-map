@@ -386,7 +386,7 @@ function ensurePinLayers() {
 // GeoJSON source (no feature-state, no id stability needed) and cached so
 // style reloads (satellite toggle) can re-apply without re-querying tiles.
 let selectedBuildingCache = null; // {geometry, height, base} or null
-let selBuildingDbg = { layer: null, found: 0, height: null, gtype: null, members: null, picked: null, count: null, zoom: null, pitch: null, triedBox: false, lastBail: null, err: null }; // ?debugpage
+let selBuildingDbg = { layer: null, found: 0, height: null, gtype: null, members: null, picked: null, linked: null, names: null, count: null, zoom: null, pitch: null, triedBox: false, lastBail: null, err: null }; // ?debugpage
 let buildingRequeryPending = false; // one-shot idle retry scheduled
 let buildingRequeriedFor = null;    // location id already granted its one retry
 let buildingPollTimer = null;       // interim pop-in poll while the camera flies
@@ -442,7 +442,7 @@ function reapplySelectedBuildingCache() {
             map.setPaintProperty('selected-building-fill', 'fill-extrusion-height', selectedBuildingCache.height);
             map.setPaintProperty('selected-building-fill', 'fill-extrusion-base', selectedBuildingCache.base);
         }
-        try { selBuildingDbg.count = map.querySourceFeatures('selected-building').length; } catch (e) { }
+        try { selBuildingDbg.count = (selectedBuildingCache && selectedBuildingCache.linked) || 0; } catch (e) { }
     } catch (e) { }
 }
 
@@ -457,25 +457,81 @@ function ringContainsPt(ring, x, y) {
     return inside;
 }
 
-// A single queried OSM feature can be a MultiPolygon relation spanning many
-// blocks (found:1 yet the whole campus tints). Keep only the one member
-// polygon containing the pin; fall back to the nearest member by centroid.
-function pickBuildingFootprint(geometry, lng, lat) {
-
+// Two outer rings touch if any vertex pair is within ~0.6m (shared edge or
+// corner). Bbox precheck keeps the all-pairs scan cheap on big relations.
+function ringsTouch(a, b) {
     try {
-        if (!geometry || (geometry.type !== 'Polygon' && geometry.type !== 'MultiPolygon')) {
-            return { geometry: geometry, members: 0, picked: -1 };
+        if (!a || !b || !a.length || !b.length) return false;
+        const eps = 0.6 / 111320; // ~0.6m in degrees
+        let ax0 = Infinity, ax1 = -Infinity, ay0 = Infinity, ay1 = -Infinity;
+        for (let k = 0; k < a.length; k++) {
+            const c = a[k];
+            if (c[0] < ax0) ax0 = c[0]; if (c[0] > ax1) ax1 = c[0];
+            if (c[1] < ay0) ay0 = c[1]; if (c[1] > ay1) ay1 = c[1];
         }
-        const polys = (geometry.type === 'Polygon') ? [geometry.coordinates] : geometry.coordinates;
+        let bx0 = Infinity, bx1 = -Infinity, by0 = Infinity, by1 = -Infinity;
+        for (let k = 0; k < b.length; k++) {
+            const c = b[k];
+            if (c[0] < bx0) bx0 = c[0]; if (c[0] > bx1) bx1 = c[0];
+            if (c[1] < by0) by0 = c[1]; if (c[1] > by1) by1 = c[1];
+        }
+        if (ax1 + eps < bx0 || bx1 + eps < ax0 || ay1 + eps < by0 || by1 + eps < ay0) return false;
+        const e2 = eps * eps;
+        for (let i = 0; i < a.length; i++) {
+            for (let j = 0; j < b.length; j++) {
+                const dx = a[i][0] - b[j][0], dy = a[i][1] - b[j][1];
+                if (dx * dx + dy * dy <= e2) return true;
+            }
+        }
+        return false;
+    } catch (e) { return false; }
+}
+
+function featName(f) {
+    try {
+        const p = f.properties || {};
+        const n = p.name;
+        return (typeof n === 'string' && n.trim()) ? n.trim() : null;
+    } catch (e) { return null; }
+}
+
+function featHeight(f) {
+    try {
+        const p = f.properties || {};
+        const h = p.render_height, b = p.render_min_height;
+        return {
+            h: (typeof h === 'number' && isFinite(h)) ? h : 8,
+            base: (typeof b === 'number' && isFinite(b)) ? b : 0,
+        };
+    } catch (e) { return { h: 8, base: 0 }; }
+}
+
+// Cross-feature flood fill: OSM splits connected complexes (hall + podium)
+// and distinct neighbours (two named halls sharing a wall) into separate
+// features. Seed from the member containing the pin, then link touching
+// members whose OSM name is missing or matches the seed's — a different name
+// stays grey even when sharing a wall. Height follows the picked feature.
+function pickLinkedFootprints(blds, lng, lat) {
+    try {
+        if (!blds || !blds.length) return null;
+        const members = [];
+        for (let fi = 0; fi < blds.length; fi++) {
+            const g = blds[fi].geometry;
+            if (!g) continue;
+            if (g.type === 'Polygon') members.push({ poly: g.coordinates, feat: fi });
+            else if (g.type === 'MultiPolygon') {
+                for (let k = 0; k < g.coordinates.length; k++) members.push({ poly: g.coordinates[k], feat: fi });
+            }
+        }
+        if (!members.length) return null;
         let picked = -1;
-        for (let i = 0; i < polys.length; i++) {
-            if (polys[i] && polys[i][0] && ringContainsPt(polys[i][0], lng, lat)) { picked = i; break; }
+        for (let i = 0; i < members.length; i++) {
+            if (members[i].poly[0] && ringContainsPt(members[i].poly[0], lng, lat)) { picked = i; break; }
         }
         if (picked === -1) {
-            if (polys.length < 2) return { geometry: geometry, members: polys.length, picked: 0 };
             let best = Infinity;
-            for (let i = 0; i < polys.length; i++) {
-                const ring = (polys[i] && polys[i][0]) || [];
+            for (let i = 0; i < members.length; i++) {
+                const ring = (members[i].poly && members[i].poly[0]) || [];
                 if (!ring.length) continue;
                 let sx = 0, sy = 0;
                 for (let k = 0; k < ring.length; k++) { sx += ring[k][0]; sy += ring[k][1]; }
@@ -483,34 +539,73 @@ function pickBuildingFootprint(geometry, lng, lat) {
                 const d = dx * dx + dy * dy;
                 if (d < best) { best = d; picked = i; }
             }
-            if (picked === -1) return { geometry: geometry, members: polys.length, picked: -1 };
+            if (picked === -1) return null;
         }
-        return { geometry: { type: 'Polygon', coordinates: polys[picked] }, members: polys.length, picked: picked };
-    } catch (e) { return { geometry: geometry, members: 0, picked: -1 }; }
+        const seedName = featName(blds[members[picked].feat]);
+        const nameOk = fi => { const n = featName(blds[fi]); return n === null || n === seedName; };
+        const seen = {};
+        seen[picked] = true;
+        const linked = [picked];
+        const queue = [picked];
+        while (queue.length) {
+            const cur = queue.pop();
+            for (let i = 0; i < members.length; i++) {
+                if (seen[i] || !members[i].poly[0] || !nameOk(members[i].feat)) continue;
+                if (ringsTouch(members[cur].poly[0], members[i].poly[0])) { seen[i] = true; linked.push(i); queue.push(i); }
+            }
+        }
+        const coords = linked.map(i => members[i].poly);
+        const singlePoly = coords.length === 1 && blds[members[linked[0]].feat].geometry.type === 'Polygon';
+        const geom = singlePoly
+            ? { type: 'Polygon', coordinates: coords[0] }
+            : { type: 'MultiPolygon', coordinates: coords };
+        const hb = featHeight(blds[members[picked].feat]);
+        const nameSet = {};
+        linked.forEach(i => { const n = featName(blds[members[i].feat]); nameSet[n === null ? '(unnamed)' : n] = true; });
+        return {
+            geometry: geom, gtype: singlePoly ? 'Polygon' : 'MultiPolygon',
+            members: members.length, picked: picked, linked: linked.length,
+            names: Object.keys(nameSet), height: hb.h, base: hb.base,
+        };
+    } catch (e) { return null; }
 }
+
+// A single queried OSM feature can be a MultiPolygon relation spanning many
+// blocks (found:1 yet the whole campus tints). Superseded by
+// pickLinkedFootprints() above (cross-feature, name-aware) — removed.
 
 // Anti z-fighting: our highlight extrusion must not share planes with the base
 // building (identical footprint + height = flicker/speckle while moving).
-// Push the outer ring outward ~0.4m from its centroid and lift the roof, so no
+// Push each outer ring outward ~0.4m from its centroid and lift the roof, so no
 // face is ever coplanar with the original. Holes kept as-is (hidden inside).
+function expandPolygon(polyCoords, meters, mPerDegLat, mPerDegLng) {
+    if (!polyCoords || !polyCoords[0]) return polyCoords;
+    const ring = polyCoords[0];
+    let sx = 0, sy = 0, n = 0;
+    for (let i = 0; i < ring.length; i++) { sx += ring[i][0]; sy += ring[i][1]; n++; }
+    if (!n) return polyCoords;
+    const cx = sx / n, cy = sy / n;
+    const out = ring.map(c => {
+        const dx = (c[0] - cx) * mPerDegLng, dy = (c[1] - cy) * mPerDegLat;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-6) return [c[0], c[1]];
+        const k = (d + meters) / d;
+        return [cx + (c[0] - cx) * k, cy + (c[1] - cy) * k];
+    });
+    return [out].concat(polyCoords.slice(1));
+}
 function expandFootprint(geometry, meters) {
     try {
-        if (!geometry || geometry.type !== 'Polygon' || !geometry.coordinates || !geometry.coordinates[0]) return geometry;
+        if (!geometry || !geometry.coordinates) return geometry;
         const mPerDegLat = 111320;
         const mPerDegLng = 111320 * Math.cos(5.4 * Math.PI / 180); // campus latitude
-        const ring = geometry.coordinates[0];
-        let sx = 0, sy = 0, n = 0;
-        for (let i = 0; i < ring.length; i++) { sx += ring[i][0]; sy += ring[i][1]; n++; }
-        if (!n) return geometry;
-        const cx = sx / n, cy = sy / n;
-        const out = ring.map(c => {
-            let dx = (c[0] - cx) * mPerDegLng, dy = (c[1] - cy) * mPerDegLat;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d < 1e-6) return [c[0], c[1]];
-            const k = (d + meters) / d;
-            return [cx + (c[0] - cx) * k, cy + (c[1] - cy) * k];
-        });
-        return { type: 'Polygon', coordinates: [out].concat(geometry.coordinates.slice(1)) };
+        if (geometry.type === 'Polygon') {
+            return { type: 'Polygon', coordinates: expandPolygon(geometry.coordinates, meters, mPerDegLat, mPerDegLng) };
+        }
+        if (geometry.type === 'MultiPolygon') {
+            return { type: 'MultiPolygon', coordinates: geometry.coordinates.map(p => expandPolygon(p, meters, mPerDegLat, mPerDegLng)) };
+        }
+        return geometry;
     } catch (e) { return geometry; }
 }
 
@@ -580,35 +675,36 @@ function updateSelectedBuildingHighlight() {
     try {
         const pt = map.project([loc.coords[1], loc.coords[0]]);
         try { selBuildingDbg.zoom = map.getZoom(); selBuildingDbg.pitch = map.getPitch(); } catch (e) { }
-        selBuildingDbg.triedBox = false;
+        selBuildingDbg.triedBox = true;
         const isBuilding = f => f.sourceLayer === 'building' || (f.layer && /build/i.test(f.layer.id));
-        const feats = map.queryRenderedFeatures(pt, {}) || [];
-        let b = feats.find(isBuilding);
-        if (!b) {
-            // Exact-pixel miss at extreme pitch/occlusion: retry with a small
-            // box around the pin and take the first building feature in it.
-            try {
-                const r = 5;
-                const boxFeats = map.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], {}) || [];
-                b = boxFeats.find(isBuilding) || null;
-                selBuildingDbg.triedBox = true;
-            } catch (e) { }
+        // Stale tint from another pin must go immediately; a miss below then
+        // keeps the (now empty) state instead of someone else's building.
+        if (selectedBuildingCache && selectedBuildingCache.locId !== loc.id) {
+            try { map.getSource('selected-building').setData({ type: 'FeatureCollection', features: [] }); } catch (e) { }
+            selectedBuildingCache = null;
         }
-        selBuildingDbg.layer = (b && b.layer && b.layer.id) || null;
-        if (!b || !b.geometry) { selBuildingDbg.found = 0; selBuildingDbg.lastBail = 'miss'; scheduleBuildingRequery(); return; } // keep cache: tiles may not be ready
-        const p = b.properties || {};
-        const h = (typeof p.render_height === 'number' && isFinite(p.render_height)) ? p.render_height : 8;
-        const base = (typeof p.render_min_height === 'number' && isFinite(p.render_min_height)) ? p.render_min_height : 0;
-        const pick = pickBuildingFootprint(b.geometry, loc.coords[1], loc.coords[0]);
-        selectedBuildingCache = { geometry: expandFootprint(pick.geometry, 0.4), height: h + 0.4, base: base };
+        // One box query gathers the picked feature plus its neighbours for
+        // name-aware cross-feature linking (hall + unnamed podium link up;
+        // a differently-named hall sharing a wall does not).
+        let blds = [];
+        try {
+            const r = 6;
+            blds = (map.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], {}) || []).filter(isBuilding);
+        } catch (e) { blds = []; }
+        selBuildingDbg.layer = (blds.length && blds[0].layer && blds[0].layer.id) || null;
+        const pick = pickLinkedFootprints(blds, loc.coords[1], loc.coords[0]);
+        if (!pick) { selBuildingDbg.found = 0; selBuildingDbg.lastBail = 'miss'; scheduleBuildingRequery(); return; } // keep cache: tiles may not be ready
+        selectedBuildingCache = { geometry: expandFootprint(pick.geometry, 0.4), height: pick.height + 0.4, base: pick.base, locId: loc.id, linked: pick.linked };
         selBuildingDbg.found = 1;
-        selBuildingDbg.height = h;
-        selBuildingDbg.gtype = b.geometry.type;
+        selBuildingDbg.height = pick.height;
+        selBuildingDbg.gtype = pick.gtype;
         selBuildingDbg.members = pick.members;
         selBuildingDbg.picked = pick.picked;
+        selBuildingDbg.linked = pick.linked;
+        selBuildingDbg.names = pick.names;
         selBuildingDbg.lastBail = null;
         reapplySelectedBuildingCache();
-        dlog('[building] highlight:', loc.number, 'h=' + h);
+        dlog('[building] highlight:', loc.number, 'h=' + pick.height + ' linked=' + pick.linked);
     } catch (e) { selBuildingDbg.err = String((e && e.message) || e); console.warn('building highlight failed:', e); }
 }
 
@@ -1942,7 +2038,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html53'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html55'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
