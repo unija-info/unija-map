@@ -184,6 +184,22 @@ body, html {
     font-size: 14px;
 }
 
+.search-results .suggest-location-btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 16px;
+    background: #fff;
+    color: #1967d2;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.search-results .suggest-location-btn:active {
+    background: #e8f0fe;
+}
+
 /* Search results scrollbar */
 .search-results::-webkit-scrollbar {
     width: 6px;
@@ -2169,15 +2185,6 @@ body, html {
     transform: translate(-50%, -50%);
 }
 
-/* Selected marker highlight — scales up with white ring glow */
-.marker-highlighted > div {
-    transform: scale(1) !important;
-    box-shadow: 0 0 0 2.5px white, 0 0 0 5px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.35) !important;
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                box-shadow 0.15s ease !important;
-    z-index: 999 !important;
-}
-
 /* Map data version/update info — hidden in sidebar (shown in info menu panel) */
 #map-data-info {
     display: none;
@@ -2217,6 +2224,64 @@ body, html {
 /* My-location button: fixed above MapLibre's nav control (desktop).
    Mobile bottom is driven inline by updateFloatingButtonsPosition(). */
 #my-location-btn { bottom: 118px; right: 10px; }
+
+/* Boot loader overlay: covers the blank-map wait on cold/hard-refresh loads.
+   Below the ?debugpage panel (3001) so debug stays usable, above all else.
+   JS hides it when map + data are ready; the failsafe animation hides it
+   alone after 15s if JS never runs. No position/display toggling on
+   third-party classes — this is our own element. */
+#boot-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f2efe9;
+    transition: opacity 0.4s ease;
+    animation: boot-failsafe 0.5s ease 15s forwards;
+}
+#boot-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+@keyframes boot-failsafe {
+    to { opacity: 0; visibility: hidden; }
+}
+.boot-loader-card {
+    text-align: center;
+    padding: 0 24px;
+}
+.boot-loader-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+}
+.boot-loader-spinner {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    border: 4px solid #dadce0;
+    border-top-color: #1967d2;
+    animation: boot-spin 0.9s linear infinite;
+}
+@keyframes boot-spin {
+    to { transform: rotate(360deg); }
+}
+.boot-loader-text {
+    font-size: 14px;
+    color: #5f6368;
+}
+.boot-loader-version {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #80868b;
+}
+@media (prefers-reduced-motion: reduce) {
+    .boot-loader-spinner { animation: none; border-top-color: #dadce0; }
+}
 
 /* Campus markers (HTML) — position MUST stay absolute: equal-specificity
    `.ml-marker{position:relative}` used to beat MapLibre's own rule and left
@@ -2261,19 +2326,46 @@ body, html {
 .ml-marker.marker-highlighted .ml-badge,
 .ml-marker.marker-highlighted .ml-dot {
     box-shadow: 0 0 0 2.5px white, 0 0 0 5px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.35);
+    transform: scale(1.15);
+}
+
+/* Pin mode-swap softening: tier changes rebuild the slot's DOM (no transition
+   possible), so fresh badge/dot/stem nodes play a short pop-in instead. Grows
+   from the stem foot; transform only, no position/display touched. */
+@keyframes pin-pop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+}
+.ml-badge, .ml-dot, .ml-stem {
+    transform-origin: bottom center;
+    animation: pin-pop 180ms ease-out;
+}
+@keyframes pin-pop-selected {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1.15); }
+}
+.ml-marker.marker-highlighted .ml-badge,
+.ml-marker.marker-highlighted .ml-dot {
+    animation-name: pin-pop-selected;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ml-badge, .ml-dot, .ml-stem { animation: none; }
+    .ml-stem { transition: none; }
 }
 
 /* Floating-pin stem: foot is the glued point, badge hovers above the roof.
    Rendered only when the map is tilted (body.is-pitched); top-down keeps the
    clean badge-on-coordinate look. */
 .ml-stem {
-    display: none;
+    display: block;
     width: 3px;
-    height: var(--pin-stem-height, 26px);
+    height: 0;
     border-radius: 2px;
     background: linear-gradient(to bottom, rgba(95,99,104,0.9), rgba(95,99,104,0.5));
+    overflow: hidden;
+    transition: height 200ms ease-out;
 }
-body.is-pitched .ml-stem { display: block; }
+body.is-pitched .ml-stem { height: var(--pin-stem-height, 26px); }
 
 /* Marker popup — reuses .custom-tooltip-popup visibility classes */
 .ml-popup {

@@ -157,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (matchedAlias) {
             const aliasEl = document.createElement('p');
             aliasEl.className = 'location-alias';
-            aliasEl.textContent = `Anda maksudkan '${matchedAlias}'?`;
+            aliasEl.textContent = `Juga dikenali sebagai '${matchedAlias}'`;
             itemDiv.appendChild(aliasEl);
         }
         const mapLink = document.createElement('p');

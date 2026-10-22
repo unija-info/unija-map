@@ -55,7 +55,7 @@ const CONFIG_DEFAULTS = {
         dotPx: 12,
     },
     base: { default: 'vector' },
-    mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02 },
+    mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02, boundaryFillColor: '#1967d2', boundaryFillOpacity: 0.07 },
     detail: { footpaths: true, sports: true, sportColor: '#7fd08a', sportLine: '#ffffff', pathColor: '#a34d4d', pathOpacity: 0.5, sportOpacity: 0.85, sportLineOpacity: 0.9, trackColor: '#c26a5a', trackOpacity: 0.9 },
     route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20 },
 };
@@ -100,6 +100,12 @@ function applyAppConfig(json) {
         }
         if (typeof mk.restrictPanning === 'boolean') CONFIG.mask.restrictPanning = mk.restrictPanning;
         CONFIG.mask.panBuffer = numOr(mk.panBuffer, CONFIG.mask.panBuffer);
+        if (typeof mk.boundaryFillColor === 'string' && /^#[0-9a-f]{6}$/i.test(mk.boundaryFillColor)) {
+            CONFIG.mask.boundaryFillColor = mk.boundaryFillColor;
+        }
+        if (typeof mk.boundaryFillOpacity === 'number' && isFinite(mk.boundaryFillOpacity)) {
+            CONFIG.mask.boundaryFillOpacity = Math.min(1, Math.max(0, mk.boundaryFillOpacity));
+        }
         const dt = json.detail || {};
         if (typeof dt.footpaths === 'boolean') CONFIG.detail.footpaths = dt.footpaths;
         if (typeof dt.sports === 'boolean') CONFIG.detail.sports = dt.sports;
@@ -174,6 +180,46 @@ try { if (localStorage.getItem('kgbMapTravelMode') === 'drive') directionsTravel
 let directionsStartMarker = null;      // L.marker pin for the chosen start point
 let directionsEndMarker = null;        // L.marker pin for the chosen end point
 
+// ===== BOOT LOADER OVERLAY =====
+// Covers the blank-map wait on cold/hard-refresh loads. Hidden when the map
+// (first idle = style + initial tiles) AND the location data (pins mounted)
+// are both ready; a 10s safety timeout + 15s CSS failsafe guarantee it never
+// sticks, including on total data failure (error shows in the sidebar).
+let bootMapReady = false;
+let bootDataReady = false;
+let bootLoaderHidden = false;
+function hideBootLoader() {
+    if (bootLoaderHidden) return;
+    bootLoaderHidden = true;
+    try {
+        const el = document.getElementById('boot-loader');
+        if (!el) return;
+        el.classList.add('hidden');
+        setTimeout(() => { try { el.style.display = 'none'; } catch (e) { } }, 500);
+    } catch (e) { }
+}
+function maybeHideBootLoader() {
+    if (bootMapReady && bootDataReady) hideBootLoader();
+}
+
+// App + code versions, shown in the boot loader and the menus so a glance
+// proves whether the phone runs fresh code (code) with which release (app).
+function bootVersionText(release) {
+    const code = (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?');
+    return release ? `Versi: ${release} · Kod ${code}` : `Kod: ${code}`;
+}
+function paintVersionLines(release) {
+    const text = bootVersionText(release);
+    try {
+        const bootEl = document.getElementById('boot-version');
+        if (bootEl) bootEl.textContent = text;
+        const mapEl = document.getElementById('map-version');
+        if (mapEl) mapEl.textContent = text;
+        const menuEl = document.getElementById('menu-version');
+        if (menuEl) menuEl.textContent = text;
+    } catch (e) { }
+}
+
 // ===== ZOOM-BASED MARKER TIERS =====
 // Defaults live in CONFIG (kgb/map/config.json) — these constants are the
 // fallback when the file is missing. Always read via CONFIG at use sites.
@@ -200,6 +246,7 @@ function setMarkerHighlight(locationIdOrNull) {
         if (r.el) r.el.classList.toggle('marker-highlighted', r.id === highlightedPinId);
     });
     refreshPinTiers();
+    updateSelectedBuildingHighlight();
 }
 
 // ===== HTML PIN ENGINE v2 (badge-only markers, shared popup) =====
@@ -223,9 +270,16 @@ function pinBadgeHTML(location, mode) {
         + `<div class="ml-stem"></div>`;
 }
 
-function pinModeFor(location) {
+// Hysteresis band (±0.15 zoom) stops dot↔badge thrash when the camera sits
+// exactly on the threshold: full pins hold on longer zooming out, dots wait
+// longer zooming in. Fresh pins (no current mode) use the exact threshold.
+function pinModeFor(location, currentMode) {
     if (CONFIG.pins.priorityCategories.includes(location.locationType)) return 'full';
-    if (map && map.getZoom() >= pinZoomThreshold()) return 'full';
+    if (map) {
+        const t = pinZoomThreshold(), z = map.getZoom();
+        const edge = (currentMode === 'full') ? t - 0.15 : (currentMode === 'dot' ? t + 0.15 : t);
+        if (z >= edge) return 'full';
+    }
     if (currentSelectedLocationId !== null && location.id === currentSelectedLocationId) return 'full';
     if (currentActiveCategory !== null && location.locationType === currentActiveCategory) return 'full';
     if (highlightedPinId !== null && highlightedPinId !== undefined && highlightedPinId === location.id) return 'full';
@@ -234,8 +288,11 @@ function pinModeFor(location) {
 
 function refreshPinTiers() {
     pinMarkers.forEach(r => {
+        const mode = pinModeFor(r.loc, r.mode);
+        if (r.mode === mode) return; // unchanged: skip DOM rewrite (no replayed pop)
+        r.mode = mode;
         const slot = r.el && r.el.querySelector('.ml-badge-slot');
-        if (slot) slot.innerHTML = pinBadgeHTML(r.loc, pinModeFor(r.loc));
+        if (slot) slot.innerHTML = pinBadgeHTML(r.loc, mode);
     });
 }
 
@@ -243,8 +300,9 @@ function createPinMarker(location, exempt = false) {
     if (!location.coords || !map) return null;
     const el = document.createElement('div');
     el.className = 'ml-marker' + (exempt ? ' ml-exempt' : '');
-    el.innerHTML = `<div class="ml-badge-slot">${pinBadgeHTML(location, pinModeFor(location))}</div>`;
-    const rec = { id: location.id, marker: null, el, loc: location, exempt: !!exempt };
+    const initMode = pinModeFor(location);
+    el.innerHTML = `<div class="ml-badge-slot">${pinBadgeHTML(location, initMode)}</div>`;
+    const rec = { id: location.id, marker: null, el, loc: location, exempt: !!exempt, mode: initMode };
     try {
         // anchor:'bottom' — the stem foot is the glued point; badge floats above.
         rec.marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -259,16 +317,21 @@ function createPinMarker(location, exempt = false) {
         if (pinPopupLocId === null || pinPopupLocId === undefined) {
             if (pinPopupHoverId !== location.id) showPinPopup(location.id, 'mini');
         }
-        // Hover-upgrade dot → chip.
-        const slot = el.querySelector('.ml-badge-slot');
-        if (slot) slot.innerHTML = pinBadgeHTML(location, 'full');
+        // Hover-upgrade dot → chip (skip if already full: avoids replaying pop).
+        if (rec.mode !== 'full') {
+            const slot = el.querySelector('.ml-badge-slot');
+            if (slot) slot.innerHTML = pinBadgeHTML(location, 'full');
+            rec.mode = 'full';
+        }
     });
     el.addEventListener('mouseleave', () => {
         if (window.innerWidth <= 768) return;
         if (pinPopupLocId === null || pinPopupLocId === undefined) hidePinPopup();
         else { pinPopupHoverId = null; positionPinPopup(); }
         const slot = el.querySelector('.ml-badge-slot');
-        if (slot) slot.innerHTML = pinBadgeHTML(location, pinModeFor(location));
+        const mode = pinModeFor(location);
+        if (slot && mode !== rec.mode) slot.innerHTML = pinBadgeHTML(location, mode);
+        rec.mode = mode;
     });
     el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -314,6 +377,239 @@ function rebuildPinMarkers(locs, exempt = false) {
 function ensurePinLayers() {
     dlog(`[pins-html] markers mounted: ${pinMarkers.length}`);
     return true;
+}
+
+// ===== SELECTED-BUILDING HIGHLIGHT (Stage 2) =====
+// Tints the 3D building under the selected pin teal. Single hook: called from
+// setMarkerHighlight(), so every select/deselect path (pin tap, search, list,
+// overlay close, filter reset) is covered. Geometry is copied into our own
+// GeoJSON source (no feature-state, no id stability needed) and cached so
+// style reloads (satellite toggle) can re-apply without re-querying tiles.
+let selectedBuildingCache = null; // {geometry, height, base} or null
+let selBuildingDbg = { layer: null, found: 0, height: null, gtype: null, members: null, picked: null, count: null, zoom: null, pitch: null, triedBox: false, lastBail: null, err: null }; // ?debugpage
+let buildingRequeryPending = false; // one-shot idle retry scheduled
+let buildingRequeriedFor = null;    // location id already granted its one retry
+let buildingPollTimer = null;       // interim pop-in poll while the camera flies
+let buildingPollTries = 0;
+
+function stopBuildingPoll() {
+    if (buildingPollTimer !== null) { try { clearInterval(buildingPollTimer); } catch (e) { } buildingPollTimer = null; }
+    buildingPollTries = 0;
+}
+
+function ensureSelectedBuildingLayers() {
+    if (!map || !map.isStyleLoaded()) return false;
+    try {
+        if (!map.getSource('selected-building')) {
+            map.addSource('selected-building', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+            let beforeId = undefined;
+            try {
+                const ls = (map.getStyle().layers || []);
+                for (const l of ls) {
+                    if (l.type === 'symbol' && l.layout && l.layout['text-field']) { beforeId = l.id; break; }
+                }
+            } catch (e) { }
+            map.addLayer({
+                id: 'selected-building-fill',
+                type: 'fill-extrusion',
+                source: 'selected-building',
+                paint: {
+                    'fill-extrusion-color': '#0aa08b',
+                    'fill-extrusion-opacity': 0.55,
+                    'fill-extrusion-height': 8,
+                    'fill-extrusion-base': 0,
+                },
+            }, beforeId);
+            map.addLayer({
+                id: 'selected-building-line',
+                type: 'line',
+                source: 'selected-building',
+                paint: { 'line-color': '#076b5d', 'line-width': 2, 'line-opacity': 0.9 },
+            });
+        }
+        return true;
+    } catch (e) { selBuildingDbg.err = String((e && e.message) || e); return false; }
+}
+
+function reapplySelectedBuildingCache() {
+    if (!selectedBuildingCache) return;
+    try {
+        map.getSource('selected-building').setData({
+            type: 'FeatureCollection',
+            features: [{ type: 'Feature', geometry: selectedBuildingCache.geometry, properties: {} }],
+        });
+        if (map.getLayer('selected-building-fill')) {
+            map.setPaintProperty('selected-building-fill', 'fill-extrusion-height', selectedBuildingCache.height);
+            map.setPaintProperty('selected-building-fill', 'fill-extrusion-base', selectedBuildingCache.base);
+        }
+        try { selBuildingDbg.count = map.querySourceFeatures('selected-building').length; } catch (e) { }
+    } catch (e) { }
+}
+
+// Ray-casting point-in-ring on [lng,lat] coords.
+function ringContainsPt(ring, x, y) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+}
+
+// A single queried OSM feature can be a MultiPolygon relation spanning many
+// blocks (found:1 yet the whole campus tints). Keep only the one member
+// polygon containing the pin; fall back to the nearest member by centroid.
+function pickBuildingFootprint(geometry, lng, lat) {
+
+    try {
+        if (!geometry || (geometry.type !== 'Polygon' && geometry.type !== 'MultiPolygon')) {
+            return { geometry: geometry, members: 0, picked: -1 };
+        }
+        const polys = (geometry.type === 'Polygon') ? [geometry.coordinates] : geometry.coordinates;
+        let picked = -1;
+        for (let i = 0; i < polys.length; i++) {
+            if (polys[i] && polys[i][0] && ringContainsPt(polys[i][0], lng, lat)) { picked = i; break; }
+        }
+        if (picked === -1) {
+            if (polys.length < 2) return { geometry: geometry, members: polys.length, picked: 0 };
+            let best = Infinity;
+            for (let i = 0; i < polys.length; i++) {
+                const ring = (polys[i] && polys[i][0]) || [];
+                if (!ring.length) continue;
+                let sx = 0, sy = 0;
+                for (let k = 0; k < ring.length; k++) { sx += ring[k][0]; sy += ring[k][1]; }
+                const dx = sx / ring.length - lng, dy = sy / ring.length - lat;
+                const d = dx * dx + dy * dy;
+                if (d < best) { best = d; picked = i; }
+            }
+            if (picked === -1) return { geometry: geometry, members: polys.length, picked: -1 };
+        }
+        return { geometry: { type: 'Polygon', coordinates: polys[picked] }, members: polys.length, picked: picked };
+    } catch (e) { return { geometry: geometry, members: 0, picked: -1 }; }
+}
+
+// Anti z-fighting: our highlight extrusion must not share planes with the base
+// building (identical footprint + height = flicker/speckle while moving).
+// Push the outer ring outward ~0.4m from its centroid and lift the roof, so no
+// face is ever coplanar with the original. Holes kept as-is (hidden inside).
+function expandFootprint(geometry, meters) {
+    try {
+        if (!geometry || geometry.type !== 'Polygon' || !geometry.coordinates || !geometry.coordinates[0]) return geometry;
+        const mPerDegLat = 111320;
+        const mPerDegLng = 111320 * Math.cos(5.4 * Math.PI / 180); // campus latitude
+        const ring = geometry.coordinates[0];
+        let sx = 0, sy = 0, n = 0;
+        for (let i = 0; i < ring.length; i++) { sx += ring[i][0]; sy += ring[i][1]; n++; }
+        if (!n) return geometry;
+        const cx = sx / n, cy = sy / n;
+        const out = ring.map(c => {
+            let dx = (c[0] - cx) * mPerDegLng, dy = (c[1] - cy) * mPerDegLat;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < 1e-6) return [c[0], c[1]];
+            const k = (d + meters) / d;
+            return [cx + (c[0] - cx) * k, cy + (c[1] - cy) * k];
+        });
+        return { type: 'Polygon', coordinates: [out].concat(geometry.coordinates.slice(1)) };
+    } catch (e) { return geometry; }
+}
+
+// Search/list selections query while the camera is still zoomed out (tiles not
+// rendered yet → found:0). Grant each selection one retry after the camera
+// settles + tiles load; then give up until the next selection (no loops).
+function scheduleBuildingRequery() {
+    if (!map || typeof map.once !== 'function') return;
+    if (buildingRequeryPending || buildingRequeriedFor === highlightedPinId) return;
+    buildingRequeryPending = true;
+    buildingRequeriedFor = highlightedPinId;
+    const myId = highlightedPinId;
+    try {
+        map.once('idle', () => {
+            buildingRequeryPending = false;
+            if (highlightedPinId === buildingRequeriedFor && selBuildingDbg.found === 0) {
+                updateSelectedBuildingHighlight();
+            }
+            stopBuildingPoll();
+        });
+    } catch (e) { buildingRequeryPending = false; }
+    // Interim pop-in: poll briefly while the camera flies so the tint can
+    // appear mid-flight as soon as destination tiles arrive, not only after
+    // the camera settles. Bounded (8 x 250ms) and hands over cleanly if the
+    // selection changes mid-flight.
+    stopBuildingPoll();
+    buildingPollTries = 0;
+    try {
+        buildingPollTimer = setInterval(() => {
+            buildingPollTries++;
+            if (highlightedPinId !== myId) {
+                stopBuildingPoll();
+                buildingRequeryPending = false;
+                buildingRequeriedFor = null;
+                scheduleBuildingRequery(); // hand the retry to the new selection
+                return;
+            }
+            if (selBuildingDbg.found === 1 || buildingPollTries >= 8) {
+                stopBuildingPoll();
+                buildingRequeryPending = false;
+                return;
+            }
+            updateSelectedBuildingHighlight();
+        }, 250);
+    } catch (e) { stopBuildingPoll(); }
+}
+
+function updateSelectedBuildingHighlight() {
+    selBuildingDbg.err = null;
+    if (!map || !map.isStyleLoaded() || typeof map.queryRenderedFeatures !== 'function') {
+        selBuildingDbg.lastBail = !map ? 'nomap' : (!map.isStyleLoaded() ? 'nostyle' : 'noqueryfn');
+        scheduleBuildingRequery();
+        return;
+    }
+    if (!ensureSelectedBuildingLayers()) { selBuildingDbg.lastBail = 'nolayers'; scheduleBuildingRequery(); return; }
+    const loc = (highlightedPinId !== null && highlightedPinId !== undefined)
+        ? mapData.find(l => l.id === highlightedPinId) : null;
+    if (!loc || !loc.coords) {
+        try { map.getSource('selected-building').setData({ type: 'FeatureCollection', features: [] }); } catch (e) { }
+        selBuildingDbg.found = 0;
+        selBuildingDbg.layer = null;
+        selBuildingDbg.lastBail = 'noloc';
+        selectedBuildingCache = null;
+        buildingRequeriedFor = null;
+        return;
+    }
+    try {
+        const pt = map.project([loc.coords[1], loc.coords[0]]);
+        try { selBuildingDbg.zoom = map.getZoom(); selBuildingDbg.pitch = map.getPitch(); } catch (e) { }
+        selBuildingDbg.triedBox = false;
+        const isBuilding = f => f.sourceLayer === 'building' || (f.layer && /build/i.test(f.layer.id));
+        const feats = map.queryRenderedFeatures(pt, {}) || [];
+        let b = feats.find(isBuilding);
+        if (!b) {
+            // Exact-pixel miss at extreme pitch/occlusion: retry with a small
+            // box around the pin and take the first building feature in it.
+            try {
+                const r = 5;
+                const boxFeats = map.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], {}) || [];
+                b = boxFeats.find(isBuilding) || null;
+                selBuildingDbg.triedBox = true;
+            } catch (e) { }
+        }
+        selBuildingDbg.layer = (b && b.layer && b.layer.id) || null;
+        if (!b || !b.geometry) { selBuildingDbg.found = 0; selBuildingDbg.lastBail = 'miss'; scheduleBuildingRequery(); return; } // keep cache: tiles may not be ready
+        const p = b.properties || {};
+        const h = (typeof p.render_height === 'number' && isFinite(p.render_height)) ? p.render_height : 8;
+        const base = (typeof p.render_min_height === 'number' && isFinite(p.render_min_height)) ? p.render_min_height : 0;
+        const pick = pickBuildingFootprint(b.geometry, loc.coords[1], loc.coords[0]);
+        selectedBuildingCache = { geometry: expandFootprint(pick.geometry, 0.4), height: h + 0.4, base: base };
+        selBuildingDbg.found = 1;
+        selBuildingDbg.height = h;
+        selBuildingDbg.gtype = b.geometry.type;
+        selBuildingDbg.members = pick.members;
+        selBuildingDbg.picked = pick.picked;
+        selBuildingDbg.lastBail = null;
+        reapplySelectedBuildingCache();
+        dlog('[building] highlight:', loc.number, 'h=' + h);
+    } catch (e) { selBuildingDbg.err = String((e && e.message) || e); console.warn('building highlight failed:', e); }
 }
 
 // Recompute pin tiers after filter/zoom changes.
@@ -1373,7 +1669,7 @@ function renderSearchResults(term) {
                     <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                     <div class="result-subtitle">${loc.locationType || ''}</div>
                     ${loc.details ? `<div class="result-detail">${loc.details}</div>` : ''}
-                    ${matchedAlias ? `<div class="result-alias">Anda maksudkan '${matchedAlias}'?</div>` : ''}
+                    ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
                 </div>
             </div>
         `;
@@ -1393,7 +1689,7 @@ function renderSearchResults(term) {
     });
 
     if (!html) {
-        html = '<div class="no-results">Tiada hasil ditemui</div>';
+        html = '<div class="no-results"><div>Tiada hasil ditemui</div><button type="button" class="suggest-location-btn" data-placeholder="cadang-lokasi">📍 Cadang Lokasi</button></div>';
     }
 
     resultsContainer.innerHTML = html;
@@ -1646,7 +1942,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html39'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html53'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -1690,6 +1986,7 @@ function debugSnapshot() {
             hidden, dots, badges,
             highlighted: highlightedPinId,
             selected: currentSelectedLocationId,
+            building: selBuildingDbg,
         };
         snap.state = {
             category: currentActiveCategory,
@@ -1893,6 +2190,8 @@ function ensureCustomStyleLayers() {
     ensureBoundaryLayers();
     ensureRouteLayers(true);
     ensurePinLayers();
+    ensureSelectedBuildingLayers();
+    reapplySelectedBuildingCache();
     dlog('[style] custom layers: boundary/route/pins done → mask');
     ensureMaskLayers();
     applyPanRestriction();
@@ -2695,7 +2994,7 @@ function renderDirectionsResults(term, field) {
                     <div class="result-content">
                         <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                         <div class="result-subtitle">${loc.locationType || ''}</div>
-                        ${matchedAlias ? `<div class="result-alias">Anda maksudkan '${matchedAlias}'?</div>` : ''}
+                        ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
                     </div>
                 </div>
             `;
@@ -2877,6 +3176,7 @@ function initMap() {
     // and would yank the camera pitch while the user interacts).
     map.on('style.load', ensureCustomStyleLayers);
     map.on('load', ensureCustomStyleLayers);
+    try { map.once('idle', () => { bootMapReady = true; maybeHideBootLoader(); }); } catch (e) { }
 
     // Debug UI (?debug= chip, ?debugpage overlay) replaces the old zoom div.
     initDebugTools();
@@ -3006,6 +3306,8 @@ function initMap() {
             showAllLocations(true, false);
             handleDeepLink();
             maybeTestRoute();
+            bootDataReady = true;
+            maybeHideBootLoader();
             updateDebugChip();
             renderDebugPage();
             // Settle log: prove how many markers are actually on the map.
@@ -3020,6 +3322,7 @@ function initMap() {
             console.error('Failed to load map data:', err);
             document.getElementById('company-list').innerHTML =
                 '<p style="padding:20px;color:#DC143C;">Gagal memuatkan data peta. Sila muat semula halaman.</p>';
+            hideBootLoader();
         });
 
     loadCampusBoundary();
@@ -3172,7 +3475,7 @@ function ensureBoundaryLayers() {
     try {
         if (!map.getSource('campus-boundary')) {
             map.addSource('campus-boundary', { type: 'geojson', data: campusBoundaryData });
-            map.addLayer({ id: 'campus-boundary-fill', type: 'fill', source: 'campus-boundary', paint: { 'fill-color': '#1967d2', 'fill-opacity': 0.07 } });
+            map.addLayer({ id: 'campus-boundary-fill', type: 'fill', source: 'campus-boundary', paint: { 'fill-color': CONFIG.mask.boundaryFillColor, 'fill-opacity': CONFIG.mask.boundaryFillOpacity } });
             map.addLayer({ id: 'campus-boundary-line', type: 'line', source: 'campus-boundary', paint: { 'line-color': '#1967d2', 'line-width': 2.5, 'line-opacity': 0.8 } });
         } else {
             map.getSource('campus-boundary').setData(campusBoundaryData);
@@ -3183,8 +3486,9 @@ function ensureBoundaryLayers() {
 
 function loadCampusBoundary() {
     // Coordinates sourced from OSM Way 1120569731 (UniSZA KGB campus) and stored locally
-    // to avoid dependency on the unreliable Overpass API.
-    fetch('/kgb/data/campus-boundary.json')
+    // to avoid dependency on the unreliable Overpass API. Cache-busted so
+    // boundary updates reach phones (same pattern as the live map data).
+    fetch('/kgb/data/campus-boundary.json?v=' + Date.now())
         .then(res => {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.json();
@@ -3254,14 +3558,10 @@ async function fetchMapDataInfo() {
             .then(commits => commits.length > 0 ? new Date(commits[0].commit.committer.date) : null)
     ]);
 
-    const versionEl = document.getElementById('map-version');
     const kemaskiniEl = document.getElementById('map-kemaskini');
 
     if (versionResult.status === 'fulfilled' && versionResult.value) {
-        const versiText = `Versi: ${versionResult.value}`;
-        if (versionEl) versionEl.textContent = versiText;
-        const menuVersionEl = document.getElementById('menu-version');
-        if (menuVersionEl) menuVersionEl.textContent = versiText;
+        paintVersionLines(versionResult.value);
     }
 
     if (commitResult.status === 'fulfilled' && commitResult.value) {
@@ -3318,6 +3618,8 @@ window.onload = function () {
 
 function bootApp() {
     window.__kgbBootCount = (window.__kgbBootCount || 0) + 1;
+    setTimeout(hideBootLoader, 10000); // safety: loader never sticks
+    paintVersionLines(null); // code version immediately; release appended later
     initMap();
     initBottomSheet();
     initDesktopSidebar();

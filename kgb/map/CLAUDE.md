@@ -54,7 +54,7 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
 ```
 
 **Key points:**
-- `alias` (new) holds comma-separated old/variant names, matched by `matchLocationsByTerm()`; `getMatchedAlias(loc, term)` returns the single matched nickname for the `Anda maksudkan 'X'?` line (`.result-alias`). Missing/empty = no change.
+- `alias` (new) holds comma-separated old/variant names, matched by `matchLocationsByTerm()`; `getMatchedAlias(loc, term)` returns the single matched nickname for the `Juga dikenali sebagai 'X'` line (`.result-alias`). Missing/empty = no change. Empty search renders `Tiada hasil ditemui` + inert `📍 Cadang Lokasi` placeholder button (`.suggest-location-btn`, `data-placeholder="cadang-lokasi"` — no handler yet).
 
 **Key points:**
 - `number` uses category prefix codes: `P` = Pentadbiran, `A`/`B` = Akademik, `K` = Kolej Kediaman, `F` = Fakulti, etc.
@@ -342,7 +342,7 @@ Sheet auto-collapses to `peek` when a location or category is selected from the 
 
 ### 11. Search Dropdown
 
-Real-time search filters both locations and categories. Results appear as dropdown below the search input. Each location result shows place name + number, category (`.result-subtitle`), `details` if non-empty (`.result-detail`, truncated with ellipsis), and the matched old name as `Anda maksudkan 'X'?` (`.result-alias`, via `getMatchedAlias()`) when the `alias` column matches. Clicking a result:
+Real-time search filters both locations and categories. Results appear as dropdown below the search input. Each location result shows place name + number, category (`.result-subtitle`), `details` if non-empty (`.result-detail`, truncated with ellipsis), and the matched old name as `Juga dikenali sebagai 'X'` (`.result-alias`, via `getMatchedAlias()`) when the `alias` column matches. Zero matches render `Tiada hasil ditemui` plus an inert `📍 Cadang Lokasi` placeholder button (`.suggest-location-btn`). Clicking a result:
 - Locations with coords: calls `filterByLocation()` (desktop) or `showLocationOnMap()` (mobile) + `showLocationInfoOverlay()`
 - Locations without coords: calls `showLocationInfoOverlay()` only
 - Categories: calls `filterByCategory()`
@@ -363,7 +363,7 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 1. **Hero** — `#info-menu-hero`: aerial campus image (`unisza-kgb-aerial.jpg`), `object-fit: cover`, `height: 220px`. Text overlay (`Peta Kampus UniSZA KGB` + `#menu-location-count` subtitle) sits at the bottom via `position: absolute` + linear-gradient. Close button (`#info-menu-close`) is `position: absolute; top: 12px; right: 12px` with frosted-glass background.
 2. **Nav** — pill buttons for Peta Bus Stop, 360° Virtual Tour, Menu Utama. `.info-menu-nav { flex-direction: column; align-items: flex-start }` prevents buttons from stretching full width.
 3. **Feedback** — thank-you text + "⭐ Beri Rating" and "🐛 Laporkan Masalah" pill buttons (placeholder `href="#"` links).
-4. **Version** — `#menu-version` and `#menu-kemaskini` spans (11px, `#80868b`), populated by `fetchMapDataInfo()`.
+4. **Version** — `#menu-version` and `#menu-kemaskini` spans (11px, `#80868b`); `#map-version` sidebar twin (hidden) kept in sync. `paintVersionLines()` writes `Kod: <APP_VERSION>` immediately at boot (code build running on the phone) and upgrades to `Versi: <release> · Kod <APP_VERSION>` once `fetchMapDataInfo()` resolves the release from `main` CHANGELOG's first `## [...]` heading; `Kemaskini:` is the latest `kgb-map.json` commit date via GitHub API. Same version line appears on the boot loader (`#boot-version`).
 
 `openInfoMenu()` sets `panel.style.left` dynamically on desktop based on whether the sidebar is collapsed (70px) or expanded (420px). `closeInfoMenu()` removes `.open` from both panel and backdrop and restores `body.style.overflow`.
 
@@ -426,7 +426,8 @@ A hamburger icon button (`#info-menu-btn`) is positioned at the right of the sea
 - **Mobile info overlay**: `top: 24px` offset leaves handle bar visible
 - **No-coords items**: `.no-coords` class — `opacity: 0.55; cursor: default`
 - **Search result detail line**: `.result-detail` — 11px, `#80868b`, `text-overflow: ellipsis`; shown only when `loc.details` is non-empty
-- **Search result alias line**: `.result-alias` — 11px italic, `#1967d2`, ellipsis; shown only when `getMatchedAlias()` finds a nickname match
+- **Search result alias line**: `.result-alias` — 11px italic, `#1967d2`, ellipsis; shown only when `getMatchedAlias()` finds a nickname match; text is `Juga dikenali sebagai 'X'`
+- **Empty search state**: `.no-results` + `.suggest-location-btn` (pill button, inert placeholder) — shown only on zero matches
 - **Campus boundary**: `L.polygon()` with `color: #1967d2`, `weight: 2.5`, `opacity: 0.8`, `fillOpacity: 0.07`; `interactive: false`; fetched from `/kgb/data/campus-boundary.json` (absolute path — relative path breaks on Vercel `cleanUrls`)
 - **Dot marker**: 12×12px, `border-radius: 50%`, category bg color, `2px solid white` border, `box-shadow: 0 1px 3px rgba(0,0,0,0.4)`
 - **Sidebar nav footer**: `.sidebar-nav-footer` — links to `/kgb/bus-stop/` and `/` (root); `border-top: 1px solid #e8eaed`, 12px muted text; globally `display: none` (superseded by info menu panel)

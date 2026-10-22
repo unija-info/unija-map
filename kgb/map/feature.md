@@ -24,7 +24,8 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 ## 3. Mencari Lokasi
 
-* Taip di kotak carian, contohnya: `perpustakaan`, `P1`, `surau`, `cafe` — nama lama juga boleh (contoh nama lama bangunan), dan hasil akan menunjukkan `Anda maksudkan 'nama lama'?`.
+* Taip di kotak carian, contohnya: `perpustakaan`, `P1`, `surau`, `cafe` — nama lama juga boleh (contoh nama lama bangunan), dan hasil akan menunjukkan `Juga dikenali sebagai 'nama lama'`.
+* Jika tiada hasil (`Tiada hasil ditemui`), ada butang **📍 Cadang Lokasi** — buat masa ini butang paparan sahaja, borang cadangan akan disambungkan kemudian.
 * Hasil muncul serta-merta — tekan mana-mana hasil untuk terbang ke lokasi tersebut.
 * Setiap lokasi ada **lencana berwarna**: warna menunjukkan kategori (pentadbiran, akademik, kolej kediaman, cafe, sukan, kesihatan, ibadah dan lagi).
 
@@ -36,7 +37,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 ## 5. Maklumat Sesuatu Tempat
 
-* Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar, kategori, singkatan dan info tambahan.
+* Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar, kategori, singkatan dan info tambahan. Pin yang dipilih membesar sedikit dengan ring putih, dan **bangunannya bertukar hijau-teal** supaya senang kenal.
 * Butang **"Buka di Google Maps"** membuka lokasi itu dalam aplikasi Google Maps.
 * Butang **"Salin Pautan"** menyalin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut.
 
