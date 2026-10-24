@@ -41,7 +41,7 @@ const CONFIG_DEFAULTS = {
         bearing: 0,
         minZoom: 14,
         maxZoom: 20,
-        maxPitch: 70,
+        maxPitch: 68.5,
     },
     pins: {
         dotZoom: { desktop: 17.5, mobile: 17 },
@@ -131,7 +131,7 @@ function applyAppConfig(json) {
 }
 
 function loadAppConfig() {
-    return fetch('/kgb/map/config.json')
+    return fetch('/kgb/map/config.json?v=' + Date.now())
         .then(res => {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.json();
@@ -854,6 +854,133 @@ function getCategoryTextColor(lt) {
     return (CATEGORY_COLORS[lt] || { text: 'white' }).text;
 }
 
+// Short pill labels for the Google-Maps style top bar (full names stay in sidebar/overlay).
+const CATEGORY_SHORT = {
+    'PENTADBIRAN & PTJ': 'Pentadbiran',
+    'BLOK AKADEMIK & KELAS': 'Akademik',
+    'BLOK FAKULTI & PUSAT PENGAJIAN': 'Fakulti',
+    'KOLEJ KEDIAMAN': 'Kolej',
+    'PUSAT AKTIVITI': 'Aktiviti',
+    'SUKAN & REKREASI': 'Sukan',
+    'CAFE & MAKANAN': 'Kafe',
+    'KESIHATAN': 'Kesihatan',
+    'IBADAH': 'Ibadah',
+    'FASILITI & KEMUDAHAN': 'Fasiliti',
+};
+
+function updateCategoryPills() {
+    document.querySelectorAll('#category-pills .cat-pill').forEach(btn => {
+        const cat = btn.dataset.category || null;
+        btn.classList.toggle('active', cat === currentActiveCategory);
+    });
+    syncSavedButton();
+}
+
+// Rail ★ Disimpan icon: active state + count in tooltip (single sync point —
+// updateCategoryPills runs on every filter/show-all/deep-link change).
+function syncSavedButton() {
+    const btn = document.getElementById('rail-saved');
+    if (!btn) return;
+    btn.classList.toggle('active', currentActiveCategory === SAVED_FILTER);
+    const n = getSavedIds().length;
+    btn.title = n ? `Lokasi disimpan (${n})` : 'Lokasi disimpan';
+    btn.setAttribute('aria-label', n ? `Lokasi disimpan (${n})` : 'Lokasi disimpan');
+}
+
+function syncPillFades() {
+    const wrap = document.getElementById('category-pills');
+    if (!wrap) return;
+    const max = wrap.scrollWidth - wrap.clientWidth;
+    wrap.classList.toggle('pills-at-start', wrap.scrollLeft <= 4);
+    wrap.classList.toggle('pills-at-end', wrap.scrollLeft >= max - 4);
+}
+
+let pillsNudgeDone = false;
+let pillsUserTouched = false;
+
+// ===== SAVED (localStorage favorites) + distance helpers =====
+const SAVED_KEY = 'kgbMapSaved';
+const SAVED_FILTER = '__saved__';
+function getSavedIds() {
+    try {
+        const v = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+        return Array.isArray(v) ? v.filter(n => typeof n === 'number') : [];
+    } catch (e) { return []; }
+}
+function setSavedIds(ids) {
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(ids)); } catch (e) { /* private mode: session only */ }
+}
+function haversineM(a, b) {
+    const R = 6371000, t = Math.PI / 180;
+    const dLa = (b[0] - a[0]) * t, dLo = (b[1] - a[1]) * t;
+    const s = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * t) * Math.cos(b[0] * t) * Math.sin(dLo / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+}
+function formatDist(m) {
+    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+}
+
+function maybeNudgeCategoryPills() {
+    if (pillsNudgeDone) return;
+    pillsNudgeDone = true;
+    try {
+        if (window.innerWidth > 768) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const wrap = document.getElementById('category-pills');
+        if (!wrap) return;
+        if (wrap.scrollWidth <= wrap.clientWidth + 4) return; // all visible
+        if (wrap.scrollLeft !== 0) return; // user already scrolling
+        wrap.scrollTo({ left: 48, behavior: 'smooth' });
+        setTimeout(() => {
+            try {
+                if (!pillsUserTouched && wrap.scrollLeft > 0) {
+                    wrap.scrollTo({ left: 0, behavior: 'smooth' });
+                }
+            } catch (e) { /* never break boot */ }
+        }, 650);
+    } catch (e) { /* never break boot */ }
+}
+
+function initCategoryPills() {
+    const wrap = document.getElementById('category-pills');
+    if (!wrap || wrap.dataset.ready) return;
+    wrap.dataset.ready = '1';
+    const all = document.createElement('button');
+    all.className = 'cat-pill cat-pill-all';
+    all.type = 'button';
+    all.dataset.category = '';
+    const allIcon = document.createElement('span');
+    allIcon.className = 'material-symbols-outlined';
+    allIcon.textContent = 'apps';
+    all.appendChild(allIcon);
+    all.appendChild(document.createTextNode('Semua Kategori'));
+    all.setAttribute('aria-label', 'Semua kategori');
+    all.title = 'Papar semua lokasi';
+    all.addEventListener('click', () => showAllLocations());
+    wrap.appendChild(all);
+    DESIRED_ORDER.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-pill';
+        btn.dataset.category = cat;
+        btn.type = 'button';
+        const dot = document.createElement('span');
+        dot.className = 'cat-dot';
+        dot.style.background = getCategoryColor(cat);
+        btn.appendChild(dot);
+        btn.appendChild(document.createTextNode(CATEGORY_SHORT[cat] || cat));
+        btn.setAttribute('aria-label', cat);
+        btn.title = cat;
+        btn.addEventListener('click', () => filterByCategory(cat));
+        wrap.appendChild(btn);
+    });
+    updateCategoryPills();
+    wrap.addEventListener('scroll', syncPillFades, { passive: true });
+    wrap.addEventListener('pointerdown', () => { pillsUserTouched = true; }, { once: true });
+    window.addEventListener('resize', syncPillFades);
+    syncPillFades();
+    setTimeout(maybeNudgeCategoryPills, 900);
+}
+
 // ===== DATA PROCESSING =====
 
 function parseCoords(googleMapLink) {
@@ -986,6 +1113,14 @@ function renderGroupedList() {
             btn.appendChild(badge);
             btn.appendChild(namePart);
 
+            if (getSavedIds().includes(loc.id)) {
+                const star = document.createElement('span');
+                star.className = 'location-saved-star';
+                star.textContent = '★';
+                star.title = 'Disimpan';
+                btn.appendChild(star);
+            }
+
             btn.onclick = (e) => {
                 e.stopPropagation();
                 if (window.innerWidth > 768) {
@@ -1051,6 +1186,7 @@ function showAllLocations(animate = true, updateUrl = true) {
     currentActiveCategory = null;
     currentSelectedLocationId = null;
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
+    updateCategoryPills();
 
     rebuildPinMarkers(mapData.filter(loc => loc.coords));
 
@@ -1081,6 +1217,7 @@ function filterByCategory(categoryName) {
     if (currentActiveCategory === categoryName) {
         currentActiveCategory = null;
         document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
+        updateCategoryPills();
         showAllLocations();
         return;
     }
@@ -1098,6 +1235,7 @@ function filterByCategory(categoryName) {
             h.classList.remove('category-active');
         }
     });
+    updateCategoryPills();
 
     clearMarkers();
     const catLocs = mapData.filter(loc => loc.locationType === categoryName && loc.coords);
@@ -1117,6 +1255,37 @@ function filterByCategory(categoryName) {
     showCategoryOverlay(categoryName);
 
     // Expand bottom sheet to half on mobile so the list is visible
+    if (window.innerWidth <= 768 && sheetElement) {
+        sheetElement.style.height = '';
+        setSheetState('half');
+    }
+}
+
+function applySavedFilter() {
+    if (currentActiveCategory === SAVED_FILTER) { showAllLocations(); return; }
+    const ids = getSavedIds();
+    if (!ids.length) { showToast('Tiada lokasi disimpan lagi — tekan Simpan pada mana-mana kad'); return; }
+    currentActiveCategory = SAVED_FILTER;
+    currentSelectedLocationId = null;
+    updateURL();
+    document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
+    document.querySelector('.stop-category-overlay')?.remove();
+    // The saved list lives inside the sidebar — open the Tier-2 panel on desktop
+    if (window.innerWidth > 768) toggleDesktopSidebar(false);
+    clearMarkers();
+    const locs = mapData.filter(loc => ids.includes(loc.id) && loc.coords);
+    rebuildPinMarkers(locs);
+    const coords = locs.map(loc => loc.coords);
+    if (coords.length > 0) {
+        if (window.innerWidth <= 768) {
+            const bottomPad = Math.round(window.innerHeight * 0.5) + 20;
+            fitCoordsToMap(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, bottomPad], maxZoom: 18, duration: 1200 });
+        } else {
+            fitCoordsToMap(coords, { padding: getMapPadding(), maxZoom: 18, duration: 1200 });
+        }
+    }
+    showSavedOverlay();
+    updateCategoryPills();
     if (window.innerWidth <= 768 && sheetElement) {
         sheetElement.style.height = '';
         setSheetState('half');
@@ -1167,7 +1336,7 @@ function showLocationInfoOverlay(locationId) {
     if (!location) return;
 
     currentInfoOverlayLocationId = locationId;
-    updateURL({ type: currentActiveCategory || null, location });
+    updateURL({ type: DESIRED_ORDER.includes(currentActiveCategory) ? currentActiveCategory : null, location });
 
     const bgColor = getCategoryColor(location.locationType);
     const textColor = getCategoryTextColor(location.locationType);
@@ -1175,43 +1344,13 @@ function showLocationInfoOverlay(locationId) {
 
     const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
     const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
-    const imageHtml = `
-        <div class="info-overlay-image-wrap">
-            <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}"
-                 onload="this.style.opacity='1';this.nextElementSibling.style.opacity='0';"
-                 onerror="
-                   if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
-                   else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
-                   else{this.style.opacity='0';}
-                 " />
-            <div class="info-overlay-image-placeholder">
-                <span class="material-symbols-outlined">hide_image</span>
-                <span>Tiada Gambar</span>
-            </div>
-        </div>
-    `;
 
     let detailRowsHtml = '';
-
-    if (location.locationType && location.locationType.trim()) {
-        detailRowsHtml += `
-            <div class="info-overlay-detail-row">
-                <span class="info-overlay-detail-label">Kategori</span>
-                <button class="info-overlay-category-badge" style="background:${bgColor}; color:${textColor};">${location.locationType}</button>
-            </div>`;
-    }
-
-    if (location.shortForm && location.shortForm.trim()) {
-        detailRowsHtml += `
-            <div class="info-overlay-detail-row">
-                <span class="info-overlay-detail-label">Singkatan</span>
-                <span class="info-overlay-detail-value">${location.shortForm}</span>
-            </div>`;
-    }
 
     if (location.details && location.details.trim()) {
         detailRowsHtml += `
             <div class="info-overlay-detail-row">
+                <span class="material-symbols-outlined info-overlay-detail-icon">info</span>
                 <span class="info-overlay-detail-label">Info</span>
                 <span class="info-overlay-detail-value">${location.details}</span>
             </div>`;
@@ -1220,36 +1359,72 @@ function showLocationInfoOverlay(locationId) {
     if (!location.coords) {
         detailRowsHtml += `
             <div class="info-overlay-detail-row">
+                <span class="material-symbols-outlined info-overlay-detail-icon">location_off</span>
                 <span class="info-overlay-detail-label">Lokasi</span>
                 <span class="info-overlay-detail-value" style="color:#DC143C;">Koordinat tidak tersedia di peta</span>
             </div>`;
     }
 
+    // Title lines under the name: short code, then type (tappable to filter).
+    const shortLineHtml = (location.shortForm && location.shortForm.trim())
+        ? `<div class="info-overlay-subline">Singkatan: <b>${location.shortForm}</b></div>`
+        : '';
+    const typeLineHtml = (location.locationType && location.locationType.trim())
+        ? `<div class="info-overlay-subline"><button class="info-overlay-category-badge info-overlay-category-link">${location.locationType}</button></div>`
+        : '';
+
     const directionsHtml = location.googleMapLink
-        ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions"><span class="material-symbols-outlined">directions</span>Buka di Google Maps</a>`
+        ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions info-action"><span class="material-symbols-outlined">directions</span><span class="info-action-label">Maps</span></a>`
         : '';
 
     const directionsToHereHtml = location.coords
-        ? `<button class="info-overlay-directions info-overlay-directions-to-here"><span class="material-symbols-outlined">route</span>Dapatkan Arah</button>`
+        ? `<button class="info-overlay-directions-to-here info-action info-action-primary"><span class="material-symbols-outlined">route</span><span class="info-action-label">Arah</span></button>`
         : '';
 
-    const shareHtml = `<button class="info-overlay-share"><span class="material-symbols-outlined">link</span>Salin Pautan</button>`;
+    const shareHtml = `<button class="info-overlay-share info-action"><span class="material-symbols-outlined">link</span><span class="info-action-label">Kongsi</span></button>`;
+
+    const saveHtml = `<button class="info-overlay-save info-action"><span class="material-symbols-outlined">bookmark</span><span class="info-action-label">Simpan</span></button>`;
+
+    const nearbyHtml = location.coords
+        ? `<button class="info-overlay-nearby info-action"><span class="material-symbols-outlined">near_me</span><span class="info-action-label">Dekat</span></button>`
+        : '';
 
     const innerHTMLString = `
-        <div class="info-overlay-header">
-            <button class="info-overlay-back">
-                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-            </button>
-            <span class="info-overlay-number-badge" style="background:${bgColor}; color:${textColor};">${location.number}</span>
-            <h3>${location.place}</h3>
-            <button class="info-overlay-close">×</button>
-        </div>
         <div class="info-overlay-content">
-            ${imageHtml}
+            <div class="info-overlay-image-wrap">
+                <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}"
+                     onload="this.style.opacity='1';this.nextElementSibling.style.opacity='0';"
+                     onerror="
+                       if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
+                       else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
+                       else{this.style.opacity='0';}
+                     " />
+                <div class="info-overlay-image-placeholder">
+                    <span class="material-symbols-outlined">hide_image</span>
+                    <span>Tiada Gambar</span>
+                </div>
+                <button class="info-overlay-back" aria-label="Kembali">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </button>
+                <button class="info-overlay-close" aria-label="Tutup">×</button>
+            </div>
+            <div class="info-overlay-title">
+                <span class="info-overlay-number-badge" style="background:${bgColor}; color:${textColor};">${location.number}</span>
+                <div class="info-overlay-title-text">
+                    <h3>${location.place}</h3>
+                    ${shortLineHtml}
+                    ${typeLineHtml}
+                </div>
+            </div>
+            <div class="info-overlay-actions">
+                ${directionsToHereHtml}
+                ${saveHtml}
+                ${nearbyHtml}
+                ${directionsHtml}
+                ${shareHtml}
+            </div>
             ${detailRowsHtml ? `<div class="info-overlay-details">${detailRowsHtml}</div>` : ''}
-            ${directionsHtml}
-            ${directionsToHereHtml}
-            ${shareHtml}
+            <a class="info-overlay-suggest" href="/feedback/kgb/map/report.html"><span class="material-symbols-outlined">edit</span>Cadang pembetulan</a>
         </div>
     `;
 
@@ -1277,8 +1452,16 @@ function showLocationInfoOverlay(locationId) {
                     rebuildPinMarkers(mapData.filter(l => l.locationType === currentActiveCategory && l.coords));
                     updateURL({ type: currentActiveCategory });
                     currentOverlaySource = null;
+                } else if (currentOverlaySource === 'saved') {
+                    // Saved overlay is still in DOM — restore saved pins, keep URL clean
+                    currentSelectedLocationId = null;
+                    const savedIds = getSavedIds();
+                    rebuildPinMarkers(mapData.filter(l => savedIds.includes(l.id) && l.coords));
+                    updateURL();
+                    currentOverlaySource = null;
                 } else {
-                    updateURL({ type: currentActiveCategory || null });
+                    // Saved filter is not a shareable ?type= — clear it from the URL
+                    updateURL({ type: DESIRED_ORDER.includes(currentActiveCategory) ? currentActiveCategory : null });
                 }
             });
         }
@@ -1304,12 +1487,36 @@ function showLocationInfoOverlay(locationId) {
             shareBtn.addEventListener('click', () => copyToClipboard(window.location.href));
         }
 
+        const saveBtn = overlayEl.querySelector('.info-overlay-save');
+        if (saveBtn) {
+            if (getSavedIds().includes(location.id)) saveBtn.classList.add('saved');
+            saveBtn.addEventListener('click', () => {
+                const cur = getSavedIds();
+                if (cur.includes(location.id)) {
+                    setSavedIds(cur.filter(i => i !== location.id));
+                    saveBtn.classList.remove('saved');
+                    showToast('Dibuang dari simpanan');
+                } else {
+                    cur.push(location.id);
+                    setSavedIds(cur);
+                    saveBtn.classList.add('saved');
+                    showToast('Disimpan — lihat di butang Disimpan');
+                }
+            });
+        }
+
+        const nearbyBtn = overlayEl.querySelector('.info-overlay-nearby');
+        if (nearbyBtn) {
+            nearbyBtn.addEventListener('click', () => showNearbyOverlay(location.id));
+        }
+
         const directionsToHereBtn = overlayEl.querySelector('.info-overlay-directions-to-here');
         if (directionsToHereBtn) {
             directionsToHereBtn.addEventListener('click', () => {
                 dismissOverlay();
+                // End = this location, Start = empty (user picks: place, label, or GPS row).
+                // No surprise geolocation prompt; GPS stays one tap away in the dropdown.
                 openDirectionsPanel({
-                    start: { type: 'gps', coords: null, label: 'Lokasi Saya (GPS)' },
                     end: { type: 'location', id: location.id, coords: location.coords, label: location.place },
                 });
             });
@@ -1320,6 +1527,7 @@ function showLocationInfoOverlay(locationId) {
 
     if (existingOverlay) {
         // Update in place: cross-fade so sidebar never shows through
+        placeInfoOverlay(existingOverlay); // reparent if breakpoint crossed while open
         existingOverlay.style.transition = 'opacity 0.12s ease';
         existingOverlay.style.opacity = '0';
         setTimeout(() => {
@@ -1333,13 +1541,147 @@ function showLocationInfoOverlay(locationId) {
         overlay.className = 'stop-info-overlay';
         overlay.innerHTML = innerHTMLString;
         wireButtons(overlay);
-        document.getElementById('sidebar').appendChild(overlay);
+        placeInfoOverlay(overlay);
 
         // On mobile, expand bottom sheet to half height
         if (window.innerWidth <= 768 && sheetElement) {
             sheetElement.style.height = '';
             setSheetState('half');
         }
+    }
+}
+
+// Tier-3 placement: desktop card lives beside the Tier-2 panel as a direct
+// child of .app-container (CSS positions it); mobile stays in the sheet.
+function placeInfoOverlay(overlay) {
+    if (!overlay) return;
+    const target = window.innerWidth <= 768
+        ? document.getElementById('sidebar')
+        : document.querySelector('.app-container');
+    if (target && overlay.parentElement !== target) target.appendChild(overlay);
+}
+
+// ===== NEARBY (5 closest locations by straight-line distance) =====
+
+function showNearbyOverlay(originId) {
+    const origin = mapData.find(l => l.id === originId);
+    const overlayEl = document.querySelector('.stop-info-overlay');
+    if (!origin || !origin.coords || !overlayEl) return;
+    const near = mapData
+        .filter(l => l.coords && l.id !== originId)
+        .map(l => ({ loc: l, d: haversineM(origin.coords, l.coords) }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 5);
+    currentInfoOverlayLocationId = -1; // force re-render on return-to-detail
+    overlayEl.style.transition = 'opacity 0.12s ease';
+    overlayEl.style.opacity = '0';
+    setTimeout(() => {
+        if (!overlayEl.isConnected) return;
+        const rows = near.map(({ loc, d }) => `
+            <button class="nearby-row" data-id="${loc.id}">
+                <span class="info-overlay-number-badge" style="background:${getCategoryColor(loc.locationType)}; color:${getCategoryTextColor(loc.locationType)};">${loc.number}</span>
+                <span class="nearby-name">${loc.place}</span>
+                <span class="nearby-dist">${formatDist(d)}</span>
+            </button>`).join('');
+        overlayEl.innerHTML = `
+            <div class="info-overlay-header">
+                <button class="info-overlay-back nearby-back" aria-label="Kembali">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </button>
+                <h3>Berhampiran ${origin.place}</h3>
+                <button class="info-overlay-close nearby-close" aria-label="Tutup">×</button>
+            </div>
+            <div class="info-overlay-content">
+                <div class="nearby-list">${rows || '<div class="nearby-empty">Tiada lokasi berkoordinat lain.</div>'}</div>
+            </div>`;
+        overlayEl.style.opacity = '1';
+        overlayEl.querySelector('.nearby-back').onclick = () => {
+            currentInfoOverlayLocationId = null;
+            showLocationInfoOverlay(originId);
+        };
+        overlayEl.querySelector('.nearby-close').onclick = () => {
+            overlayEl.classList.add('closing');
+            overlayEl.addEventListener('animationend', () => {
+                overlayEl.remove();
+                currentInfoOverlayLocationId = null;
+                clearRoute();
+                showAllLocations();
+            }, { once: true });
+        };
+        overlayEl.querySelectorAll('.nearby-row').forEach(row => {
+            row.addEventListener('click', () => showLocationInfoOverlay(parseInt(row.dataset.id, 10)));
+        });
+    }, 120);
+}
+
+// ===== SAVED OVERLAY (Tier-2 list of saved places, mirrors category overlay) =====
+
+function showSavedOverlay() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const locs = mapData.filter(l => getSavedIds().includes(l.id)).sort(customSort);
+
+    let listHtml = '';
+    locs.forEach(loc => {
+        const isNoCoords = !loc.coords;
+        const bgColor = getCategoryColor(loc.locationType);
+        const textColor = getCategoryTextColor(loc.locationType);
+        listHtml += `
+            <button class="category-btn${isNoCoords ? ' no-coords' : ''}" data-loc-id="${loc.id}">
+                <span class="location-number-badge" style="background:${bgColor}; color:${textColor};">${loc.number}</span>
+                <span class="location-place-name">${loc.place}${loc.shortForm && loc.shortForm.trim() ? `<span class="location-short-form"> (${loc.shortForm})</span>` : ''}</span>
+            </button>`;
+    });
+
+    const innerHTMLString = `
+        <div class="category-overlay-header" style="border-left: 6px solid #f9ab00;">
+            <button class="category-overlay-back">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <span class="category-overlay-badge" style="background:#f9ab00; color:black;">★ Disimpan</span>
+            <button class="category-overlay-close">×</button>
+        </div>
+        <div class="category-overlay-subtitle">${locs.length} lokasi disimpan</div>
+        <div class="category-overlay-list">${listHtml}</div>`;
+
+    function wireSavedOverlayButtons(overlayEl) {
+        overlayEl.querySelector('.category-overlay-back').onclick = () => showAllLocations();
+        overlayEl.querySelector('.category-overlay-close').onclick = () => showAllLocations();
+
+        overlayEl.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const locId = parseInt(btn.dataset.locId, 10);
+                const loc = mapData.find(l => l.id === locId);
+                if (!loc) return;
+                currentOverlaySource = 'saved';
+                if (loc.coords) {
+                    if (window.innerWidth > 768) filterByLocation(loc);
+                    else showLocationOnMap(loc);
+                }
+                // filterByLocation/showLocationOnMap reset it — restore saved context
+                currentActiveCategory = SAVED_FILTER;
+                showLocationInfoOverlay(loc.id);
+            });
+        });
+    }
+
+    const existingOverlay = sidebar.querySelector('.stop-category-overlay');
+
+    if (existingOverlay) {
+        // Cross-fade when re-opening (e.g. rail tapped twice via reset path)
+        existingOverlay.style.transition = 'opacity 0.12s ease';
+        existingOverlay.style.opacity = '0';
+        setTimeout(() => {
+            existingOverlay.innerHTML = innerHTMLString;
+            wireSavedOverlayButtons(existingOverlay);
+            existingOverlay.style.opacity = '1';
+        }, 120);
+    } else {
+        const overlay = document.createElement('div');
+        overlay.className = 'stop-category-overlay';
+        overlay.innerHTML = innerHTMLString;
+        wireSavedOverlayButtons(overlay);
+        sidebar.appendChild(overlay);
     }
 }
 
@@ -1659,6 +2001,19 @@ function initDesktopSidebar() {
         e.stopPropagation();
         toggleDesktopSidebar(false);
     });
+
+    // Default: sidebar hidden on desktop load (map-first); rail hamburger toggles it.
+    toggleDesktopSidebar(true);
+
+    // Tier-1 rail wiring (desktop only; rail is display:none on mobile).
+    // Hamburger = settings/info panel, layers icon = category/location panel.
+    // Directions lives in the search bar (desktop) / FAB (mobile) — no rail button.
+    document.getElementById('rail-menu')?.addEventListener('click', () => openInfoMenu());
+    document.getElementById('rail-location')?.addEventListener('click', () => {
+        document.getElementById('my-location-btn')?.click();
+    });
+    document.getElementById('rail-layers')?.addEventListener('click', () => toggleDesktopSidebar());
+    document.getElementById('rail-saved')?.addEventListener('click', () => applySavedFilter());
 }
 
 function toggleDesktopSidebar(collapse) {
@@ -1762,7 +2117,7 @@ function renderSearchResults(term) {
         html += `
             <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                 <div class="result-content">
-                    <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
+                    <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}${getSavedIds().includes(loc.id) ? '<span class="result-saved"> ★</span>' : ''}</div>
                     <div class="result-subtitle">${loc.locationType || ''}</div>
                     ${loc.details ? `<div class="result-detail">${loc.details}</div>` : ''}
                     ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
@@ -1962,6 +2317,7 @@ function handleDeepLink() {
             const cat = DESIRED_ORDER.find(c => slugify(c) === typeSlug);
             if (cat) currentActiveCategory = cat;
         }
+        updateCategoryPills();
     } else if (typeSlug) {
         const cat = DESIRED_ORDER.find(c => slugify(c) === typeSlug);
         if (cat) filterByCategory(cat);
@@ -2038,7 +2394,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html55'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html75'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -2474,6 +2830,7 @@ function setUserLocationVisible(visible) {
                 console.warn('Geolocation error:', err);
                 showUserLocation = false;
                 document.getElementById('my-location-btn')?.classList.remove('active');
+                document.getElementById('rail-location')?.classList.remove('active');
             },
             { enableHighAccuracy: true }
         );
@@ -2580,6 +2937,7 @@ function initMyLocationButton() {
         const next = !showUserLocation;
         setUserLocationVisible(next);
         btn.classList.toggle('active', next);
+        document.getElementById('rail-location')?.classList.toggle('active', next);
     });
 }
 
@@ -3721,6 +4079,7 @@ function bootApp() {
     initDesktopSidebar();
     initSearchDropdown();
     initDirectionsPanel();
+    initCategoryPills();
     initMyLocationButton();
     initFloatingButtonsMobile();
     createClearSearchButton();
@@ -3734,6 +4093,10 @@ window.addEventListener('resize', function () {
     // Pin dot/badge zoom tier follows the mobile/desktop breakpoint.
     refreshPinTiers();
     positionPinPopup();
+
+    // Reparent an open info overlay across the breakpoint (Tier-3 card <-> sheet).
+    const openInfoOverlay = document.querySelector('.stop-info-overlay');
+    if (openInfoOverlay) placeInfoOverlay(openInfoOverlay);
 
     if (window.innerWidth <= 768) {
         initBottomSheet();

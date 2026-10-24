@@ -13,11 +13,11 @@
       "desktop": 17,
       "mobile": 15.5
     },
-    "pitch3D": 70,
+    "pitch3D": 68.5,
     "bearing": -27.2,
     "minZoom": 14,
     "maxZoom": 20,
-    "maxPitch": 70
+    "maxPitch": 68.5
   },
   "pins": {
     "dotZoom": {
