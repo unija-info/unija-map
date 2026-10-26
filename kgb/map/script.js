@@ -65,6 +65,28 @@ function numOr(v, fb) {
     return (typeof v === 'number' && isFinite(v)) ? v : fb;
 }
 
+// Camera knob: plain number = both views, {desktop, mobile} = per-view.
+// Idempotent: running twice over an already-normalized pair keeps it.
+function pairOr(v, fb) {
+    const fbPair = (fb && typeof fb === 'object') ? fb : { desktop: fb, mobile: fb };
+    if (v && typeof v === 'object') return { desktop: numOr(v.desktop, fbPair.desktop), mobile: numOr(v.mobile, fbPair.mobile) };
+    const n = numOr(v, null);
+    if (n !== null) return { desktop: n, mobile: n };
+    return { desktop: fbPair.desktop, mobile: fbPair.mobile };
+}
+
+// Per-view camera picks (evaluated live — resize-safe).
+function viewPitch() {
+    const p = CONFIG.view.pitch3D;
+    const pair = (p && typeof p === 'object') ? p : { desktop: p, mobile: p };
+    return numOr(window.innerWidth <= 768 ? pair.mobile : pair.desktop, DEFAULT_PITCH_3D);
+}
+function viewBearing() {
+    const b = CONFIG.view.bearing;
+    const pair = (b && typeof b === 'object') ? b : { desktop: b, mobile: b };
+    return numOr(window.innerWidth <= 768 ? pair.mobile : pair.desktop, 0);
+}
+
 function applyAppConfig(json) {
     if (!json || typeof json !== 'object') return;
     try {
@@ -73,8 +95,8 @@ function applyAppConfig(json) {
         if (Array.isArray(v.mobileCenter) && v.mobileCenter.length === 2) CONFIG.view.mobileCenter = [numOr(v.mobileCenter[0], CONFIG.view.mobileCenter[0]), numOr(v.mobileCenter[1], CONFIG.view.mobileCenter[1])];
         CONFIG.view.zoom.desktop = numOr(v.zoom && v.zoom.desktop, CONFIG.view.zoom.desktop);
         CONFIG.view.zoom.mobile = numOr(v.zoom && v.zoom.mobile, CONFIG.view.zoom.mobile);
-        CONFIG.view.pitch3D = numOr(v.pitch3D, CONFIG.view.pitch3D);
-        CONFIG.view.bearing = numOr(v.bearing, CONFIG.view.bearing);
+        CONFIG.view.pitch3D = pairOr(v.pitch3D, CONFIG.view.pitch3D);
+        CONFIG.view.bearing = pairOr(v.bearing, CONFIG.view.bearing);
         CONFIG.view.minZoom = numOr(v.minZoom, CONFIG.view.minZoom);
         CONFIG.view.maxZoom = numOr(v.maxZoom, CONFIG.view.maxZoom);
         CONFIG.view.maxPitch = numOr(v.maxPitch, CONFIG.view.maxPitch);
@@ -874,6 +896,33 @@ function updateCategoryPills() {
         btn.classList.toggle('active', cat === currentActiveCategory);
     });
     syncSavedButton();
+    syncRailState();
+}
+
+// Rail Tier-1 highlight: which panel is open (single sync point).
+// layers = Tier-2 sidebar expanded with list content (never with the docked
+// menu); saved is an independent pins-only filter and co-lights freely.
+// Only layers+menu stay mutually exclusive.
+function syncRailState() {
+    const menuOpen = document.getElementById('info-menu-panel')?.classList.contains('open');
+    const layers = document.getElementById('rail-layers');
+    if (layers) {
+        // Desktop: lit while the Tier-2 sidebar is expanded.
+        // Mobile: lit while the sheet is up (half/full).
+        const isMobile = window.innerWidth <= 768;
+        const desktopOpen = typeof desktopSidebarCollapsed !== 'undefined' ? !desktopSidebarCollapsed : false;
+        const sheetOpen = typeof sheetState !== 'undefined'
+            && (sheetState === 'half' || sheetState === 'full');
+        const open = isMobile ? sheetOpen : desktopOpen;
+        layers.classList.toggle('active', open && !menuOpen);
+        layers.title = open ? 'Tutup senarai lokasi' : 'Senarai lokasi';
+        layers.setAttribute('aria-label', open ? 'Tutup senarai lokasi' : 'Buka senarai lokasi');
+    }
+    const menu = document.getElementById('rail-menu');
+    if (menu) {
+        const open = document.getElementById('info-menu-panel')?.classList.contains('open');
+        menu.classList.toggle('active', !!open);
+    }
 }
 
 // Rail ★ Disimpan icon: active state + count in tooltip (single sync point —
@@ -1196,7 +1245,7 @@ function showAllLocations(animate = true, updateUrl = true) {
         const isMobile = window.innerWidth <= 768;
         const mobileCenter = CONFIG.view.mobileCenter;
         const desktopCenter = CONFIG.view.center;
-        const pitch = (show3D && currentBaseView === 'vector') ? CONFIG.view.pitch3D : 0;
+        const pitch = (show3D && currentBaseView === 'vector') ? viewPitch() : 0;
         if (animate) {
             map.flyTo({ center: isMobile ? mobileCenter : desktopCenter, zoom: isMobile ? CONFIG.view.zoom.mobile : CONFIG.view.zoom.desktop, pitch, duration: 1200 });
         } else {
@@ -1204,10 +1253,10 @@ function showAllLocations(animate = true, updateUrl = true) {
         }
     }
 
-    // Collapse bottom sheet on mobile
+    // Reset to bare map on mobile (sheet fully hidden, like desktop)
     if (window.innerWidth <= 768 && sheetElement) {
         sheetElement.style.height = '';
-        setSheetState('peek');
+        setSheetState('hidden');
     }
     updatePanRestrictionForState();
 }
@@ -1261,6 +1310,9 @@ function filterByCategory(categoryName) {
     }
 }
 
+// Saved = pins-only filter, fully disconnected from the Tier-2 list/sheet:
+// tapping the bookmark never opens, covers, or collapses any panel —
+// the category list stays exactly as it was. Toggle off = plain show-all.
 function applySavedFilter() {
     if (currentActiveCategory === SAVED_FILTER) { showAllLocations(); return; }
     const ids = getSavedIds();
@@ -1270,26 +1322,18 @@ function applySavedFilter() {
     updateURL();
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
     document.querySelector('.stop-category-overlay')?.remove();
-    // The saved list lives inside the sidebar — open the Tier-2 panel on desktop
-    if (window.innerWidth > 768) toggleDesktopSidebar(false);
     clearMarkers();
     const locs = mapData.filter(loc => ids.includes(loc.id) && loc.coords);
     rebuildPinMarkers(locs);
     const coords = locs.map(loc => loc.coords);
     if (coords.length > 0) {
         if (window.innerWidth <= 768) {
-            const bottomPad = Math.round(window.innerHeight * 0.5) + 20;
-            fitCoordsToMap(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, bottomPad], maxZoom: 18, duration: 1200 });
+            fitCoordsToMap(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, 140], maxZoom: 18, duration: 1200 });
         } else {
             fitCoordsToMap(coords, { padding: getMapPadding(), maxZoom: 18, duration: 1200 });
         }
     }
-    showSavedOverlay();
     updateCategoryPills();
-    if (window.innerWidth <= 768 && sheetElement) {
-        sheetElement.style.height = '';
-        setSheetState('half');
-    }
 }
 
 function filterByLocation(location) {
@@ -1330,6 +1374,11 @@ function showLocationOnMap(location) {
 
 function showLocationInfoOverlay(locationId) {
     if (currentInfoOverlayLocationId === locationId) return;
+    // Cards live in the sheet on mobile — unhide it (peek) if buried.
+    if (window.innerWidth <= 768 && sheetElement && sheetState === 'hidden') {
+        sheetElement.style.height = '';
+        setSheetState('peek');
+    }
     clearRoute();
 
     const location = mapData.find(l => l.id === locationId);
@@ -1451,13 +1500,6 @@ function showLocationInfoOverlay(locationId) {
                     currentSelectedLocationId = null;
                     rebuildPinMarkers(mapData.filter(l => l.locationType === currentActiveCategory && l.coords));
                     updateURL({ type: currentActiveCategory });
-                    currentOverlaySource = null;
-                } else if (currentOverlaySource === 'saved') {
-                    // Saved overlay is still in DOM — restore saved pins, keep URL clean
-                    currentSelectedLocationId = null;
-                    const savedIds = getSavedIds();
-                    rebuildPinMarkers(mapData.filter(l => savedIds.includes(l.id) && l.coords));
-                    updateURL();
                     currentOverlaySource = null;
                 } else {
                     // Saved filter is not a shareable ?type= — clear it from the URL
@@ -1614,77 +1656,6 @@ function showNearbyOverlay(originId) {
     }, 120);
 }
 
-// ===== SAVED OVERLAY (Tier-2 list of saved places, mirrors category overlay) =====
-
-function showSavedOverlay() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    const locs = mapData.filter(l => getSavedIds().includes(l.id)).sort(customSort);
-
-    let listHtml = '';
-    locs.forEach(loc => {
-        const isNoCoords = !loc.coords;
-        const bgColor = getCategoryColor(loc.locationType);
-        const textColor = getCategoryTextColor(loc.locationType);
-        listHtml += `
-            <button class="category-btn${isNoCoords ? ' no-coords' : ''}" data-loc-id="${loc.id}">
-                <span class="location-number-badge" style="background:${bgColor}; color:${textColor};">${loc.number}</span>
-                <span class="location-place-name">${loc.place}${loc.shortForm && loc.shortForm.trim() ? `<span class="location-short-form"> (${loc.shortForm})</span>` : ''}</span>
-            </button>`;
-    });
-
-    const innerHTMLString = `
-        <div class="category-overlay-header" style="border-left: 6px solid #f9ab00;">
-            <button class="category-overlay-back">
-                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-            </button>
-            <span class="category-overlay-badge" style="background:#f9ab00; color:black;">★ Disimpan</span>
-            <button class="category-overlay-close">×</button>
-        </div>
-        <div class="category-overlay-subtitle">${locs.length} lokasi disimpan</div>
-        <div class="category-overlay-list">${listHtml}</div>`;
-
-    function wireSavedOverlayButtons(overlayEl) {
-        overlayEl.querySelector('.category-overlay-back').onclick = () => showAllLocations();
-        overlayEl.querySelector('.category-overlay-close').onclick = () => showAllLocations();
-
-        overlayEl.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const locId = parseInt(btn.dataset.locId, 10);
-                const loc = mapData.find(l => l.id === locId);
-                if (!loc) return;
-                currentOverlaySource = 'saved';
-                if (loc.coords) {
-                    if (window.innerWidth > 768) filterByLocation(loc);
-                    else showLocationOnMap(loc);
-                }
-                // filterByLocation/showLocationOnMap reset it — restore saved context
-                currentActiveCategory = SAVED_FILTER;
-                showLocationInfoOverlay(loc.id);
-            });
-        });
-    }
-
-    const existingOverlay = sidebar.querySelector('.stop-category-overlay');
-
-    if (existingOverlay) {
-        // Cross-fade when re-opening (e.g. rail tapped twice via reset path)
-        existingOverlay.style.transition = 'opacity 0.12s ease';
-        existingOverlay.style.opacity = '0';
-        setTimeout(() => {
-            existingOverlay.innerHTML = innerHTMLString;
-            wireSavedOverlayButtons(existingOverlay);
-            existingOverlay.style.opacity = '1';
-        }, 120);
-    } else {
-        const overlay = document.createElement('div');
-        overlay.className = 'stop-category-overlay';
-        overlay.innerHTML = innerHTMLString;
-        wireSavedOverlayButtons(overlay);
-        sidebar.appendChild(overlay);
-    }
-}
-
 // ===== CATEGORY OVERLAY =====
 
 function showCategoryOverlay(categoryName) {
@@ -1769,7 +1740,7 @@ function showCategoryOverlay(categoryName) {
 }
 
 // ===== MOBILE BOTTOM SHEET =====
-let sheetState = 'peek';
+let sheetState = 'hidden';
 let desktopSidebarCollapsed = false;
 let touchStartY = 0;
 let touchCurrentY = 0;
@@ -1798,7 +1769,23 @@ function initBottomSheet() {
         sheetElement.insertBefore(handle, sheetElement.firstChild);
     }
 
-    sheetElement.classList.add('sheet-peek');
+    // Default: fully hidden (map-first, like the desktop sidebar) — unless a
+    // state class already exists (e.g. crossing the breakpoint with a sheet up).
+    if (!sheetElement.classList.contains('sheet-peek')
+        && !sheetElement.classList.contains('sheet-half')
+        && !sheetElement.classList.contains('sheet-full')
+        && !sheetElement.classList.contains('sheet-hidden')) {
+        setSheetState('hidden');
+    }
+
+    // Sheet × button (mobile only, hidden by CSS on desktop): bury the sheet.
+    // onclick (not addEventListener) so resize re-init can't double-wire.
+    const closeBtn = document.getElementById('sheet-close-btn');
+    if (closeBtn) closeBtn.onclick = function (e) {
+        e.stopPropagation();
+        sheetElement.style.height = '';
+        setSheetState('hidden');
+    };
 
     const actualHandle = sheetElement.querySelector('.sheet-handle');
 
@@ -1851,13 +1838,18 @@ function handleTouchEnd(e) {
     sheetElement.style.transition = '';
     const currentHeight = sheetElement.offsetHeight;
     const heightPercent = (currentHeight / window.innerHeight) * 100;
-    if (heightPercent < 32) {
+    if (heightPercent < 18) {
+        // Deliberate push past the bottom — bury the sheet entirely.
+        sheetElement.style.height = '';
+        setSheetState('hidden');
+    } else if (heightPercent < 32) {
         sheetState = 'peek';
     } else if (heightPercent < 70) {
         sheetState = 'half';
     } else {
         sheetState = 'full';
     }
+    syncRailVisibility();
 }
 
 function handleSheetTap(e) {
@@ -1922,13 +1914,18 @@ function handleContentTouchEnd(e) {
         sheetElement.style.transition = '';
         const currentHeight = sheetElement.offsetHeight;
         const heightPercent = (currentHeight / window.innerHeight) * 100;
-        if (heightPercent < 32) {
+        if (heightPercent < 18) {
+            // Deliberate push past the bottom — bury the sheet entirely.
+            sheetElement.style.height = '';
+            setSheetState('hidden');
+        } else if (heightPercent < 32) {
             sheetState = 'peek';
         } else if (heightPercent < 70) {
             sheetState = 'half';
         } else {
             sheetState = 'full';
         }
+        syncRailVisibility();
     }
     gestureMode = null;
 }
@@ -1961,24 +1958,33 @@ function handleHeaderTouchEnd(e) {
     sheetElement.style.transition = '';
     const currentHeight = sheetElement.offsetHeight;
     const heightPercent = (currentHeight / window.innerHeight) * 100;
-    if (heightPercent < 32) {
+    if (heightPercent < 18) {
+        // Deliberate push past the bottom — bury the sheet entirely.
+        sheetElement.style.height = '';
+        setSheetState('hidden');
+    } else if (heightPercent < 32) {
         sheetState = 'peek';
     } else if (heightPercent < 70) {
         sheetState = 'half';
     } else {
         sheetState = 'full';
     }
+    syncRailVisibility();
 }
 
 function setSheetState(newState) {
     if (!sheetElement) return;
-    sheetElement.classList.remove('sheet-peek', 'sheet-half', 'sheet-full');
+    sheetElement.style.height = '';
+    sheetElement.classList.remove('sheet-peek', 'sheet-half', 'sheet-full', 'sheet-hidden');
     if (newState === 'half') {
         sheetElement.classList.add('sheet-half');
     } else if (newState === 'full') {
         sheetElement.classList.add('sheet-full');
+    } else if (newState === 'hidden') {
+        sheetElement.classList.add('sheet-hidden');
     }
     sheetState = newState;
+    syncRailVisibility();
 }
 
 // ===== DESKTOP SIDEBAR =====
@@ -2002,18 +2008,49 @@ function initDesktopSidebar() {
         toggleDesktopSidebar(false);
     });
 
-    // Default: sidebar hidden on desktop load (map-first); rail hamburger toggles it.
+    // Default: sidebar hidden on desktop load (map-first).
     toggleDesktopSidebar(true);
+}
 
-    // Tier-1 rail wiring (desktop only; rail is display:none on mobile).
-    // Hamburger = settings/info panel, layers icon = category/location panel.
-    // Directions lives in the search bar (desktop) / FAB (mobile) — no rail button.
-    document.getElementById('rail-menu')?.addEventListener('click', () => openInfoMenu());
+// Tier-1 rail wiring (both widths: desktop side bar, mobile bottom bar).
+// Hamburger = menu panel, layers = list panel/sheet, saved = saved filter.
+// Location + directions live in the search bar (desktop) / FABs (mobile),
+// so rail-location stays desktop-only (hidden by CSS on mobile).
+function initRail() {
+    // Single-open: menu toggles info, either panel closes the other.
+    const menuBtn = document.getElementById('rail-menu');
+    menuBtn?.addEventListener('click', () => {
+        const open = document.getElementById('info-menu-panel')?.classList.contains('open');
+        if (open) closeInfoMenu();
+        else openInfoMenu();
+    });
     document.getElementById('rail-location')?.addEventListener('click', () => {
         document.getElementById('my-location-btn')?.click();
     });
-    document.getElementById('rail-layers')?.addEventListener('click', () => toggleDesktopSidebar());
+    document.getElementById('rail-layers')?.addEventListener('click', () => {
+        if (window.innerWidth <= 768) toggleMobileSheet();
+        else toggleDesktopSidebar();
+    });
     document.getElementById('rail-saved')?.addEventListener('click', () => applySavedFilter());
+    syncRailVisibility();
+}
+
+// Mobile rail layers button: true toggle — hidden summons the sheet to peek,
+// any open state (peek/half/full) buries it (desktop uses toggleDesktopSidebar).
+function toggleMobileSheet() {
+    if (!sheetElement || window.innerWidth > 768) return;
+    sheetElement.style.height = '';
+    setSheetState(sheetState === 'hidden' ? 'peek' : 'hidden');
+}
+
+// Mobile bottom rail: always visible (Google-Maps rule — topmost chrome,
+// sheet slides under it). Sheet keeps its bottom offset via .rail-visible.
+function syncRailVisibility() {
+    const rail = document.getElementById('rail');
+    if (!rail) return;
+    rail.classList.remove('rail-hidden');
+    if (window.innerWidth <= 768 && sheetElement) sheetElement.classList.add('rail-visible');
+    syncRailState();
 }
 
 function toggleDesktopSidebar(collapse) {
@@ -2022,13 +2059,24 @@ function toggleDesktopSidebar(collapse) {
 
     if (collapse === undefined) collapse = !desktopSidebarCollapsed;
 
+    if (!collapse && window.innerWidth > 768) {
+        // Single-open: shut the docked menu BEFORE expanding, otherwise its
+        // own bare-map collapse would re-collapse after us. No-op unless open.
+        closeInfoMenu();
+    }
+
     desktopSidebarCollapsed = collapse;
 
     if (collapse) {
         sidebar.classList.add('collapsed');
+        // Collapsing hides everything docked in the sidebar — drop menu state
+        // directly (no closeInfoMenu call: no loop, no extra collapse).
+        document.getElementById('info-menu-panel')?.classList.remove('open');
+        document.getElementById('info-menu-backdrop')?.classList.remove('open');
     } else {
         sidebar.classList.remove('collapsed');
     }
+    syncRailState();
 }
 
 // ===== MAP PADDING =====
@@ -2394,7 +2442,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html75'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html87'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -2634,7 +2682,7 @@ function ensureCustomStyleLayers() {
     if (currentBaseView === 'vector') {
         addDetailLayers();
         add3DBuildingsLayer();
-        map.easeTo({ pitch: show3D ? CONFIG.view.pitch3D : 0, duration: 300 });
+        map.easeTo({ pitch: show3D ? viewPitch() : 0, duration: 300 });
     } else {
         map.easeTo({ pitch: 0, duration: 300 });
     }
@@ -2807,7 +2855,7 @@ function setPitch3D(on, persist) {
     const box = document.getElementById('toggle-3d-checkbox');
     if (box) box.checked = show3D;
     if (map && currentBaseView === 'vector') {
-        map.easeTo({ pitch: show3D ? CONFIG.view.pitch3D : 0, duration: 500 });
+        map.easeTo({ pitch: show3D ? viewPitch() : 0, duration: 500 });
     }
 }
 
@@ -2831,6 +2879,9 @@ function setUserLocationVisible(visible) {
                 showUserLocation = false;
                 document.getElementById('my-location-btn')?.classList.remove('active');
                 document.getElementById('rail-location')?.classList.remove('active');
+                showToast(err && err.code === 1
+                    ? 'Akses lokasi ditolak — benarkan akses lokasi untuk pelayar ini.'
+                    : 'Gagal mengesan lokasi anda.');
             },
             { enableHighAccuracy: true }
         );
@@ -2915,7 +2966,7 @@ function focusMapOnUserLocation(coords) {
         flyToMarker(coords);
         if (sheetElement) {
             sheetElement.style.height = '';
-            setSheetState('peek');
+            setSheetState('hidden');
         }
     } else {
         const basePadding = getMapPadding();
@@ -2934,6 +2985,13 @@ function initMyLocationButton() {
     const btn = document.getElementById('my-location-btn');
     if (!btn) return;
     btn.addEventListener('click', () => {
+        // Geolocation is a secure-context API: on plain-HTTP test servers
+        // (e.g. LAN IP) navigator.geolocation is undefined. Fail loudly
+        // instead of lighting the button with no dot.
+        if (!navigator.geolocation) {
+            showToast('GPS perlukan HTTPS — butang lokasi hanya berfungsi di laman sebenar, bukan server ujian HTTP.');
+            return;
+        }
         const next = !showUserLocation;
         setUserLocationVisible(next);
         btn.classList.toggle('active', next);
@@ -3614,8 +3672,8 @@ function initMap() {
         style: currentBaseView === 'satellite' ? SATELLITE_STYLE : VECTOR_STYLE_URL,
         center: isMobileInit ? CONFIG.view.mobileCenter : CONFIG.view.center,
         zoom: isMobileInit ? CONFIG.view.zoom.mobile : CONFIG.view.zoom.desktop,
-        pitch: currentBaseView === 'vector' && show3D ? CONFIG.view.pitch3D : 0,
-        bearing: CONFIG.view.bearing,
+        pitch: currentBaseView === 'vector' && show3D ? viewPitch() : 0,
+        bearing: viewBearing(),
         maxPitch: CONFIG.view.maxPitch,
         minZoom: CONFIG.view.minZoom,
         maxZoom: CONFIG.view.maxZoom,
@@ -3736,9 +3794,10 @@ function initMap() {
     map.on('click', function () {
         hidePinPopup();
         setMarkerHighlight(null);
-        if (window.innerWidth <= 768 && sheetElement && sheetState !== 'peek') {
+        // Empty-map tap dismisses the sheet to bare map (Google-Maps gesture).
+        if (window.innerWidth <= 768 && sheetElement && sheetState !== 'hidden') {
             sheetElement.style.height = '';
-            setSheetState('peek');
+            setSheetState('hidden');
         }
     });
 
@@ -4031,25 +4090,34 @@ async function fetchMapDataInfo() {
 
 function openInfoMenu() {
     const panel = document.getElementById('info-menu-panel');
-    // On desktop, align popup with the search bar's current left position
     if (window.innerWidth > 768) {
+        // Docked mode: the menu lives inside the Tier-2 sidebar like every
+        // other panel. Moving the node preserves its listeners and IDs.
         const sidebar = document.getElementById('sidebar');
-        const isCollapsed = sidebar && sidebar.classList.contains('collapsed');
-        panel.style.left = isCollapsed ? '70px' : '420px';
+        if (sidebar && panel.parentElement !== sidebar) sidebar.appendChild(panel);
+        panel.style.left = '';
+        toggleDesktopSidebar(false); // expand; its closeInfoMenu() is a no-op here
+        panel.classList.add('open');
+        // No backdrop / body lock on desktop — the menu is just sidebar content.
     } else {
         panel.style.left = '';
-    }
-    panel.classList.add('open');
-    document.getElementById('info-menu-backdrop').classList.add('open');
-    if (window.innerWidth <= 768) {
+        panel.classList.add('open');
+        document.getElementById('info-menu-backdrop').classList.add('open');
         document.body.style.overflow = 'hidden';
     }
+    syncRailState();
 }
 
 function closeInfoMenu() {
-    document.getElementById('info-menu-panel').classList.remove('open');
+    const panel = document.getElementById('info-menu-panel');
+    const wasOpen = panel.classList.contains('open');
+    panel.classList.remove('open');
     document.getElementById('info-menu-backdrop').classList.remove('open');
     document.body.style.overflow = '';
+    // The menu opened the sidebar to dock — closing it returns to bare map.
+    // Guarded by wasOpen so toggleDesktopSidebar's own single-open call can't loop.
+    if (wasOpen && window.innerWidth > 768) toggleDesktopSidebar(true);
+    syncRailState();
 }
 
 // ===== EVENT WIRING =====
@@ -4077,6 +4145,7 @@ function bootApp() {
     initMap();
     initBottomSheet();
     initDesktopSidebar();
+    initRail();
     initSearchDropdown();
     initDirectionsPanel();
     initCategoryPills();
@@ -4098,6 +4167,13 @@ window.addEventListener('resize', function () {
     const openInfoOverlay = document.querySelector('.stop-info-overlay');
     if (openInfoOverlay) placeInfoOverlay(openInfoOverlay);
 
+    // The menu docks inside the sidebar on desktop only — move it back to the
+    // body when crossing to mobile so the right-side slide-in keeps working.
+    if (window.innerWidth <= 768) {
+        const panel = document.getElementById('info-menu-panel');
+        if (panel && panel.parentElement !== document.body) document.body.appendChild(panel);
+    }
+
     if (window.innerWidth <= 768) {
         initBottomSheet();
         initFloatingButtonsMobile();
@@ -4108,4 +4184,5 @@ window.addEventListener('resize', function () {
         }
         positionMyLocationButtonDesktop();
     }
+    syncRailVisibility();
 });

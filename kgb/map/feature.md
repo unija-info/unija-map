@@ -39,7 +39,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 * Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar besar, diikuti nama, baris singkatan dan baris kategori (tekan kategori untuk menapis), dan info tambahan. Pin yang dipilih membesar sedikit dengan ring putih, dan **bangunannya bertukar hijau-teal** supaya senang kenal.
 * Baris butang bulat di bawah gambar: **Arah** (buka panel arah ke sini), **Simpan** (tandai tempat — jadi emas, kekal walaupun tutup aplikasi), **Dekat** (5 tempat paling hampir berserta jarak), **Maps** (buka lokasi dalam aplikasi Google Maps) dan **Kongsi** (salin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut).
-* Ikon **★ Disimpan** di bar sisi kiri (dengan kiraan dalam tooltip) menapis peta kepada tempat simpanan anda sahaja dan membuka senarai simpanan; senarai dan hasil carian menandakan tempat simpanan dengan ★ emas.
+* Ikon **★ Disimpan** di bar sisi kiri (dengan kiraan dalam tooltip) menapis peta kepada tempat simpanan anda sahaja — senarai kategori tidak terusik; senarai dan hasil carian menandakan tempat simpanan dengan ★ emas.
 * Pautan **Cadang pembetulan** di bawah kad untuk melaporkan maklumat yang salah atau tidak terkini.
 
 ## 6. Dapatkan Arah (Jalan Kaki / Memandu)
@@ -62,7 +62,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 ## 9. Paparan Telefon vs Komputer
 
-* **Telefon**: senarai duduk dalam panel bawah yang boleh diseret (intai → separuh → penuh). Ketik pemegang untuk menukar saiz. Semasa panel penuh, butang lokasi/arahan duduk di belakang panel supaya tidak mengganggu.
+* **Telefon**: senarai duduk dalam panel bawah yang boleh diseret (intai → separuh → penuh) dan disorok penuh — seret ke bawah melepasi intai, ketik peta kosong, atau tutup kad; ketik ikon lapisan untuk memanggilnya semula. Semasa panel penuh, ia menutup carian dan pil kategori (kekal bar bawah sahaja); butang lokasi/arahan duduk di belakang panel supaya tidak mengganggu.
 * **Komputer**: bar sisi boleh dikuncup/dikembangkan dengan butang anak panah; bar carian mengikut kedudukannya.
 
 ## 10. Perkara Baik Untuk Tahu

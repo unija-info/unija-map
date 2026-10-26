@@ -6,15 +6,21 @@
       5.39963
     ],
     "mobileCenter": [
-      103.07978857810325,
-      5.4030603222603855
+      103.08038,
+      5.39884
     ],
     "zoom": {
       "desktop": 17,
-      "mobile": 15.5
+      "mobile": 15.81
     },
-    "pitch3D": 68.5,
-    "bearing": -27.2,
+    "pitch3D": {
+      "desktop": 68.5,
+      "mobile": 62.6
+    },
+    "bearing": {
+      "desktop": -27.2,
+      "mobile": -56.9
+    },
     "minZoom": 14,
     "maxZoom": 20,
     "maxPitch": 68.5
