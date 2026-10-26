@@ -70,3 +70,9 @@ validation, (b) PMTiles KGB cut served locally, (c) worker router prototype.
   and hides the OFM layer for A/B; `serve.py` gained single-range 206
   support (stock `http.server` ignores Range — LAN spike testing needs it).
   Verified: 206 + correct Content-Range locally. Awaiting on-device A/B.
+- PARKED 2026-10-26: owner edited one building in OSM; recut waits on planet
+  build `20261026` (latest is still `20261025`, predates the edit — recutting
+  now would be byte-identical). On "go": extract same bbox from the new
+  build, verify replication time covers the edit, copy over
+  `basemap/kgb.pmtiles`, push; remind owner the way needs `height=*` or
+  `building:levels=*` or it extrudes at the 8 m fallback.
