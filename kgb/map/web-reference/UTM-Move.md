@@ -64,3 +64,9 @@ validation, (b) PMTiles KGB cut served locally, (c) worker router prototype.
 - Open question remains the far-field: cut ends at the bbox edge, so
   Kubang Ikan context becomes void (our dim-mask becomes redundant).
 - Next: serve the cut + port the extrusion layer + screenshot on-device.
+- Wired 2026-10-26 (`?pmtiles=1`, `html88`): `basemap/kgb.pmtiles` (839 KB)
+  + vendored pmtiles.js 4.5.0 committed; `add3DBuildingsLayer` adds
+  `3d-buildings-pmtiles` (source-layer `buildings`, `height`/`min_height`)
+  and hides the OFM layer for A/B; `serve.py` gained single-range 206
+  support (stock `http.server` ignores Range — LAN spike testing needs it).
+  Verified: 206 + correct Content-Range locally. Awaiting on-device A/B.

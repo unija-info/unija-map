@@ -24,6 +24,7 @@ Stop with Ctrl+C.
 
 import argparse
 import json
+import os
 import socket
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -41,6 +42,39 @@ class DevHandler(SimpleHTTPRequestHandler):
         if p.endswith(NO_CACHE_EXTS) or p.endswith("/"):  # "/" serves index.html
             self.send_header("Cache-Control", "no-store")
         super().end_headers()
+
+    def do_GET(self):
+        # Single-range support (PMTiles spike: the client fetches byte ranges;
+        # stock SimpleHTTPRequestHandler ignores them). Falls back to stdlib.
+        rng = self.headers.get("Range")
+        if rng and rng.startswith("bytes="):
+            try:
+                first, _, last = rng[6:].partition("-")
+                start = int(first) if first else 0
+            except ValueError:
+                return super().do_GET()
+            path = self.translate_path(self.path)
+            if not os.path.isfile(path):
+                return super().do_GET()
+            size = os.path.getsize(path)
+            end = min(int(last) if last else size - 1, size - 1)
+            if start >= size or end < start:
+                return super().do_GET()
+            with open(path, "rb") as f:
+                f.seek(start)
+                data = f.read(end - start + 1)
+            self.send_response(206)
+            self.send_header("Content-Type", self.guess_type(path))
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Accept-Ranges", "bytes")
+            self.end_headers()
+            try:
+                self.wfile.write(data)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
+        return super().do_GET()
 
 
 def lan_ip():

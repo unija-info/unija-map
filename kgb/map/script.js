@@ -2442,7 +2442,10 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html87'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+// Spike (exp/utm-spike): ?pmtiles=1 extrudes from the self-hosted KGB cut
+// instead of OpenFreeMap. Survives in-map navigation like the debug flags.
+const PMTILES_MODE = (() => { try { return new URLSearchParams(window.location.search).has('pmtiles'); } catch (e) { return false; } })();
+const APP_VERSION = 'html88'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -2820,6 +2823,44 @@ function add3DBuildingsLayer() {
             },
             labelLayerId || undefined
         );
+        // Spike (exp/utm-spike, ?pmtiles=1): same extrusion from the self-hosted
+        // Protomaps cut — source-layer is `buildings`, heights are `height` /
+        // `min_height` (not OpenMapTiles' `render_height`). Hides the OFM layer
+        // for a clean A/B.
+        try {
+            if (PMTILES_MODE && window.pmtiles && window.maplibregl) {
+                const proto = new window.pmtiles.Protocol();
+                try { window.maplibregl.addProtocol('pmtiles', proto.tile); } catch (e) { /* already registered */ }
+                if (!map.getSource('kgb-pmtiles')) {
+                    map.addSource('kgb-pmtiles', { type: 'vector', url: 'pmtiles:///kgb/map/basemap/kgb.pmtiles' });
+                }
+                if (!map.getLayer('3d-buildings-pmtiles')) {
+                    map.addLayer(
+                        {
+                            id: '3d-buildings-pmtiles',
+                            source: 'kgb-pmtiles',
+                            'source-layer': 'buildings',
+                            type: 'fill-extrusion',
+                            minzoom: 15,
+                            filter: buildingFilter(),
+                            paint: {
+                                'fill-extrusion-color': [
+                                    'interpolate', ['linear'], ['coalesce', ['get', 'height'], 8],
+                                    0, '#d9d9d9', 200, '#b0b8c8', 400, '#9fb2d8',
+                                ],
+                                'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, ['coalesce', ['get', 'height'], 8]],
+                                'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, ['coalesce', ['get', 'min_height'], 0]],
+                                'fill-extrusion-opacity': 0.9,
+                            },
+                        },
+                        labelLayerId || undefined
+                    );
+                }
+                if (map.getLayer('3d-buildings')) map.setLayoutProperty('3d-buildings', 'visibility', 'none');
+            }
+        } catch (err) {
+            console.warn('PMTiles spike layer failed:', err);
+        }
     } catch (err) {
         console.warn('3D buildings layer failed:', err);
     }

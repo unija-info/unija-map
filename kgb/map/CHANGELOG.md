@@ -67,6 +67,7 @@ All notable changes to `kgb/map/` are documented here.
 - **Mobile rail captions (style `html44`)** — Menu/Senarai/Disimpan labels under the icons (Google-Maps style, Malay); buttons become soft tiles, bar grows, sheet offset raised to match; desktop rail icon-only as before; markup + CSS
 - **Desktop rail captions (style `html45`)** — Menu/Lokasi/Senarai/Disimpan labels under all four rail icons; buttons narrow tiles (56px, rail stays 64px so no offset cascade); markup + CSS
 - **Per-view pitch + bearing (`?v=html87`)** — `pitch3D`/`bearing` accept a number (both views, old behavior) or `{desktop, mobile}` via `pairOr` (validated, idempotent); live `viewPitch()`/`viewBearing()` picks feed boot/show-all/3D-toggles; config sets pitch 68.5/30, bearing -27.2/-27.2 (mobile values tunable); config fetch already Date.now-busted; `feature.md` untouched (no user-visible change yet); JS + config
+- **[spike `exp/utm-spike`] PMTiles A/B (`?v=html88`, `?pmtiles=1`)** — vendored pmtiles.js 4.5.0 + `basemap/kgb.pmtiles` (839 KB KGB cut); `3d-buildings-pmtiles` extrusion (`height`/`min_height` port) hides OFM layer for clean A/B; `serve.py` single-range 206 support for LAN testing; findings in `web-reference/UTM-Move.md`
 
 ### Changed/Removed
 - **Removed Leaflet** — CDN, panes (`campusMarkerPane`, `routeLinePane`, …), `L.divIcon` tooltips, and custom mobile double-tap gestures gone; boundary/route/GPS-accuracy are GeoJSON sources (re-added automatically after every `setStyle`), and mobile uses MapLibre native gestures
