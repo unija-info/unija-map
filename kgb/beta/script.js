@@ -143,7 +143,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const mapLink = document.createElement('p');
         mapLink.className = 'location-link';
-        mapLink.innerHTML = `<a href="${loc.googleMapLink}" target="_blank" rel="noopener noreferrer">View on Google Maps</a>`;
+        // Compat: full URL passes through, bare "lat,lng" gets the Google prefix.
+        const rawLink = loc.googleMapLink || '';
+        const gHref = rawLink.indexOf('http') === 0 ? rawLink : (rawLink ? 'https://maps.google.com/?q=' + rawLink : '');
+        mapLink.innerHTML = `<a href="${gHref}" target="_blank" rel="noopener noreferrer">View on Google Maps</a>`;
         itemDiv.appendChild(mapLink);
         return itemDiv;
     }

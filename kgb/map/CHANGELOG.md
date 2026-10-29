@@ -4,6 +4,11 @@ All notable changes to `kgb/map/` are documented here.
 
 ---
 
+## [2.10] — 2026-10-29
+
+### Added
+- **Bare-coords compat (`?v=coord1`)** — `googleMapLink` now accepts bare `lat,lng` as well as the full `https://maps.google.com/?q=lat,lng` URL: `parseCoords()` falls back to the raw string when no `?q=` is present; the card's "Buka di Google Maps" builds its URL from `coords` first (raw link as fallback); hub lists (`kgb/`, `kgb/beta/`) prefix bare values with the Google URL. No behavior change for existing full-URL rows. Groundwork for the Sheet's coords-only migration + Google/Apple/Waze chooser (beta).
+
 ## [2.9] — 2026-05-06
 
 ### Added

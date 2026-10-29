@@ -99,9 +99,9 @@ function getCategoryTextColor(lt) {
 
 function parseCoords(googleMapLink) {
     if (!googleMapLink || typeof googleMapLink !== 'string') return null;
+    // Sheet compat: full Google URL (?q=lat,lng) or bare "lat,lng" both work.
     const qIndex = googleMapLink.indexOf('?q=');
-    if (qIndex === -1) return null;
-    const coordStr = googleMapLink.slice(qIndex + 3);
+    const coordStr = (qIndex === -1 ? googleMapLink.trim() : googleMapLink.slice(qIndex + 3));
     const parts = coordStr.split(',');
     if (parts.length < 2) return null;
     const lat = parseFloat(parts[0]);
@@ -604,7 +604,11 @@ function showLocationInfoOverlay(locationId) {
 
     const bgColor = getCategoryColor(location.locationType);
     const textColor = getCategoryTextColor(location.locationType);
-    const googleUrl = location.googleMapLink || '#';
+    // Compat: prefer coords-built URL (works with bare "lat,lng" Sheet values),
+    // fall back to the raw Sheet link.
+    const googleUrl = location.coords
+        ? `https://maps.google.com/?q=${location.coords[0]},${location.coords[1]}`
+        : (location.googleMapLink || '#');
 
     const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
     const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
@@ -657,7 +661,7 @@ function showLocationInfoOverlay(locationId) {
             </div>`;
     }
 
-    const directionsHtml = location.googleMapLink
+    const directionsHtml = (location.coords || location.googleMapLink)
         ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions"><span class="material-symbols-outlined">directions</span>Buka di Google Maps</a>`
         : '';
 
