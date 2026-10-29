@@ -38,7 +38,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 ## 5. Maklumat Sesuatu Tempat
 
 * Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar besar, diikuti nama, baris singkatan dan baris kategori (tekan kategori untuk menapis), dan info tambahan. Pin yang dipilih membesar sedikit dengan ring putih, dan **bangunannya bertukar hijau-teal** supaya senang kenal.
-* Baris butang bulat di bawah gambar: **Arah** (buka panel arah ke sini), **Simpan** (tandai tempat — jadi emas, kekal walaupun tutup aplikasi), **Dekat** (5 tempat paling hampir berserta jarak), **Maps** (buka lokasi dalam aplikasi Google Maps) dan **Kongsi** (salin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut).
+* Baris butang bulat di bawah gambar: **Arah** (buka panel arah ke sini), **Simpan** (tandai tempat — jadi emas, kekal walaupun tutup aplikasi), **Dekat** (5 tempat paling hampir berserta jarak), **Maps** (pilih aplikasi — Google Maps, Apple Maps atau Waze — pautan dibina dari koordinat pin, bukan lagi pautan tetap dalam helaian data) dan **Kongsi** (salin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut).
 * Ikon **★ Disimpan** di bar sisi kiri (dengan kiraan dalam tooltip) menapis peta kepada tempat simpanan anda sahaja — senarai kategori tidak terusik; senarai dan hasil carian menandakan tempat simpanan dengan ★ emas.
 * Pautan **Cadang pembetulan** di bawah kad untuk melaporkan maklumat yang salah atau tidak terkini.
 

@@ -1034,9 +1034,9 @@ function initCategoryPills() {
 
 function parseCoords(googleMapLink) {
     if (!googleMapLink || typeof googleMapLink !== 'string') return null;
+    // Sheet compat: full Google URL (?q=lat,lng) or bare "lat,lng" both work.
     const qIndex = googleMapLink.indexOf('?q=');
-    if (qIndex === -1) return null;
-    const coordStr = googleMapLink.slice(qIndex + 3);
+    const coordStr = (qIndex === -1 ? googleMapLink.trim() : googleMapLink.slice(qIndex + 3));
     const parts = coordStr.split(',');
     if (parts.length < 2) return null;
     const lat = parseFloat(parts[0]);
@@ -1370,6 +1370,65 @@ function showLocationOnMap(location) {
     }
 }
 
+// ===== EXTERNAL MAPS CHOOSER (Google / Apple / Waze) =====
+
+// All three links built from the same parsed coords (lat,lng) — the Sheet's
+// googleMapLink is no longer used directly. Apple uses the legacy ?ll=&q=
+// form (works on every device + web fallback); unified /place needs iOS 18.4+.
+function externalMapLinks(loc) {
+    if (!loc || !loc.coords) return null;
+    const ll = loc.coords[0] + ',' + loc.coords[1];
+    return {
+        google: 'https://maps.google.com/?q=' + ll,
+        apple: 'https://maps.apple.com/?ll=' + ll + '&q=' + encodeURIComponent(loc.place || ''),
+        waze: 'https://waze.com/ul?ll=' + ll,
+    };
+}
+
+function closeExternalMapsMenu() {
+    const m = document.getElementById('external-maps-menu');
+    if (m) m.remove();
+    document.removeEventListener('pointerdown', onExternalMapsOutside, true);
+    document.removeEventListener('keydown', onExternalMapsKey, true);
+}
+
+function onExternalMapsOutside(e) {
+    const m = document.getElementById('external-maps-menu');
+    if (m && !m.contains(e.target) && !e.target.closest('.info-overlay-maps')) closeExternalMapsMenu();
+}
+
+function onExternalMapsKey(e) {
+    if (e.key === 'Escape') closeExternalMapsMenu();
+}
+
+function toggleExternalMapsMenu(btn, loc) {
+    const existing = document.getElementById('external-maps-menu');
+    if (existing) {
+        const same = existing.dataset.for === String(loc.id);
+        closeExternalMapsMenu();
+        if (same) return;
+    }
+    const links = externalMapLinks(loc);
+    if (!links) return;
+    const menu = document.createElement('div');
+    menu.id = 'external-maps-menu';
+    menu.dataset.for = String(loc.id);
+    menu.innerHTML =
+        `<a href="${links.google}" target="_blank" rel="noopener"><span>Google Maps</span><span class="material-symbols-outlined">open_in_new</span></a>` +
+        `<a href="${links.apple}" target="_blank" rel="noopener"><span>Apple Maps</span><span class="material-symbols-outlined">open_in_new</span></a>` +
+        `<a href="${links.waze}" target="_blank" rel="noopener"><span>Waze</span><span class="material-symbols-outlined">open_in_new</span></a>`;
+    document.body.appendChild(menu);
+    const r = btn.getBoundingClientRect();
+    const mw = 220, mh = 180;
+    menu.style.left = Math.min(Math.max(8, r.left + r.width / 2 - mw / 2), window.innerWidth - mw - 8) + 'px';
+    let top = r.bottom + 8;
+    if (top + mh > window.innerHeight) top = Math.max(8, r.top - mh - 8);
+    menu.style.top = top + 'px';
+    menu.addEventListener('click', (e) => { if (e.target.closest('a')) closeExternalMapsMenu(); });
+    document.addEventListener('pointerdown', onExternalMapsOutside, true);
+    document.addEventListener('keydown', onExternalMapsKey, true);
+}
+
 // ===== INFO OVERLAY =====
 
 function showLocationInfoOverlay(locationId) {
@@ -1380,6 +1439,7 @@ function showLocationInfoOverlay(locationId) {
         setSheetState('peek');
     }
     clearRoute();
+    closeExternalMapsMenu();
 
     const location = mapData.find(l => l.id === locationId);
     if (!location) return;
@@ -1389,7 +1449,6 @@ function showLocationInfoOverlay(locationId) {
 
     const bgColor = getCategoryColor(location.locationType);
     const textColor = getCategoryTextColor(location.locationType);
-    const googleUrl = location.googleMapLink || '#';
 
     const folder = CATEGORY_SLUG[location.locationType] ?? 'lain';
     const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${location.number}`;
@@ -1422,8 +1481,10 @@ function showLocationInfoOverlay(locationId) {
         ? `<div class="info-overlay-subline"><button class="info-overlay-category-badge info-overlay-category-link">${location.locationType}</button></div>`
         : '';
 
-    const directionsHtml = location.googleMapLink
-        ? `<a href="${googleUrl}" target="_blank" class="info-overlay-directions info-action"><span class="material-symbols-outlined">directions</span><span class="info-action-label">Maps</span></a>`
+    // Maps circle opens a chooser (Google / Apple / Waze) built from coords —
+    // no longer the Sheet's hard Google link.
+    const directionsHtml = location.coords
+        ? `<button class="info-overlay-maps info-action"><span class="material-symbols-outlined">directions</span><span class="info-action-label">Maps</span></button>`
         : '';
 
     const directionsToHereHtml = location.coords
@@ -1480,6 +1541,7 @@ function showLocationInfoOverlay(locationId) {
     function wireButtons(overlayEl) {
         // × — fully reset: close overlay + show all locations
         function closeOverlay() {
+            closeExternalMapsMenu();
             overlayEl.classList.add('closing');
             overlayEl.addEventListener('animationend', () => {
                 overlayEl.remove();
@@ -1490,6 +1552,7 @@ function showLocationInfoOverlay(locationId) {
         }
         // ← — dismiss only: close overlay, keep current map state
         function dismissOverlay() {
+            closeExternalMapsMenu();
             overlayEl.classList.add('closing');
             overlayEl.addEventListener('animationend', () => {
                 overlayEl.remove();
@@ -1561,6 +1624,14 @@ function showLocationInfoOverlay(locationId) {
                 openDirectionsPanel({
                     end: { type: 'location', id: location.id, coords: location.coords, label: location.place },
                 });
+            });
+        }
+
+        const mapsBtn = overlayEl.querySelector('.info-overlay-maps');
+        if (mapsBtn) {
+            mapsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleExternalMapsMenu(mapsBtn, location);
             });
         }
     }
@@ -2442,7 +2513,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html87'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html89'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
