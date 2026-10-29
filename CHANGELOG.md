@@ -22,6 +22,7 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Google-Maps-ification of `kgb/map/` UI: category pills row (Semua Kategori + scroll hint) beside/below search, Tier-1 icon rail (menu/location/panel/saved) with sidebar hidden by default, Tier-3 floating detail card that docks to the rail, photo-top card with circular Arah/Simpan/Dekat/Maps/Kongsi actions, Simpan (`localStorage`) + Berhampiran (nearest-5) + saved-list panel, pitch capped 68.5 (horizon band), `Dapatkan Arah` no longer auto-GPS, `APP_VERSION` provenance fix
 - Rail + mobile follow-ups (unmerged): single-open sidetabs + single rail highlight, menu docked in sidebar, mobile bottom rail (3 icons + captions, hideable sheet with `hidden` state, full sheet covers search), saved decoupled to pins-only, per-view pitch/bearing in `config.json`, GPS HTTPS-only honest toasts
 - Hidden `/osm-status` page (unlinked, `noindex`): bilingual BM/EN live map-data status — active TileJSON version, OSM `osm_date` snapshot, next Sunday cutoff + Tuesday release with MYT-first display and countdowns; `osm_date` read via first-party `api/osm-date.js` proxy (btrfs sends no CORS headers; third-party proxies proven unreliable), build-ID-derived estimate as last resort
+- External-maps chooser + bare-coords Sheet compat with per-app brand icons: Maps circle opens Google/Apple/Waze (all built from `coords`, Apple legacy `?ll=&q=`), `parseCoords` takes bare `lat,lng`, chooser rows show true-vector logos (`media/logo/`, wired `html90`)
 
 ---
 

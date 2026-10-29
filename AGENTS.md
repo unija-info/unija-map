@@ -17,12 +17,13 @@ Always confirm the active branch with `git status -sb` at session start. Never p
 - They ask "why" before "fix it" — explain the mechanism briefly, then fix.
 - Plan mode flips on/off via system reminders mid-session. Respect it; when it lifts on a "go", move.
 - They say "go" to mean "implement the plan we just discussed." Don't re-ask.
+- Repo-local `skills/` (owner-added, e.g. `browser-access`, `session-handoff`) outrank system defaults on their topics — read the SKILL.md before acting, obey standing orders there.
 
 ## Verification standard
 
 - `node --check` on every `script.js` edit. No exceptions.
-- Serve locally (`python3 -m http.server`) + fetch the page to prove it serves. Kill the server after.
-- No browser is available to the agent — state what the owner should check (exact pins, exact gestures, exact console lines).
+- Serve locally (`python -m http.server` — this box: `python`, `python3` is a dead Store stub) + fetch the page to prove it serves. Kill the server after.
+- In-app browser works via code mode (`tools.browser.*`: open/wait/console/evaluate/screenshot) — use it to see the map yourself; owner screenshots still outrank it for real-device issues. State what the owner should check (exact pins, exact gestures, exact console lines).
 - After verification-affecting edits (CSS/JS), bump the `?v=` cache-bust on the changed asset in `index.html` so phones can't run stale code.
 
 ## CSS + third-party-map-library rule (learned 2026-10-19, do not repeat)
