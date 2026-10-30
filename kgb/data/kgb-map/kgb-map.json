@@ -113,7 +113,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.398989449556346,103.07758473385337",
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "BPA",
-    "details": "Bendahari / Senat / Comai-e",
+    "details": "Bendahari / Dewan Senat / Comai-e",
     "alias": ""
   },
   {
@@ -130,7 +130,7 @@
     "place": "Bangunan HEPA",
     "googleMapLink": "https://maps.google.com/?q=5.398215354379296,103.07938904298823",
     "locationType": "PENTADBIRAN & PTJ",
-    "shortForm": "",
+    "shortForm": "HEPA",
     "details": "PUSAT TEKNOLOGI MAKLUMAT (PTM)",
     "alias": ""
   },
@@ -169,6 +169,15 @@
     "shortForm": "JKKP",
     "details": "",
     "alias": ""
+  },
+  {
+    "number": "U20",
+    "place": "Bahagian Pengurusan Organisasi Dan Protokol",
+    "googleMapLink": "",
+    "locationType": "PENTADBIRAN & PTJ",
+    "shortForm": "BPOP",
+    "details": "5.401373090553436, 103.07464978628859",
+    "alias": "BPOP"
   },
   {
     "number": "A1",
@@ -383,7 +392,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.400713694598439,103.07570908647985",
     "locationType": "BLOK FAKULTI & PUSAT PENGAJIAN",
     "shortForm": "",
-    "details": "FRIT",
+    "details": "FRIT (Fakulti Rekabentuk Inovatif dan Teknologi)",
     "alias": "Aisyah"
   },
   {
@@ -618,7 +627,7 @@
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "FH",
     "details": "",
-    "alias": ""
+    "alias": "Fathimah"
   },
   {
     "number": "MY",
@@ -645,7 +654,7 @@
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "SH",
     "details": "",
-    "alias": ""
+    "alias": "Saodah"
   },
   {
     "number": "UK",
@@ -690,7 +699,7 @@
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "KD",
     "details": "",
-    "alias": ""
+    "alias": "Khindi"
   },
   {
     "number": "KW",
@@ -712,7 +721,7 @@
   },
   {
     "number": "FR",
-    "place": "Asrama  Farabi",
+    "place": "Asrama Farabi",
     "googleMapLink": "https://maps.google.com/?q=5.401902045585424,103.0793258086188",
     "locationType": "KOLEJ KEDIAMAN",
     "shortForm": "FR",
@@ -739,7 +748,7 @@
   },
   {
     "number": "P3",
-    "place": "Student Hall",
+    "place": "Anjung Ilmu (Student Hall Siswi)",
     "googleMapLink": "https://maps.google.com/?q=5.4041383032718,103.0759282110364",
     "locationType": "PUSAT AKTIVITI",
     "shortForm": "",
@@ -838,12 +847,12 @@
   },
   {
     "number": "S10",
-    "place": "Kandang Kuda",
+    "place": "Kandang Kuda (Equine Stable)",
     "googleMapLink": "https://maps.google.com/?q=5.406908042428364,103.08199013964955",
     "locationType": "SUKAN & REKREASI",
     "shortForm": "",
     "details": "",
-    "alias": ""
+    "alias": "equin"
   },
   {
     "number": "S11",
@@ -878,7 +887,7 @@
     "googleMapLink": "https://maps.google.com/?q=5.397451555252221,103.07787618685718",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
-    "details": "ZUS, D'Apple Fried Chicken (DAFC)",
+    "details": "ZUS, D'Apple Fried Chicken (DAFC), Mixue",
     "alias": ""
   },
   {
@@ -901,12 +910,12 @@
   },
   {
     "number": "C4",
-    "place": "Cafeteria FKI",
+    "place": "D Qalbu Cafeteria FKI",
     "googleMapLink": "https://maps.google.com/?q=5.400837831490066,103.07707644040742",
     "locationType": "CAFE & MAKANAN",
     "shortForm": "",
     "details": " ",
-    "alias": ""
+    "alias": "DQalbu"
   },
   {
     "number": "C5",
@@ -973,16 +982,16 @@
   },
   {
     "number": "I2",
-    "place": "SURAU ABIDIN",
+    "place": "Surau Abidin",
     "googleMapLink": "https://maps.google.com/?q=5.399537821752416,103.07746633183956",
     "locationType": "IBADAH",
     "shortForm": "",
     "details": "",
-    "alias": ""
+    "alias": "Musola Abidin, Mussolla Abidin"
   },
   {
     "number": "I3",
-    "place": "SURAU FKI (BLOK E)",
+    "place": "Surau FKI (BLOK E)",
     "googleMapLink": "https://maps.google.com/?q=5.400658074528107,103.0766769497652",
     "locationType": "IBADAH",
     "shortForm": "",
@@ -991,7 +1000,7 @@
   },
   {
     "number": "I4",
-    "place": "SURAU FRIT (BLOK ZAINAB)",
+    "place": "Surau FRIT (BLOK ZAINAB)",
     "googleMapLink": "https://maps.google.com/?q=5.400701449143232,103.07587941560878",
     "locationType": "IBADAH",
     "shortForm": "",
@@ -1000,17 +1009,44 @@
   },
   {
     "number": "I5",
-    "place": "SURAU KHANSA'",
+    "place": "Surau Khansa' ",
     "googleMapLink": "https://maps.google.com/?q=5.403037020008431,103.07834520293117",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": "",
+    "alias": "Kansa"
+  },
+  {
+    "number": "I6",
+    "place": "Surau Tariq",
+    "googleMapLink": "https://maps.google.com/?q=5.404240019193609,103.07841508934193",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": "",
+    "alias": "Musola Tariq, Mussolla Tariq, Toriq, Torik"
+  },
+  {
+    "number": "I7",
+    "place": "Surau Habibah",
+    "googleMapLink": "https://maps.google.com/?q=5.4040935517254605,103.07592601366868",
     "locationType": "IBADAH",
     "shortForm": "",
     "details": "",
     "alias": ""
   },
   {
-    "number": "I6",
-    "place": "SURAU TARIQ",
-    "googleMapLink": "https://maps.google.com/?q=5.404240019193609,103.07841508934193",
+    "number": "I8",
+    "place": "Surau Saudah",
+    "googleMapLink": "https://maps.google.com/?q=5.402378071869425,103.07651920758302",
+    "locationType": "IBADAH",
+    "shortForm": "",
+    "details": "",
+    "alias": "Saodah"
+  },
+  {
+    "number": "I9",
+    "place": "Surau Farabi",
+    "googleMapLink": "https://maps.google.com/?q=5.402117174891711,103.07921382893097",
     "locationType": "IBADAH",
     "shortForm": "",
     "details": "",
@@ -1018,20 +1054,20 @@
   },
   {
     "number": "K1",
-    "place": "DOBI BERPUSAT",
+    "place": "Dobi Laundritek (Asrama Lelaki)",
     "googleMapLink": "https://maps.google.com/?q=5.404155248484816,103.07875030541135",
     "locationType": "FASILITI & KEMUDAHAN",
     "shortForm": "",
     "details": "",
-    "alias": ""
+    "alias": "Laundry, Dobi"
   },
   {
     "number": "K2",
-    "place": "DOBI BERPUSAT 2",
+    "place": "Dobi Laundritek (Asrama Perempuan)",
     "googleMapLink": "https://maps.google.com/?q=5.402309782344574,103.0791824010663",
     "locationType": "FASILITI & KEMUDAHAN",
     "shortForm": "",
     "details": "",
-    "alias": ""
+    "alias": "Laundry, Dobi"
   }
 ]
