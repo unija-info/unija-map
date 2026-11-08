@@ -1414,9 +1414,9 @@ function toggleExternalMapsMenu(btn, loc) {
     menu.id = 'external-maps-menu';
     menu.dataset.for = String(loc.id);
     menu.innerHTML =
-        `<a href="${links.google}" target="_blank" rel="noopener"><span>Google Maps</span><span class="material-symbols-outlined">open_in_new</span></a>` +
-        `<a href="${links.apple}" target="_blank" rel="noopener"><span>Apple Maps</span><span class="material-symbols-outlined">open_in_new</span></a>` +
-        `<a href="${links.waze}" target="_blank" rel="noopener"><span>Waze</span><span class="material-symbols-outlined">open_in_new</span></a>`;
+        `<a href="${links.google}" target="_blank" rel="noopener"><span>Google Maps</span><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/google-map.svg" alt="Google Maps"></a>` +
+        `<a href="${links.apple}" target="_blank" rel="noopener"><span>Apple Maps</span><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/apple-map.svg" alt="Apple Maps"></a>` +
+        `<a href="${links.waze}" target="_blank" rel="noopener"><span>Waze</span><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/waze.svg" alt="Waze"></a>`;
     document.body.appendChild(menu);
     const r = btn.getBoundingClientRect();
     const mw = 220, mh = 180;
@@ -2513,7 +2513,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html89'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html92'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);

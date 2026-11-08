@@ -2075,9 +2075,9 @@ body, html {
 #external-maps-menu a:hover {
     background: #f1f3f4;
 }
-#external-maps-menu .material-symbols-outlined {
-    font-size: 18px;
-    color: #5f6368;
+#external-maps-menu .external-maps-icon {
+    width: 20px;
+    height: 20px;
 }
 .info-overlay-details {
     background: none;
