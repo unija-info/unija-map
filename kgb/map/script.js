@@ -57,7 +57,12 @@ const CONFIG_DEFAULTS = {
     base: { default: 'vector' },
     mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02, boundaryFillColor: '#1967d2', boundaryFillOpacity: 0.07 },
     detail: { footpaths: true, sports: true, sportColor: '#7fd08a', sportLine: '#ffffff', pathColor: '#a34d4d', pathOpacity: 0.5, sportOpacity: 0.85, sportLineOpacity: 0.9, trackColor: '#c26a5a', trackOpacity: 0.9 },
-    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20 },
+    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20, shortcutRatio: 1.8, shortcutMaxM: 500, shortcutWalkMps: 1.4 },
+    // solo: place names that tint ONLY their containing footprint (no flood).
+    // For OSM ways the tiles merge into one feature (e.g. DABS + Perdana) —
+    // geometry alone cannot split them, so a human lists them here.
+    // soloPrefix: same, by place-name prefix (e.g. the whole Asrama Blok family).
+    tint: { solo: [], soloPrefix: [] },
 };
 const CONFIG = JSON.parse(JSON.stringify(CONFIG_DEFAULTS));
 
@@ -142,6 +147,12 @@ function applyAppConfig(json) {
         CONFIG.route.dotSpacingM = Math.min(200, Math.max(2, numOr(rt.dotSpacingM, CONFIG.route.dotSpacingM)));
         CONFIG.route.dotMax = Math.round(Math.min(200, Math.max(1, numOr(rt.dotMax, CONFIG.route.dotMax))));
         CONFIG.route.dotMaxSpeedMps = Math.min(200, Math.max(1, numOr(rt.dotMaxSpeedMps, CONFIG.route.dotMaxSpeedMps)));
+        CONFIG.route.shortcutRatio = Math.min(10, Math.max(1.1, numOr(rt.shortcutRatio, CONFIG.route.shortcutRatio)));
+        CONFIG.route.shortcutMaxM = Math.min(5000, Math.max(50, numOr(rt.shortcutMaxM, CONFIG.route.shortcutMaxM)));
+        CONFIG.route.shortcutWalkMps = Math.min(5, Math.max(0.5, numOr(rt.shortcutWalkMps, CONFIG.route.shortcutWalkMps)));
+        const tn = json.tint || {};
+        if (Array.isArray(tn.solo) && tn.solo.every(s => typeof s === 'string')) CONFIG.tint.solo = tn.solo.slice();
+        if (Array.isArray(tn.soloPrefix) && tn.soloPrefix.every(s => typeof s === 'string')) CONFIG.tint.soloPrefix = tn.soloPrefix.slice();
         const root = document.documentElement.style;
         root.setProperty('--pin-stem-height', `${CONFIG.pins.stem.heightPx}px`);
         root.setProperty('--pin-badge-px', `${CONFIG.pins.badgePx}px`);
@@ -198,6 +209,8 @@ let directionsStart = null;            // { type:'location'|'maplabel'|'gps', id
 let directionsEnd = null;              // same shape
 let directionsActiveField = null;      // 'start' | 'end' | null — which field the shared dropdown feeds
 let directionsTravelMode = 'walk';     // 'walk' | 'drive' — persisted in localStorage
+// Shortcut fallback (walk only): { osrm: {geo,path,result}, direct: {...}, active } or null.
+let routeShortcut = null;
 try { if (localStorage.getItem('kgbMapTravelMode') === 'drive') directionsTravelMode = 'drive'; } catch (e) { }
 let directionsStartMarker = null;      // L.marker pin for the chosen start point
 let directionsEndMarker = null;        // L.marker pin for the chosen end point
@@ -268,6 +281,7 @@ function setMarkerHighlight(locationIdOrNull) {
         if (r.el) r.el.classList.toggle('marker-highlighted', r.id === highlightedPinId);
     });
     refreshPinTiers();
+    sortMarkersByDepth();
     updateSelectedBuildingHighlight();
 }
 
@@ -316,6 +330,35 @@ function refreshPinTiers() {
         const slot = r.el && r.el.querySelector('.ml-badge-slot');
         if (slot) slot.innerHTML = pinBadgeHTML(r.loc, mode);
     });
+}
+
+// Depth sort: HTML markers stack by DOM order, so overlaps resolve arbitrarily
+// (A3 buried under F1). Painter's algorithm — lower on screen = closer = on top.
+// Highlighted pin always wins; directions pins + walker dots stay above campus
+// pins. z-index ONLY, never positioning (march-bug rule). Runs on settle
+// (moveend / rebuild / highlight change), not per-frame.
+function sortMarkersByDepth() {
+    if (!map || typeof map.project !== 'function') return;
+    try {
+        for (const r of pinMarkers) {
+            if (!r.el || !r.loc || !r.loc.coords) continue;
+            const p = map.project([r.loc.coords[1], r.loc.coords[0]]);
+            let z = Math.max(1, Math.round(p.y));
+            if (r.id === highlightedPinId) z += 100000;
+            r.el.style.zIndex = String(z);
+        }
+        if (typeof routeDotMarkers !== 'undefined') {
+            for (const d of routeDotMarkers) {
+                try { if (d.marker) d.marker.getElement().style.zIndex = '50000'; } catch (e) { }
+            }
+        }
+        if (typeof directionsStartMarker !== 'undefined' && directionsStartMarker) {
+            try { directionsStartMarker.getElement().style.zIndex = '60000'; } catch (e) { }
+        }
+        if (typeof directionsEndMarker !== 'undefined' && directionsEndMarker) {
+            try { directionsEndMarker.getElement().style.zIndex = '60000'; } catch (e) { }
+        }
+    } catch (e) { }
 }
 
 function createPinMarker(location, exempt = false) {
@@ -389,6 +432,7 @@ function rebuildPinMarkers(locs, exempt = false) {
     hidePinPopup();
     setMarkerHighlight(null);
     locs.forEach(loc => { if (loc.coords) createPinMarker(loc, exempt); });
+    sortMarkersByDepth();
     dlog(`[pins-html] markers mounted: ${pinMarkers.length}`);
 }
 
@@ -528,12 +572,11 @@ function featHeight(f) {
     } catch (e) { return { h: 8, base: 0 }; }
 }
 
-// Cross-feature flood fill: OSM splits connected complexes (hall + podium)
-// and distinct neighbours (two named halls sharing a wall) into separate
-// features. Seed from the member containing the pin, then link touching
-// members whose OSM name is missing or matches the seed's — a different name
-// stays grey even when sharing a wall. Height follows the picked feature.
-function pickLinkedFootprints(blds, lng, lat) {
+// Single-feature flood fill: link only touching members of the SAME queried
+// OSM feature (one way/relation). Separate ways never link — even unnamed —
+// so DABS/Perdana-style neighbours always split. Far-flung relation members
+// still excluded (touch-only). Height follows the picked feature.
+function pickLinkedFootprints(blds, lng, lat, solo) {
     try {
         if (!blds || !blds.length) return null;
         const members = [];
@@ -563,8 +606,19 @@ function pickLinkedFootprints(blds, lng, lat) {
             }
             if (picked === -1) return null;
         }
-        const seedName = featName(blds[members[picked].feat]);
-        const nameOk = fi => { const n = featName(blds[fi]); return n === null || n === seedName; };
+        const hb = featHeight(blds[members[picked].feat]);
+        const nameSet = {};
+        { const n = featName(blds[members[picked].feat]); nameSet[n === null ? '(unnamed)' : n] = true; }
+        // Solo places (config): containing footprint only — for OSM neighbours
+        // the tiles fuse into one feature, where no rule can split them.
+        if (solo) {
+            return {
+                geometry: { type: 'Polygon', coordinates: members[picked].poly },
+                gtype: 'Polygon', members: members.length, picked: picked,
+                linked: 1, names: Object.keys(nameSet), height: hb.h, base: hb.base,
+            };
+        }
+        const seedFeat = members[picked].feat;
         const seen = {};
         seen[picked] = true;
         const linked = [picked];
@@ -572,7 +626,7 @@ function pickLinkedFootprints(blds, lng, lat) {
         while (queue.length) {
             const cur = queue.pop();
             for (let i = 0; i < members.length; i++) {
-                if (seen[i] || !members[i].poly[0] || !nameOk(members[i].feat)) continue;
+                if (seen[i] || !members[i].poly[0] || members[i].feat !== seedFeat) continue;
                 if (ringsTouch(members[cur].poly[0], members[i].poly[0])) { seen[i] = true; linked.push(i); queue.push(i); }
             }
         }
@@ -581,8 +635,6 @@ function pickLinkedFootprints(blds, lng, lat) {
         const geom = singlePoly
             ? { type: 'Polygon', coordinates: coords[0] }
             : { type: 'MultiPolygon', coordinates: coords };
-        const hb = featHeight(blds[members[picked].feat]);
-        const nameSet = {};
         linked.forEach(i => { const n = featName(blds[members[i].feat]); nameSet[n === null ? '(unnamed)' : n] = true; });
         return {
             geometry: geom, gtype: singlePoly ? 'Polygon' : 'MultiPolygon',
@@ -698,23 +750,28 @@ function updateSelectedBuildingHighlight() {
         const pt = map.project([loc.coords[1], loc.coords[0]]);
         try { selBuildingDbg.zoom = map.getZoom(); selBuildingDbg.pitch = map.getPitch(); } catch (e) { }
         selBuildingDbg.triedBox = true;
-        const isBuilding = f => f.sourceLayer === 'building' || (f.layer && /build/i.test(f.layer.id));
+        // Never seed from our own highlight extrusion: its layer id matches the
+        // /build/i fallback and its features carry no render_height (tint
+        // would re-tint itself at fallback height 8 and flip single↔both).
+        const isBuilding = f => f.sourceLayer === 'building' || (f.layer && /build/i.test(f.layer.id) && !/^selected-building/.test(f.layer.id));
         // Stale tint from another pin must go immediately; a miss below then
         // keeps the (now empty) state instead of someone else's building.
         if (selectedBuildingCache && selectedBuildingCache.locId !== loc.id) {
             try { map.getSource('selected-building').setData({ type: 'FeatureCollection', features: [] }); } catch (e) { }
             selectedBuildingCache = null;
         }
-        // One box query gathers the picked feature plus its neighbours for
-        // name-aware cross-feature linking (hall + unnamed podium link up;
-        // a differently-named hall sharing a wall does not).
+        // One box query gathers the picked feature plus its neighbours; the
+        // link step only joins members of the same feature (single-feature
+        // flood), so touching-but-separate neighbours never tint together.
         let blds = [];
         try {
             const r = 6;
             blds = (map.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], {}) || []).filter(isBuilding);
         } catch (e) { blds = []; }
         selBuildingDbg.layer = (blds.length && blds[0].layer && blds[0].layer.id) || null;
-        const pick = pickLinkedFootprints(blds, loc.coords[1], loc.coords[0]);
+        const inSolo = Array.isArray(CONFIG.tint.solo) && !!loc.place && CONFIG.tint.solo.indexOf(loc.place) !== -1;
+        const inSoloPrefix = Array.isArray(CONFIG.tint.soloPrefix) && !!loc.place && CONFIG.tint.soloPrefix.some(px => loc.place.indexOf(px) === 0);
+        const pick = pickLinkedFootprints(blds, loc.coords[1], loc.coords[0], inSolo || inSoloPrefix);
         if (!pick) { selBuildingDbg.found = 0; selBuildingDbg.lastBail = 'miss'; scheduleBuildingRequery(); return; } // keep cache: tiles may not be ready
         selectedBuildingCache = { geometry: expandFootprint(pick.geometry, 0.4), height: pick.height + 0.4, base: pick.base, locId: loc.id, linked: pick.linked };
         selBuildingDbg.found = 1;
@@ -780,8 +837,6 @@ function showPinPopup(locationId, mode) {
     const loc = mapData.find(l => l.id === locationId);
     if (!loc) return;
     const el = ensurePinPopup();
-    const bgColor = getCategoryColor(loc.locationType);
-    const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.coords[0]},${loc.coords[1]}`;
     if (mode === 'mini') {
         pinPopupHoverId = locationId;
         el.className = 'mini';
@@ -790,20 +845,57 @@ function showPinPopup(locationId, mode) {
         pinPopupLocId = locationId;
         pinPopupHoverId = null;
         el.className = 'full';
+        // Photo-card popup (reference: Google-Maps place card) — photo top,
+        // name + subtitle, Butiran (info overlay) + Arah (in-app Directions).
+        const folder = CATEGORY_SLUG[loc.locationType] ?? 'lain';
+        const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${loc.number}`;
+        const sub = (loc.details && loc.details.trim()) ? loc.details : (loc.locationType || '');
+        const arahHtml = loc.coords
+            ? `<button class="popup-btn-light" data-location-id="${loc.id}">Arah</button>`
+            : '';
         el.innerHTML = `
-            <div class="popup-content-wrapper">
+            <div class="popup-content-wrapper popup-card">
                 <button class="tooltip-close-btn" style="display:flex;">×</button>
-                <strong class="popup-stop-name">${loc.place}</strong>
-                <span class="popup-category" style="background:${bgColor}">${loc.locationType}</span>
-                <div class="popup-buttons" style="max-height:80px;opacity:1;margin-top:6px;padding-bottom:4px;">
-                    <button class="tooltip-info-btn" data-location-id="${loc.id}">i</button>
-                    <a href="${googleUrl}" target="_blank" class="popup-link"><span class="material-symbols-outlined">directions</span>Arah</a>
+                <div class="popup-photo-wrap">
+                    <div class="popup-photo-placeholder">
+                        <span class="material-symbols-outlined">hide_image</span>
+                        <span>Tiada Gambar</span>
+                    </div>
+                    <img class="popup-photo" src="${imgBase}.jpg" alt=""
+                         onload="this.style.opacity='1';this.previousElementSibling.style.display='none';"
+                         onerror="
+                           if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
+                           else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
+                           else{this.style.display='none';}
+                         " />
+                </div>
+                <div class="popup-card-body">
+                    <strong class="popup-stop-name">${loc.place}</strong>
+                    <div class="popup-sub">${sub}</div>
+                    <div class="popup-card-actions">
+                        <button class="popup-btn-dark" data-location-id="${loc.id}">Butiran</button>
+                        ${arahHtml}
+                    </div>
                 </div>
             </div>`;
-        const infoBtn = el.querySelector('.tooltip-info-btn');
-        if (infoBtn) infoBtn.addEventListener('click', (e) => {
+        const detailBtn = el.querySelector('.popup-btn-dark');
+        if (detailBtn) detailBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            showLocationInfoOverlay(parseInt(infoBtn.dataset.locationId));
+            showLocationInfoOverlay(parseInt(detailBtn.dataset.locationId));
+        });
+        const arahBtn = el.querySelector('.popup-btn-light');
+        if (arahBtn) arahBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const l = mapData.find(x => x.id === parseInt(arahBtn.dataset.locationId));
+            hidePinPopup();
+            setMarkerHighlight(null);
+            // An info card may already be open (Butiran first) — Arah takes
+            // over via the card's own animated dismiss (route protected).
+            document.querySelector('.stop-info-overlay')?._dismiss?.({ keepRoute: true });
+            // End = this location, Start = empty (user picks: place, label, or GPS row).
+            if (l && l.coords) openDirectionsPanel({
+                end: { type: 'location', id: l.id, coords: l.coords, label: l.place },
+            });
         });
         const closeBtn = el.querySelector('.tooltip-close-btn');
         if (closeBtn) closeBtn.addEventListener('click', (e) => {
@@ -826,6 +918,7 @@ function initPinInteractions() {
         } catch (e) { }
         positionPinPopup();
     });
+    map.on('moveend', sortMarkersByDepth);
 }
 
 // ===== CATEGORY COLOR SYSTEM =====
@@ -1539,25 +1632,37 @@ function showLocationInfoOverlay(locationId) {
     `;
 
     function wireButtons(overlayEl) {
+        // Overlay removal must never depend solely on `animationend` — a missed
+        // event strands the card in the DOM (seen: card stuck under the
+        // Directions panel). The timer finishes the job if the event never fires.
+        function removeOverlayAfterClose(finish) {
+            let done = false;
+            const run = () => {
+                if (done) return;
+                done = true;
+                overlayEl.remove();
+                currentInfoOverlayLocationId = null;
+                finish();
+            };
+            overlayEl.addEventListener('animationend', run, { once: true });
+            setTimeout(run, 400);
+        }
         // × — fully reset: close overlay + show all locations
         function closeOverlay() {
             closeExternalMapsMenu();
             overlayEl.classList.add('closing');
-            overlayEl.addEventListener('animationend', () => {
-                overlayEl.remove();
-                currentInfoOverlayLocationId = null;
+            removeOverlayAfterClose(() => {
                 clearRoute();
                 showAllLocations();
             });
         }
         // ← — dismiss only: close overlay, keep current map state
-        function dismissOverlay() {
+        function dismissOverlay(opts = {}) {
             closeExternalMapsMenu();
             overlayEl.classList.add('closing');
-            overlayEl.addEventListener('animationend', () => {
-                overlayEl.remove();
-                currentInfoOverlayLocationId = null;
-                clearRoute();
+            removeOverlayAfterClose(() => {
+                // Arah opens a fresh route right after dismiss — don't wipe it.
+                if (!opts.keepRoute) clearRoute();
                 if (currentOverlaySource === 'category') {
                     // Category overlay is still in DOM — restore category pins
                     currentSelectedLocationId = null;
@@ -1572,18 +1677,19 @@ function showLocationInfoOverlay(locationId) {
         }
         overlayEl.querySelector('.info-overlay-close').onclick = closeOverlay;
         overlayEl.querySelector('.info-overlay-back').onclick = dismissOverlay;
+        // Lets outside callers (pin-popup Arah) retire an open card through
+        // the same animated + fallback-covered path. Re-assigned on re-wire.
+        overlayEl._dismiss = dismissOverlay;
 
         const categoryBadge = overlayEl.querySelector('.info-overlay-category-badge');
         if (categoryBadge) {
             categoryBadge.addEventListener('click', () => {
                 const catName = location.locationType;
                 overlayEl.classList.add('closing');
-                overlayEl.addEventListener('animationend', () => {
-                    overlayEl.remove();
-                    currentInfoOverlayLocationId = null;
+                removeOverlayAfterClose(() => {
                     currentOverlaySource = null;
                     filterByCategory(catName);
-                }, { once: true });
+                });
             });
         }
 
@@ -1618,7 +1724,7 @@ function showLocationInfoOverlay(locationId) {
         const directionsToHereBtn = overlayEl.querySelector('.info-overlay-directions-to-here');
         if (directionsToHereBtn) {
             directionsToHereBtn.addEventListener('click', () => {
-                dismissOverlay();
+                dismissOverlay({ keepRoute: true });
                 // End = this location, Start = empty (user picks: place, label, or GPS row).
                 // No surprise geolocation prompt; GPS stays one tap away in the dropdown.
                 openDirectionsPanel({
@@ -2513,7 +2619,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html92'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html102'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -3243,22 +3349,84 @@ async function drawOSRMRoute(fromCoords, toCoords) {
         if (!data.routes || !data.routes.length) return null;
         const route = data.routes[0];
         const built = buildRoutePath(route.geometry, fromCoords, toCoords);
-        routeGeoJSON = built.main;
+        const osrmResult = { distance: route.distance, duration: route.duration, mode: isDrive ? 'drive' : 'walk' };
 
-        if (ensureRouteLayers(false)) {
-            map.getSource('osrm-route').setData(routeGeoJSON);
-            const bounds = new maplibregl.LngLatBounds();
-            built.path.forEach(c => bounds.extend(c));
-            map.fitBounds(bounds, { padding: 60, duration: 1000 });
-            startRouteAnimation();
-            buildRouteDot(built.path);
+        // Shortcut fallback (walk only): OSM footway gaps make the router loop
+        // around roads while pedestrians cut straight across. When the detour
+        // ratio is bad, offer a direct beeline — default-selected. Self-retires
+        // once the missing footways are mapped in OSM (ratio stops triggering).
+        routeShortcut = null;
+        hideShortcutToggle();
+        if (!isDrive) {
+            const bee = haversineM(fromCoords, toCoords);
+            if (bee > 0 && bee <= CONFIG.route.shortcutMaxM && route.distance > bee * CONFIG.route.shortcutRatio) {
+                const dGeo = { type: 'LineString', coordinates: [[fromCoords[1], fromCoords[0]], [toCoords[1], toCoords[0]]] };
+                routeShortcut = {
+                    osrm: { geo: built.main, path: built.path, result: osrmResult },
+                    direct: { geo: dGeo, path: dGeo.coordinates, result: { distance: bee, duration: bee / CONFIG.route.shortcutWalkMps, mode: 'walk' } },
+                    active: 'direct',
+                };
+                selectRoutePath('direct');
+                return Object.assign({}, routeShortcut.direct.result, { via: 'terus' });
+            }
         }
-
-        return { distance: route.distance, duration: route.duration, mode: isDrive ? 'drive' : 'walk' };
+        renderRouteGeometry(built.main, built.path);
+        const result = Object.assign({}, osrmResult, { via: null });
+        updateDirectionsRouteInfo(result);
+        return result;
     } catch (err) {
         console.warn('Route fetch failed:', err);
         return null;
     }
+}
+
+function renderRouteGeometry(geo, path) {
+    routeGeoJSON = geo;
+    if (ensureRouteLayers(false)) {
+        map.getSource('osrm-route').setData(routeGeoJSON);
+        const bounds = new maplibregl.LngLatBounds();
+        path.forEach(c => bounds.extend(c));
+        map.fitBounds(bounds, { padding: 60, duration: 1000 });
+        startRouteAnimation();
+        buildRouteDot(path);
+    }
+}
+
+// Shortcut toggle (walk only): single source shows the ACTIVE path; the
+// buttons carry both distances so the comparison survives without a second layer.
+function renderShortcutToggle() {
+    const box = document.getElementById('directions-shortcut');
+    const sc = routeShortcut;
+    if (!box) return;
+    if (!sc) { box.innerHTML = ''; box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML =
+        `<div class="directions-shortcut-label">Pilih laluan:</div>` +
+        `<div class="directions-shortcut-row">` +
+        `<button data-which="direct" class="${sc.active === 'direct' ? 'active' : ''}">Laluan terus · ${formatDist(sc.direct.result.distance)}</button>` +
+        `<button data-which="osrm" class="${sc.active === 'osrm' ? 'active' : ''}">Ikut jalan · ${formatDist(sc.osrm.result.distance)}</button>` +
+        `</div>`;
+    box.querySelectorAll('button[data-which]').forEach(btn => {
+        btn.addEventListener('click', () => selectRoutePath(btn.dataset.which));
+    });
+}
+
+function hideShortcutToggle() {
+    const box = document.getElementById('directions-shortcut');
+    if (!box) return;
+    box.innerHTML = '';
+    box.style.display = 'none';
+}
+
+function selectRoutePath(which) {
+    const sc = routeShortcut;
+    if (!sc || (which !== 'osrm' && which !== 'direct')) return;
+    sc.active = which;
+    const useDirect = which === 'direct';
+    const pick = useDirect ? sc.direct : sc.osrm;
+    renderRouteGeometry(pick.geo, pick.path);
+    updateDirectionsRouteInfo(Object.assign({}, pick.result, { via: useDirect ? 'terus' : 'jalan' }));
+    renderShortcutToggle();
 }
 
 // Marching-ants crawl on the white dash overlay. MapLibre has no dash-offset,
@@ -3415,6 +3583,8 @@ function clearRoute() {
     stopRouteAnimation();
     clearRouteDot();
     routeGeoJSON = null;
+    routeShortcut = null;
+    hideShortcutToggle();
     try {
         if (map && map.getSource('osrm-route')) {
             map.getSource('osrm-route').setData({ type: 'FeatureCollection', features: [] });
@@ -3453,6 +3623,7 @@ function renderDirectionsPin(field, point) {
     const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([point.coords[1], point.coords[0]])
         .addTo(map);
+    try { el.style.zIndex = '60000'; } catch (e) { } // above campus pins (see sortMarkersByDepth)
 
     if (isStart) directionsStartMarker = marker;
     else directionsEndMarker = marker;
@@ -3471,8 +3642,42 @@ function updateDirectionsRouteInfo(result) {
     } else if (result === null) {
         infoEl.textContent = '';
     } else {
-        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (${result.mode === 'drive' ? 'memandu' : 'jalan kaki'})`;
+        const via = result.via === 'terus' ? ' · laluan terus' : (result.via === 'jalan' ? ' · ikut jalan' : '');
+        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (${result.mode === 'drive' ? 'memandu' : 'jalan kaki'})${via}`;
     }
+}
+
+// ===== DIRECTIONS EXTERNAL FALLBACK (Google / Apple / Waze) =====
+
+// Shown as soon as End has coords — independent of OSRM success, so it is
+// there exactly when our route disappoints (or fails). Origin-aware when
+// Start has coords; Waze takes destination only.
+function directionsExternalLinks() {
+    const end = directionsEnd;
+    if (!end || !end.coords) return null;
+    const dest = end.coords[0] + ',' + end.coords[1];
+    const start = directionsStart;
+    const orig = (start && start.coords) ? start.coords[0] + ',' + start.coords[1] : null;
+    return {
+        google: 'https://www.google.com/maps/dir/?api=1&destination=' + dest + (orig ? '&origin=' + orig : ''),
+        apple: 'https://maps.apple.com/?daddr=' + dest + (orig ? '&saddr=' + orig : ''),
+        waze: 'https://waze.com/ul?ll=' + dest + '&navigate=yes',
+    };
+}
+
+function renderDirectionsExternal() {
+    const box = document.getElementById('directions-external');
+    if (!box) return;
+    const links = directionsExternalLinks();
+    if (!links) { box.innerHTML = ''; box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML =
+        `<div class="directions-external-label">Tidak berpuas hati? Buka di:</div>` +
+        `<div class="directions-external-row">` +
+        `<a href="${links.google}" target="_blank" rel="noopener"><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/google-map.svg" alt="Google Maps"><span>Google</span></a>` +
+        `<a href="${links.apple}" target="_blank" rel="noopener"><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/apple-map.svg" alt="Apple Maps"><span>Apple</span></a>` +
+        `<a href="${links.waze}" target="_blank" rel="noopener"><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/waze.svg" alt="Waze"><span>Waze</span></a>` +
+        `</div>`;
 }
 
 async function maybeComputeRoute() {
@@ -3509,6 +3714,7 @@ function setDirectionsField(field, value) {
 
     updatePanRestrictionForState();
     maybeComputeRoute();
+    renderDirectionsExternal();
 }
 
 function swapDirectionsFields() {
@@ -3639,6 +3845,7 @@ function closeDirectionsPanel() {
     directionsEnd = null;
     directionsActiveField = null;
     updateDirectionsRouteInfo(null);
+    renderDirectionsExternal();
 
     const startInput = document.getElementById('directions-start-input');
     const endInput = document.getElementById('directions-end-input');

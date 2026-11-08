@@ -23,6 +23,10 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Rail + mobile follow-ups (unmerged): single-open sidetabs + single rail highlight, menu docked in sidebar, mobile bottom rail (3 icons + captions, hideable sheet with `hidden` state, full sheet covers search), saved decoupled to pins-only, per-view pitch/bearing in `config.json`, GPS HTTPS-only honest toasts
 - Hidden `/osm-status` page (unlinked, `noindex`): bilingual BM/EN live map-data status — active TileJSON version, OSM `osm_date` snapshot, next Sunday cutoff + Tuesday release with MYT-first display and countdowns; `osm_date` read via first-party `api/osm-date.js` proxy (btrfs sends no CORS headers; third-party proxies proven unreliable), build-ID-derived estimate as last resort
 - External-maps chooser + bare-coords Sheet compat with per-app brand icons: Maps circle opens Google/Apple/Waze (all built from `coords`, Apple legacy `?ll=&q=`), `parseCoords` takes bare `lat,lng`, chooser rows show true-vector logos (`media/logo/`, wired `html90`)
+- Popup tip photo card + Directions external fallback (`html93–94`): desktop tap popup is a photo mini-card (Butiran → info overlay, Arah → in-app Directions; `Tiada Gambar` placeholder when photo-less); Directions panel gains origin-aware Google/Apple/Waze row for when our route disappoints
+- Walk shortcut fallback (`html97`): `Laluan terus` beeline default-selected when the foot router detours badly (missing OSM footways); one-tap `Ikut jalan`; drive unaffected
+- Building tint fixes (`html98–101`): same-feature flood, no self-seeding from our own layer, per-place `tint.solo`/`tint.soloPrefix` exceptions for tile-fused neighbours (DABS/Perdana, Asrama Blok A–Q); OSM `name` tags never reach tiles (schema has no `name`)
+- Marker depth sort (`html102`): pins stack by screen Y on settle, tapped pin always front
 
 ---
 

@@ -66,5 +66,20 @@
     "sportLineOpacity": 0.9,
     "trackColor": "#c26a5a",
     "trackOpacity": 0.9
+  },
+  "route": {
+    "_note": "Walk shortcut fallback: when OSRM distance exceeds shortcutRatio × beeline (and beeline is within shortcutMaxM), offer a direct beeline at shortcutWalkMps pace, default-selected. Drive mode never triggers. Self-retires once missing footways are mapped in OSM.",
+    "loopSeconds": 14,
+    "dotSpacingM": 12,
+    "dotMax": 48,
+    "dotMaxSpeedMps": 20,
+    "shortcutRatio": 1.8,
+    "shortcutMaxM": 500,
+    "shortcutWalkMps": 1.4
+  },
+  "tint": {
+    "_note": "solo: place names (exact match on Sheet `place`) that tint ONLY the footprint containing the pin. soloPrefix: same by name prefix (covers the whole Asrama Blok A–Q family, present and future). For OSM neighbours the tiles fuse into one feature (DABS + Perdana, hostel clusters) — no geometric rule can split those, so list them here. Everything else keeps the same-feature flood.",
+    "solo": ["Dewan Al-Muktafi Billah Shah", "Dewan Perdana"],
+    "soloPrefix": ["Asrama Blok "]
   }
 }

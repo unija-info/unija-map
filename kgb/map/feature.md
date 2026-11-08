@@ -38,6 +38,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 ## 5. Maklumat Sesuatu Tempat
 
 * Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar besar, diikuti nama, baris singkatan dan baris kategori (tekan kategori untuk menapis), dan info tambahan. Pin yang dipilih membesar sedikit dengan ring putih, dan **bangunannya bertukar hijau-teal** supaya senang kenal.
+* Di komputer, tekan pin dahulu membuka **kad kecil bergambar** (nama + info ringkas) — tekan **Butiran** untuk kad penuh, atau **Arah** untuk terus membuka panel arah ke tempat itu.
 * Baris butang bulat di bawah gambar: **Arah** (buka panel arah ke sini), **Simpan** (tandai tempat — jadi emas, kekal walaupun tutup aplikasi), **Dekat** (5 tempat paling hampir berserta jarak), **Maps** (pilih aplikasi — Google Maps, Apple Maps atau Waze — pautan dibina dari koordinat pin, bukan lagi pautan tetap dalam helaian data) dan **Kongsi** (salin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut).
 * Ikon **★ Disimpan** di bar sisi kiri (dengan kiraan dalam tooltip) menapis peta kepada tempat simpanan anda sahaja — senarai kategori tidak terusik; senarai dan hasil carian menandakan tempat simpanan dengan ★ emas.
 * Pautan **Cadang pembetulan** di bawah kad untuk melaporkan maklumat yang salah atau tidak terkini.
@@ -48,6 +49,8 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 * Anda juga boleh membuka panel arah dari ikon **🧭 arah** dan memilih mana-mana dua tempat (lokasi kampus, tasik/padang, atau lokasi GPS anda) sebagai mula dan destinasi.
 * Pilih **🚶 jalan kaki atau 🚗 memandu** di bahagian atas panel — laluan dan anggaran masa mengikut pilihan (pilihan diingati untuk lawatan seterusnya).
 * Peta melukis **garisan biru** beserta jarak dan anggaran masa, dengan **titik-titik putih bergerak** menunjukkan arah perjalanan. Jika destinasi terletak jauh dari jalan (dalam bangunan/padang), titik-titik melengkung dari hujung jalan tepat ke pin. Nota: laluan adalah anggaran mengikut jalan yang tercatat dalam peta — jalan pintas kaki yang tiada dalam peta mungkin tidak diambil kira.
+* Jika laluan jalan kaki memusing jauh (contoh: peta belum ada lorong pejalan kaki yang wujud), panel menawarkan **Laluan terus** — garis lurus anggaran jarak — yang dipilih automatik, dengan butang **Ikut jalan** untuk kembali ke laluan peta. Pilihan ini hanya untuk jalan kaki, bukan memandu.
+* Jika laluan kami tidak memuaskan, panel arah ada baris **"Tidak berpuas hati? Buka di:"** — lompat ke Google Maps, Apple Maps atau Waze dengan kedua-dua titik mula dan destinasi dibawa bersama (Waze: destinasi sahaja).
 
 ## 7. Lokasi Saya (GPS)
 
