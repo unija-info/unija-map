@@ -50,12 +50,12 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 * Pilih **🚶 jalan kaki atau 🚗 memandu** di bahagian atas panel — laluan dan anggaran masa mengikut pilihan (pilihan diingati untuk lawatan seterusnya).
 * Peta melukis **garisan biru** beserta jarak dan anggaran masa, dengan **titik-titik putih bergerak** menunjukkan arah perjalanan. Jika destinasi terletak jauh dari jalan (dalam bangunan/padang), titik-titik melengkung dari hujung jalan tepat ke pin. Nota: laluan adalah anggaran mengikut jalan yang tercatat dalam peta — jalan pintas kaki yang tiada dalam peta mungkin tidak diambil kira.
 * Jika laluan jalan kaki memusing jauh (contoh: peta belum ada lorong pejalan kaki yang wujud), panel menawarkan **Laluan terus** — garis lurus anggaran jarak — yang dipilih automatik, dengan butang **Ikut jalan** untuk kembali ke laluan peta. Pilihan ini hanya untuk jalan kaki, bukan memandu.
-* Jika laluan kami tidak memuaskan, panel arah ada baris **"Tidak berpuas hati? Buka di:"** — lompat ke Google Maps, Apple Maps atau Waze dengan kedua-dua titik mula dan destinasi dibawa bersama (Waze: destinasi sahaja).
+* Jika laluan kami tidak memuaskan, panel arah ada baris **"Tidak berpuas hati? Buka di:"** — lompat ke Google Maps, Apple Maps atau Waze dengan kedua-dua titik mula dan destinasi dibawa bersama (Waze: destinasi sahaja). Jika mana-mana titik melebihi 1 km dari sempadan kampus, peta tidak mengira laluan dalam aplikasi — baris luar menjadi **"Laluan jauh — teruskan di:"** sebagai jalan utama.
 
 ## 7. Lokasi Saya (GPS)
 
 * Tekan butang **📍 bulat (my_location)** — di bar sisi kiri (komputer) atau melayang di atas senarai (telefon).
-* Benarkan akses lokasi sekali — titik biru menunjukkan kedudukan anda dan peta memfokus ke sana.
+* Benarkan akses lokasi sekali — titik biru menunjukkan kedudukan anda dan peta memfokus ke sana (hanya di dalam kampus; di luar kampus tiada titik biru — peta kekal di kampus).
 * Tekan lagi untuk mematikan. GPS tidak menjejaki anda di latar belakang — ia berhenti sebaik sahaja dimatikan.
 
 ## 8. Kongsi Dengan Tepat

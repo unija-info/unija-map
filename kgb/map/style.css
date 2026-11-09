@@ -2252,6 +2252,26 @@ body, html {
     white-space: nowrap;
 }
 
+#map-toast.has-sub {
+    white-space: normal;
+    text-align: center;
+    border-radius: 14px;
+    max-width: 280px;
+    padding: 12px 18px;
+    line-height: 1.35;
+}
+
+#map-toast .toast-title {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+#map-toast .toast-sub {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
 #map-toast.visible {
     opacity: 1;
     transform: translateX(-50%) translateY(0);

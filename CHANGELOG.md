@@ -27,6 +27,9 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Walk shortcut fallback (`html97`): `Laluan terus` beeline default-selected when the foot router detours badly (missing OSM footways); one-tap `Ikut jalan`; drive unaffected
 - Building tint fixes (`html98–101`): same-feature flood, no self-seeding from our own layer, per-place `tint.solo`/`tint.soloPrefix` exceptions for tile-fused neighbours (DABS/Perdana, Asrama Blok A–Q); OSM `name` tags never reach tiles (schema has no `name`)
 - Marker depth sort (`html102`): pins stack by screen Y on settle, tapped pin always front
+- GPS campus gate (`html103–105`): outside-campus GPS shows no blue dot, camera stays; two-line notice (big `Anda berada di luar kampus` + `Peta ini hanya menunjukkan lokasi GPS anda di dalam kampus.`), fires every GPS-on tap
+- Arah range limit (`html106`): endpoints beyond 1 km from the boundary skip in-app routing (walk + drive) — external Google/Apple/Waze row becomes the hero; `route.maxInAppM` knob
+- Fake-GPS debug (`html107`): `?testcoordinate=lat,lng` feeds one fix through the real gate for desk testing
 
 ---
 

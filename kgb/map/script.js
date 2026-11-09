@@ -57,7 +57,7 @@ const CONFIG_DEFAULTS = {
     base: { default: 'vector' },
     mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02, boundaryFillColor: '#1967d2', boundaryFillOpacity: 0.07 },
     detail: { footpaths: true, sports: true, sportColor: '#7fd08a', sportLine: '#ffffff', pathColor: '#a34d4d', pathOpacity: 0.5, sportOpacity: 0.85, sportLineOpacity: 0.9, trackColor: '#c26a5a', trackOpacity: 0.9 },
-    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20, shortcutRatio: 1.8, shortcutMaxM: 500, shortcutWalkMps: 1.4 },
+    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20, shortcutRatio: 1.8, shortcutMaxM: 500, shortcutWalkMps: 1.4, maxInAppM: 1000 },
     // solo: place names that tint ONLY their containing footprint (no flood).
     // For OSM ways the tiles merge into one feature (e.g. DABS + Perdana) —
     // geometry alone cannot split them, so a human lists them here.
@@ -150,6 +150,7 @@ function applyAppConfig(json) {
         CONFIG.route.shortcutRatio = Math.min(10, Math.max(1.1, numOr(rt.shortcutRatio, CONFIG.route.shortcutRatio)));
         CONFIG.route.shortcutMaxM = Math.min(5000, Math.max(50, numOr(rt.shortcutMaxM, CONFIG.route.shortcutMaxM)));
         CONFIG.route.shortcutWalkMps = Math.min(5, Math.max(0.5, numOr(rt.shortcutWalkMps, CONFIG.route.shortcutWalkMps)));
+        CONFIG.route.maxInAppM = Math.min(5000, Math.max(100, numOr(rt.maxInAppM, CONFIG.route.maxInAppM)));
         const tn = json.tint || {};
         if (Array.isArray(tn.solo) && tn.solo.every(s => typeof s === 'string')) CONFIG.tint.solo = tn.solo.slice();
         if (Array.isArray(tn.soloPrefix) && tn.soloPrefix.every(s => typeof s === 'string')) CONFIG.tint.soloPrefix = tn.soloPrefix.slice();
@@ -198,7 +199,8 @@ let maskLastError = null;        // last ensureMaskLayers error string (debug)
 let maskPollTries = 0;           // mask poller attempts (debug)
 let maskPollError = null;        // last mask poller error string (debug)
 let routeGeoJSON = null;         // active route geometry cached for re-add after setStyle
-let currentUserLocation = null;        // {lat, lng, accuracy}
+let currentUserLocation = null;        // {lat, lng, accuracy} — set ONLY while inside campus
+let userWasOutsideCampus = false;    // last GPS fix was outside → toast once per excursion
 let userLocationMarker = null;         // L.marker (blue dot)
 let userLocationAccuracyCircle = null; // L.circle
 let userLocationWatchId = null;        // navigator.geolocation.watchPosition handle
@@ -209,6 +211,7 @@ let directionsStart = null;            // { type:'location'|'maplabel'|'gps', id
 let directionsEnd = null;              // same shape
 let directionsActiveField = null;      // 'start' | 'end' | null — which field the shared dropdown feeds
 let directionsTravelMode = 'walk';     // 'walk' | 'drive' — persisted in localStorage
+let directionsTooFar = false;          // last computed pair exceeded maxInAppM from boundary
 // Shortcut fallback (walk only): { osrm: {geo,path,result}, direct: {...}, active } or null.
 let routeShortcut = null;
 try { if (localStorage.getItem('kgbMapTravelMode') === 'drive') directionsTravelMode = 'drive'; } catch (e) { }
@@ -2495,12 +2498,23 @@ function updateURL({ type = null, location = null } = {}) {
     history.replaceState(null, '', url.toString().replace(/#$/, ''));
 }
 
-function showToast(message) {
+function showToast(message, sub) {
     const existing = document.getElementById('map-toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
     toast.id = 'map-toast';
-    toast.textContent = message;
+    if (sub) {
+        toast.classList.add('has-sub');
+        const t = document.createElement('div');
+        t.className = 'toast-title';
+        t.textContent = message;
+        const s = document.createElement('div');
+        s.className = 'toast-sub';
+        s.textContent = sub;
+        toast.append(t, s);
+    } else {
+        toast.textContent = message;
+    }
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('visible'));
     setTimeout(() => {
@@ -2581,6 +2595,39 @@ function maybeTestRoute() {
     } catch (e) { }
 }
 
+// ?testcoordinate=lat,lng — debug helper: feeds one fake GPS fix through the
+// REAL gate (updateUserLocationMarker) so inside/outside behavior can be tested
+// from a desk, no walking needed. Outside → no dot + two-line notice, camera
+// stays; inside → dot + focus. Same settle-wait + survival pattern as ?testroute.
+function maybeTestCoordinate() {
+    try {
+        const v = new URLSearchParams(window.location.search).get('testcoordinate');
+        if (!v) return;
+        const parts = v.split(',').map(s => parseFloat(s.trim()));
+        if (parts.length !== 2 || !parts.every(n => isFinite(n))) { dlog('[gps] testcoordinate: bad value', v); return; }
+        const [lat, lng] = parts;
+        dlog('[gps] test coordinate queued:', lat, lng);
+        let tries = 0;
+        const t = setInterval(() => {
+            tries++;
+            try {
+                // Map object only — no style wait: the dot is a DOM marker and
+                // the accuracy layer self-skips until the style is ready.
+                if (map) {
+                    clearInterval(t);
+                    showUserLocation = true;
+                    document.getElementById('my-location-btn')?.classList.add('active');
+                    document.getElementById('rail-location')?.classList.add('active');
+                    updateUserLocationMarker({ latitude: lat, longitude: lng, accuracy: 20 });
+                } else if (tries > 60) {
+                    clearInterval(t);
+                    dlog('[gps] test coordinate: map never ready');
+                }
+            } catch (e) { clearInterval(t); }
+        }, 500);
+    } catch (e) { }
+}
+
 function createClearSearchButton() {
     const searchContainer = document.querySelector('.search-container');
     if (!searchContainer) return;
@@ -2619,7 +2666,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html102'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html107'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -3049,6 +3096,7 @@ function setUserLocationVisible(visible) {
     showUserLocation = visible;
     if (visible) {
         if (!navigator.geolocation) return;
+        userWasOutsideCampus = false; // re-arm: every GPS-on tap answers, even a repeat outside tap
         userLocationWatchId = navigator.geolocation.watchPosition(
             (pos) => updateUserLocationMarker(pos.coords),
             (err) => {
@@ -3111,6 +3159,18 @@ function removeAccuracyCircle() {
 
 function updateUserLocationMarker(coords) {
     if (!map) return;
+    // Outside campus: no blue dot, no camera yank — map stays on campus.
+    // Watch keeps running so walking back inside re-appears automatically.
+    if (!isLngLatInsideCampus(coords.longitude, coords.latitude)) {
+        if (userLocationMarker) { try { userLocationMarker.remove(); } catch (e) { } userLocationMarker = null; }
+        removeAccuracyCircle();
+        currentUserLocation = null;
+        updatePanRestrictionForState();
+        if (!userWasOutsideCampus) showToast('Anda berada di luar kampus', 'Peta ini hanya menunjukkan lokasi GPS anda di dalam kampus.');
+        userWasOutsideCampus = true;
+        return;
+    }
+    userWasOutsideCampus = false;
     currentUserLocation = { lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy };
     const lngLat = [coords.longitude, coords.latitude];
     const isFirstFix = !userLocationMarker;
@@ -3639,6 +3699,8 @@ function updateDirectionsRouteInfo(result) {
     if (!infoEl) return;
     if (result === 'loading') {
         infoEl.textContent = 'Mengira jarak...';
+    } else if (result === 'too-far') {
+        infoEl.textContent = 'Laluan di luar kawasan kampus.';
     } else if (result === null) {
         infoEl.textContent = '';
     } else {
@@ -3672,7 +3734,7 @@ function renderDirectionsExternal() {
     if (!links) { box.innerHTML = ''; box.style.display = 'none'; return; }
     box.style.display = '';
     box.innerHTML =
-        `<div class="directions-external-label">Tidak berpuas hati? Buka di:</div>` +
+        `<div class="directions-external-label">${directionsTooFar ? 'Laluan jauh — teruskan di:' : 'Tidak berpuas hati? Buka di:'}</div>` +
         `<div class="directions-external-row">` +
         `<a href="${links.google}" target="_blank" rel="noopener"><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/google-map.svg" alt="Google Maps"><span>Google</span></a>` +
         `<a href="${links.apple}" target="_blank" rel="noopener"><img class="external-maps-icon" src="/media/logo/SVG/svg-lower/apple-map.svg" alt="Apple Maps"><span>Apple</span></a>` +
@@ -3682,10 +3744,25 @@ function renderDirectionsExternal() {
 
 async function maybeComputeRoute() {
     if (!directionsStart || !directionsEnd || !directionsStart.coords || !directionsEnd.coords) {
+        directionsTooFar = false;
         clearRoute();
         updateDirectionsRouteInfo(null);
         return;
     }
+    // Campus range: either endpoint further than maxInAppM from the boundary
+    // skips in-app routing in BOTH modes — external providers take over.
+    const farthest = Math.max(
+        distOutsideCampusM(directionsStart.coords[0], directionsStart.coords[1]),
+        distOutsideCampusM(directionsEnd.coords[0], directionsEnd.coords[1])
+    );
+    if (farthest > CONFIG.route.maxInAppM) {
+        directionsTooFar = true;
+        clearRoute();
+        updateDirectionsRouteInfo('too-far');
+        renderDirectionsExternal();
+        return;
+    }
+    directionsTooFar = false;
     updateDirectionsRouteInfo('loading');
     const result = await drawOSRMRoute(directionsStart.coords, directionsEnd.coords);
     if (!result) {
@@ -3741,6 +3818,14 @@ async function resolveGpsPoint(field) {
 
     navigator.geolocation.getCurrentPosition(
         (pos) => {
+            // Outside-campus fix can never start an in-app route — same gate
+            // as the blue dot; the two-line notice says where to go instead.
+            if (!isLngLatInsideCampus(pos.coords.longitude, pos.coords.latitude)) {
+                if (input) input.value = '';
+                setDirectionsField(field, null);
+                showToast('Anda berada di luar kampus', 'Peta ini hanya menunjukkan lokasi GPS anda di dalam kampus.');
+                return;
+            }
             setDirectionsField(field, {
                 type: 'gps',
                 coords: [pos.coords.latitude, pos.coords.longitude],
@@ -4097,6 +4182,7 @@ function initMap() {
             showAllLocations(true, false);
             handleDeepLink();
             maybeTestRoute();
+            maybeTestCoordinate();
             bootDataReady = true;
             maybeHideBootLoader();
             updateDebugChip();
@@ -4229,6 +4315,45 @@ function campusMaxBounds() {
         if (c[1] > maxLat) maxLat = c[1];
     });
     return [[minLng - buf, minLat - buf], [maxLng + buf, maxLat + buf]];
+}
+
+// True polygon check against the campus ring ([lng,lat] ray-cast).
+// Falls back to TRUE while the boundary hasn't loaded yet — never block GPS
+// on a missing file; the bbox box-check in coordsOutsideCampus still guards the lock.
+function isLngLatInsideCampus(lng, lat) {
+    const ring = campusRingLngLat();
+    if (!ring) return true;
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+}
+
+// Meters from the campus boundary; 0 when inside (or boundary not loaded).
+// Campus coords are [lat, lng]. Equirectangular point-segment distance.
+function distOutsideCampusM(lat, lng) {
+    const ring = campusRingLngLat();
+    if (!ring) return 0;
+    if (isLngLatInsideCampus(lng, lat)) return 0;
+    const kx = 111320 * Math.cos(lat * Math.PI / 180);
+    const ky = 110540;
+    const px = lng * kx, py = lat * ky;
+    let best2 = Infinity;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const ax = ring[j][0] * kx - px, ay = ring[j][1] * ky - py;
+        const bx = ring[i][0] * kx - px, by = ring[i][1] * ky - py;
+        const dx = bx - ax, dy = by - ay;
+        const L2 = dx * dx + dy * dy;
+        let t = L2 ? (-(ax * dx + ay * dy) / L2) : 0;
+        if (t < 0) t = 0; else if (t > 1) t = 1;
+        const ex = ax + t * dx, ey = ay + t * dy;
+        const d2 = ex * ex + ey * ey;
+        if (d2 < best2) best2 = d2;
+    }
+    return Math.sqrt(best2);
 }
 
 // Campus coords are [lat, lng]. True when the point falls outside the lock box.
