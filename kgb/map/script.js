@@ -2666,7 +2666,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html107'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html108'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -2816,7 +2816,10 @@ function initDebugTools() {
                     <button id="debug-close">× Close</button>
                 </span>
             </div>
-            <pre id="debug-page-body">{loading…}</pre>`;
+            <pre id="debug-page-body">{loading…}</pre>
+            <div class="debug-flags">
+                <div class="debug-flags-title">Debug flags — tap to open in a new tab:</div>
+            </div>`;
         document.body.appendChild(debugPageEl);
         const expandBtn = document.createElement('button');
         expandBtn.id = 'debug-expand-btn';
@@ -2863,6 +2866,39 @@ function initDebugTools() {
             window.location.reload();
         });
         debugPageEl.querySelector('#debug-reload').addEventListener('click', () => window.location.reload());
+        // Flags index — static block below the live JSON (untouched by the
+        // 750ms refresh, which only rewrites #debug-page-body). Examples open
+        // in a new tab so the current repro state survives.
+        try {
+            const base = location.pathname;
+            const rows = [
+                ['?debug=1', 'live camera chip', base + '?debug=1'],
+                ['?debugpage', 'this overlay', base + '?debugpage'],
+                ['?testroute=1', 'demo foot route on load', base + '?testroute=1'],
+                ['?testcoordinate=outside', 'fake GPS outside campus (no dot + notice)', base + '?testcoordinate=5.394029187181976,103.11271207804042'],
+                ['?testcoordinate=inside', 'fake GPS on campus (dot + focus)', base + '?testcoordinate=5.39963,103.07857'],
+            ];
+            const box = debugPageEl.querySelector('.debug-flags');
+            rows.forEach(([name, what, href]) => {
+                const row = document.createElement('div');
+                row.className = 'debug-flag';
+                const code = document.createElement('code');
+                code.textContent = name;
+                const span = document.createElement('span');
+                span.textContent = what;
+                const a = document.createElement('a');
+                a.href = href;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                a.textContent = 'try →';
+                row.append(code, span, a);
+                box.appendChild(row);
+            });
+            const ref = document.createElement('div');
+            ref.className = 'debug-flag-ref';
+            ref.textContent = 'Not debug (user deep links): ?type=slug, #place-slug';
+            box.appendChild(ref);
+        } catch (e) { }
         renderDebugPage();
         debugPageTimer = setInterval(renderDebugPage, 750);
     }

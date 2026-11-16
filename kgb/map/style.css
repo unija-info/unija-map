@@ -3051,6 +3051,37 @@ body.is-pitched .ml-stem { height: var(--pin-stem-height, 26px); }
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.debug-flags {
+    border-top: 1px solid #333;
+    padding: 10px 12px 14px;
+    font-size: 12px;
+    line-height: 1.7;
+}
+.debug-flags-title {
+    color: #fff;
+    margin-bottom: 4px;
+}
+.debug-flag {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.debug-flag code {
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 0 6px;
+    color: #ffd97d;
+}
+.debug-flag span { color: #9aa0a6; flex: 1 1 auto; }
+.debug-flag a { color: #8ab4f8; }
+.debug-flag-ref {
+    color: #5f6368;
+    margin-top: 4px;
 }
 @media (min-width: 769px) {
     #debug-page {
