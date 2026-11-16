@@ -63,6 +63,9 @@ const CONFIG_DEFAULTS = {
     // geometry alone cannot split them, so a human lists them here.
     // soloPrefix: same, by place-name prefix (e.g. the whole Asrama Blok family).
     tint: { solo: [], soloPrefix: [] },
+    // faculty.names: Sheet `fakulti` short code -> full name. Sheet stores
+    // codes only; map shows code with full name alongside. Missing = raw code.
+    faculty: { names: {} },
 };
 const CONFIG = JSON.parse(JSON.stringify(CONFIG_DEFAULTS));
 
@@ -151,6 +154,14 @@ function applyAppConfig(json) {
         const tn = json.tint || {};
         if (Array.isArray(tn.solo) && tn.solo.every(s => typeof s === 'string')) CONFIG.tint.solo = tn.solo.slice();
         if (Array.isArray(tn.soloPrefix) && tn.soloPrefix.every(s => typeof s === 'string')) CONFIG.tint.soloPrefix = tn.soloPrefix.slice();
+        const fc = json.faculty || {};
+        if (fc.names && typeof fc.names === 'object' && !Array.isArray(fc.names)) {
+            const clean = {};
+            Object.keys(fc.names).forEach(k => {
+                if (typeof fc.names[k] === 'string' && fc.names[k].trim()) clean[String(k).trim().toUpperCase()] = fc.names[k].trim();
+            });
+            CONFIG.faculty.names = clean;
+        }
         const root = document.documentElement.style;
         root.setProperty('--pin-stem-height', `${CONFIG.pins.stem.heightPx}px`);
         root.setProperty('--pin-badge-px', `${CONFIG.pins.badgePx}px`);
@@ -1555,6 +1566,27 @@ function showLocationInfoOverlay(locationId) {
             </div>`;
     }
 
+    // Phase 1 new columns — blank = hidden (most pins have neither).
+    if (location.gender && String(location.gender).trim()) {
+        detailRowsHtml += `
+            <div class="info-overlay-detail-row">
+                <span class="material-symbols-outlined info-overlay-detail-icon">wc</span>
+                <span class="info-overlay-detail-label">Jantina</span>
+                <span class="info-overlay-detail-value">${String(location.gender).trim()}</span>
+            </div>`;
+    }
+    {
+        const fac = facultyLabel(location.fakulti);
+        if (fac) {
+            detailRowsHtml += `
+            <div class="info-overlay-detail-row">
+                <span class="material-symbols-outlined info-overlay-detail-icon">school</span>
+                <span class="info-overlay-detail-label">Fakulti</span>
+                <span class="info-overlay-detail-value">${fac}</span>
+            </div>`;
+        }
+    }
+
     if (!location.coords) {
         detailRowsHtml += `
             <div class="info-overlay-detail-row">
@@ -2277,8 +2309,30 @@ function matchLocationsByTerm(term) {
         (loc.shortForm || '').toLowerCase().includes(lowerTerm) ||
         (loc.details || '').toLowerCase().includes(lowerTerm) ||
         (loc.alias || '').toLowerCase().includes(lowerTerm) ||
-        (loc.locationType || '').toLowerCase().includes(lowerTerm)
+        (loc.locationType || '').toLowerCase().includes(lowerTerm) ||
+        (loc.gender || '').toLowerCase().includes(lowerTerm) ||
+        (loc.fakulti || '').toLowerCase().includes(lowerTerm) ||
+        facultyFull(loc.fakulti).toLowerCase().includes(lowerTerm)
     );
+}
+
+// fakulti holds a short code ("FSSG"); CONFIG.faculty.names maps it to the
+// full name. Missing/blank = '' (row hidden, never "undefined").
+function facultyFull(code) {
+    if (!code || !String(code).trim()) return '';
+    const key = String(code).trim().toUpperCase();
+    try {
+        const names = (typeof CONFIG !== 'undefined' && CONFIG.faculty && CONFIG.faculty.names) || {};
+        return names[key] || '';
+    } catch (e) { return ''; }
+}
+
+// "FSSG — Fakulti Sains Sosial Gunaan", or "FSSG" when unmapped, or ''.
+function facultyLabel(code) {
+    if (!code || !String(code).trim()) return '';
+    const short = String(code).trim().toUpperCase();
+    const full = facultyFull(short);
+    return full ? `${short} — ${full}` : short;
 }
 
 // alias holds comma-separated old/variant names ("FKI lama, Blok E lama").
@@ -2337,12 +2391,17 @@ function renderSearchResults(term) {
     // Render location results
     matchingLocations.slice(0, 12).forEach(loc => {
         const matchedAlias = getMatchedAlias(loc, term);
+        const metaBits = [];
+        if (loc.gender && String(loc.gender).trim()) metaBits.push(String(loc.gender).trim());
+        const fac = facultyLabel(loc.fakulti);
+        if (fac) metaBits.push(fac);
         html += `
             <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                 <div class="result-content">
                     <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}${getSavedIds().includes(loc.id) ? '<span class="result-saved"> ★</span>' : ''}</div>
                     <div class="result-subtitle">${loc.locationType || ''}</div>
                     ${loc.details ? `<div class="result-detail">${loc.details}</div>` : ''}
+                    ${metaBits.length ? `<div class="result-detail">${metaBits.join(' · ')}</div>` : ''}
                     ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
                 </div>
             </div>
@@ -2661,7 +2720,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html109'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html110'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -3834,11 +3893,16 @@ function renderDirectionsResults(term, field) {
         matchingLocations.slice(0, 12).forEach(loc => {
             if (otherField && otherField.type === 'location' && otherField.id === loc.id) return;
             const matchedAlias = getMatchedAlias(loc, term);
+            const metaBits = [];
+            if (loc.gender && String(loc.gender).trim()) metaBits.push(String(loc.gender).trim());
+            const fac = facultyLabel(loc.fakulti);
+            if (fac) metaBits.push(fac);
             html += `
                 <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                     <div class="result-content">
                         <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                         <div class="result-subtitle">${loc.locationType || ''}</div>
+                        ${metaBits.length ? `<div class="result-detail">${metaBits.join(' · ')}</div>` : ''}
                         ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
                     </div>
                 </div>

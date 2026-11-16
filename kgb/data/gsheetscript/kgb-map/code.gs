@@ -1,6 +1,6 @@
 // ------------------ USER CONFIGURATION ------------------
 // (1) FILL IN YOUR DETAILS HERE
-const SCRIPT_VERSION = '1.3.1 (2026-10-21: +alias, human No-column safe, skip number/place-blank rows)';
+const SCRIPT_VERSION = '1.4.0 (2026-11-16: +gender, +fakulti)';
 const USER_CONFIG = {
   GITHUB_USERNAME: "unija-info", // Your GitHub username
   REPO_NAME: "unija-map", // The name of your GitHub repository
@@ -42,7 +42,7 @@ function updateGitHubFile() {
   // NOTE: human counter column (e.g. "No"/"Bil") and any other extra
   // columns are ignored. Only these headers are exported.
   const REQUIRED_HEADERS = [
-    'number', 'place', 'googleMapLink', 'locationType', 'shortForm', 'details', 'alias'
+    'number', 'place', 'googleMapLink', 'locationType', 'shortForm', 'details', 'alias', 'gender', 'fakulti'
   ];
   
   const GITHUB_TOKEN = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');

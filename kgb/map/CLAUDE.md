@@ -48,13 +48,16 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
     "locationType": "PENTADBIRAN & PTJ",
     "shortForm": "",
     "details": "Optional extra info",
-    "alias": "Old/variant names, comma-separated — search-only"
+    "alias": "Old/variant names, comma-separated — search-only",
+    "gender": "Lelaki | Perempuan | Campuran — dorm assignment, blank = hidden",
+    "fakulti": "Short code (FBK, FSSG, ...) — blank = hidden; full name from config.json faculty.names"
   }
 ]
 ```
 
 **Key points:**
-- `alias` (new) holds comma-separated old/variant names, matched by `matchLocationsByTerm()`; `getMatchedAlias(loc, term)` returns the single matched nickname for the `Juga dikenali sebagai 'X'` line (`.result-alias`). Missing/empty = no change. Empty search renders `Tiada hasil ditemui` + inert `📍 Cadang Lokasi` placeholder button (`.suggest-location-btn`, `data-placeholder="cadang-lokasi"` — no handler yet).
+- `alias` holds comma-separated old/variant names, matched by `matchLocationsByTerm()`; `getMatchedAlias(loc, term)` returns the single matched nickname for the `Juga dikenali sebagai 'X'` line (`.result-alias`). Missing/empty = no change. Empty search renders `Tiada hasil ditemui` + inert `📍 Cadang Lokasi` placeholder button (`.suggest-location-btn`, `data-placeholder="cadang-lokasi"` — no handler yet).
+- `gender`/`fakulti` (phase 1): Sheet-owned strings, searched by `matchLocationsByTerm()` (fakulti matches code AND `facultyFull()` mapped name); shown as `Jantina`/`Fakulti` info-overlay rows + a `gender · CODE — full` meta line in search/Arah results, all conditional on non-blank. `facultyLabel()` formats `CODE — full` (raw code when unmapped). Mapping lives in `config.json` `faculty.names` (validated in `applyAppConfig`, keys uppercased) so faculties change without code edits.
 
 **Key points:**
 - `number` uses category prefix codes: `P` = Pentadbiran, `A`/`B` = Akademik, `K` = Kolej Kediaman, `F` = Fakulti, etc.

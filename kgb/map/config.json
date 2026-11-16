@@ -75,6 +75,20 @@
     "dotMaxSpeedMps": 20,
     "maxInAppM": 1000
   },
+  "faculty": {
+    "_note": "Short code (Sheet `fakulti`) to full name. Sheet stores codes only; map shows code by default with full name alongside. Add/remove entries here when faculties change — no code edit needed.",
+    "names": {
+      "FBK": "Fakulti Bahasa dan Komunikasi",
+      "FSSG": "Fakulti Sains Sosial Gunaan",
+      "FUPL": "Fakulti Pengajian Umum dan Pengajian Lanjutan",
+      "FKI": "Fakulti Pengajian Kontemporari Islam",
+      "FPP": "Fakulti Perniagaan dan Pengurusan",
+      "FSK": "Fakulti Sains Kesihatan",
+      "FUHA": "Fakulti Undang-Undang dan Hubungan Antarabangsa",
+      "FRIT": "Fakulti Rekabentuk Inovatif dan Teknologi",
+      "PUSPA": "Pusat Asasi Sains dan Perubatan"
+    }
+  },
   "tint": {
     "_note": "solo: place names (exact match on Sheet `place`) that tint ONLY the footprint containing the pin. soloPrefix: same by name prefix (covers the whole Asrama Blok A–Q family, present and future). For OSM neighbours the tiles fuse into one feature (DABS + Perdana, hostel clusters) — no geometric rule can split those, so list them here. Everything else keeps the same-feature flood.",
     "solo": ["Dewan Al-Muktafi Billah Shah", "Dewan Perdana"],

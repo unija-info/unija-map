@@ -24,12 +24,15 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Hidden `/osm-status` page (unlinked, `noindex`): bilingual BM/EN live map-data status — active TileJSON version, OSM `osm_date` snapshot, next Sunday cutoff + Tuesday release with MYT-first display and countdowns; `osm_date` read via first-party `api/osm-date.js` proxy (btrfs sends no CORS headers; third-party proxies proven unreliable), build-ID-derived estimate as last resort
 - External-maps chooser + bare-coords Sheet compat with per-app brand icons: Maps circle opens Google/Apple/Waze (all built from `coords`, Apple legacy `?ll=&q=`), `parseCoords` takes bare `lat,lng`, chooser rows show true-vector logos (`media/logo/`, wired `html90`)
 - Popup tip photo card + Directions external fallback (`html93–94`): desktop tap popup is a photo mini-card (Butiran → info overlay, Arah → in-app Directions; `Tiada Gambar` placeholder when photo-less); Directions panel gains origin-aware Google/Apple/Waze row for when our route disappoints
-- Walk shortcut fallback (`html97`): `Laluan terus` beeline default-selected when the foot router detours badly (missing OSM footways); one-tap `Ikut jalan`; drive unaffected
+- Walk shortcut fallback (`html97`, RETIRED in `html109`): `Laluan terus` beeline default-selected when the foot router detours badly (missing OSM footways); one-tap `Ikut jalan`; drive unaffected — removed once footways were mapped, Arah is OSRM-only now
 - Building tint fixes (`html98–101`): same-feature flood, no self-seeding from our own layer, per-place `tint.solo`/`tint.soloPrefix` exceptions for tile-fused neighbours (DABS/Perdana, Asrama Blok A–Q); OSM `name` tags never reach tiles (schema has no `name`)
 - Marker depth sort (`html102`): pins stack by screen Y on settle, tapped pin always front
 - GPS campus gate (`html103–105`): outside-campus GPS shows no blue dot, camera stays; two-line notice (big `Anda berada di luar kampus` + `Peta ini hanya menunjukkan lokasi GPS anda di dalam kampus.`), fires every GPS-on tap
 - Arah range limit (`html106`): endpoints beyond 1 km from the boundary skip in-app routing (walk + drive) — external Google/Apple/Waze row becomes the hero; `route.maxInAppM` knob
 - Fake-GPS debug (`html107`): `?testcoordinate=lat,lng` feeds one fix through the real gate for desk testing
+- Debug flags index (`html108`): `?debugpage` gains a pinned index of all debug flags with one-tap example links (new tabs)
+- Walk beeline removed (`html109`): `Laluan terus` retired, Arah OSRM-only in both modes
+- Gender + fakulti phase 1 (`html110`, script v1.4.0): Sheet `gender`/`fakulti` columns — search + info rows, short code with full name from `config.json faculty.names`
 
 ---
 
