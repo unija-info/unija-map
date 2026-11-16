@@ -123,6 +123,53 @@ body, html {
     line-height: 1;
 }
 
+/* Phase-2 sub-filter chips: same scroll-row pattern as the pills, one row
+ * below, smaller + blue when active. Hidden until JS fills it (.visible).
+ * No positioning properties on library classes — these are our own divs. */
+#sub-pills {
+    position: absolute;
+    top: 64px;
+    left: 812px; /* mirrors #category-pills: search left 420 + width 380 + 12 gap */
+    right: 12px;
+    z-index: 1001;
+    display: none;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 6px;
+    scrollbar-width: none;
+}
+#sub-pills::-webkit-scrollbar { display: none; }
+#sub-pills.visible { display: flex; }
+.sidebar.collapsed ~ #sub-pills {
+    left: 462px;
+}
+/* Hidden whenever directions takes over the search slot (with the pills) */
+.search-container.directions-hidden + #category-pills + #sub-pills {
+    display: none;
+}
+.sub-pill {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 999px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    font-size: 12px;
+    font-weight: 500;
+    color: #202124;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sub-pill:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.sub-pill.active {
+    background: #1967d2;
+    border-color: #1967d2;
+    color: white;
+}
+
 /* Edge fades hide at the scrolled-to end (synced by syncPillFades()) */
 #category-pills.pills-at-start {
     -webkit-mask-image: linear-gradient(to right, black, black calc(100% - 20px), transparent);
@@ -148,6 +195,15 @@ body, html {
     }
     .sidebar.collapsed ~ #category-pills { left: 12px; }
     .cat-pill { padding: 7px 12px; font-size: 12px; }
+    #sub-pills {
+        position: fixed;
+        top: 106px;
+        left: 12px;
+        right: 12px;
+        z-index: 1590; /* same band as the pills, below search dropdown */
+        padding-bottom: 4px;
+    }
+    .sidebar.collapsed ~ #sub-pills { left: 12px; }
 }
 
 #search-bar {

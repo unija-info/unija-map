@@ -33,6 +33,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 * Tekan mana-mana **nama kategori** dalam senarai untuk melihat semua lokasinya di peta.
 * Tekan kategori yang sama sekali lagi untuk kembali ke paparan semua lokasi.
+* Sesetengah kategori ada **baris cip kedua** di bawahnya — contohnya kategori fakulti menunjukkan cip `FBK`, `FSSG`, … dan surau menunjukkan `Lelaki`/`Perempuan`/`Campuran`. Tekan cip untuk menapis pin dan senarai (`3 daripada 17 lokasi`); tekan `Semua` untuk kembali. Baris ini hanya muncul bila kategori itu ada lebih daripada satu nilai — asrama akan menyertai sebaik sahaja jantina diisi.
 * Butang **"Salin Pautan Kategori"** menyalin pautan yang boleh dikongsi — sesiapa yang membukanya akan nampak kategori yang sama.
 
 ## 5. Maklumat Sesuatu Tempat

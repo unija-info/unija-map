@@ -185,7 +185,8 @@ function loadAppConfig() {
 // ===== STATE =====
 let map;
 let mapData = [];
-let currentActiveCategory = null;
+let currentActiveCategory = null;       // DESIRED_ORDER entry, SAVED_FILTER, or null
+let currentSubFilter = null;          // { kind:'gender'|'fakulti', value:string } | null — chips under the pills
 let currentSelectedLocationId = null;
 let currentInfoOverlayLocationId = null;
 let currentOverlaySource = null; // null | 'category'
@@ -999,6 +1000,101 @@ function updateCategoryPills() {
     });
     syncSavedButton();
     syncRailState();
+    renderSubPills();
+}
+
+// ===== PHASE-2 SUB-FILTERS (gender / fakulti chips under the pills) =====
+// Data-driven: chips appear for the active category only when it holds 2+
+// distinct non-blank values. Blanks never get a chip and are hidden while
+// a sub-filter is active — so KOLEJ shows nothing until genders are filled.
+function subFilterGroups(categoryName) {
+    const groups = { gender: [], fakulti: [] };
+    if (!categoryName) return groups;
+    const seenG = {}, seenF = {};
+    mapData.forEach(loc => {
+        if (loc.locationType !== categoryName) return;
+        const g = (loc.gender || '').trim();
+        if (g && !seenG[g]) { seenG[g] = 1; groups.gender.push(g); }
+        const f = (loc.fakulti || '').trim().toUpperCase();
+        if (f && !seenF[f]) { seenF[f] = 1; groups.fakulti.push(f); }
+    });
+    groups.gender.sort();
+    groups.fakulti.sort();
+    return groups;
+}
+
+function subFilterPasses(loc) {
+    if (!currentSubFilter) return true;
+    if (currentSubFilter.kind === 'gender') {
+        return (loc.gender || '').trim() === currentSubFilter.value;
+    }
+    return (loc.fakulti || '').trim().toUpperCase() === currentSubFilter.value;
+}
+
+function categoryLocsFiltered(categoryName, withCoords) {
+    return mapData.filter(loc => {
+        if (loc.locationType !== categoryName) return false;
+        if (withCoords && !loc.coords) return false;
+        return subFilterPasses(loc);
+    });
+}
+
+function renderSubPills() {
+    const wrap = document.getElementById('sub-pills');
+    if (!wrap) return;
+    const groups = subFilterGroups(currentActiveCategory);
+    const show = !!currentActiveCategory && (groups.gender.length > 1 || groups.fakulti.length > 1);
+    if (!show) {
+        currentSubFilter = null;
+        wrap.innerHTML = '';
+        wrap.classList.remove('visible');
+        return;
+    }
+    // Drop a sub-filter whose kind has no chips (e.g. data changed).
+    if (currentSubFilter) {
+        const pool = currentSubFilter.kind === 'gender' ? groups.gender : groups.fakulti;
+        if (pool.indexOf(currentSubFilter.value) === -1) currentSubFilter = null;
+    }
+    wrap.innerHTML = '';
+    const mk = (kind, value, label, title) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        const isActive = value === null ? !currentSubFilter : (currentSubFilter && currentSubFilter.kind === kind && currentSubFilter.value === value);
+        b.className = 'sub-pill' + (isActive ? ' active' : '');
+        b.textContent = label;
+        if (title) b.title = title;
+        b.setAttribute('aria-label', title || label);
+        b.addEventListener('click', () => selectSubFilter(kind, value));
+        wrap.appendChild(b);
+    };
+    // Gender chips first, then faculty chips (same scroll row as pills).
+    if (groups.gender.length > 1) {
+        mk('gender', null, 'Semua', 'Semua jantina');
+        groups.gender.forEach(g => mk('gender', g, g, 'Jantina: ' + g));
+    }
+    if (groups.fakulti.length > 1) {
+        mk('fakulti', null, 'Semua', 'Semua fakulti');
+        groups.fakulti.forEach(f => mk('fakulti', f, f, facultyLabel(f)));
+    }
+    wrap.classList.add('visible');
+}
+
+function selectSubFilter(kind, value) {
+    currentSubFilter = value === null ? null : { kind, value };
+    renderSubPills();
+    clearMarkers();
+    const locs = categoryLocsFiltered(currentActiveCategory, true);
+    rebuildPinMarkers(locs);
+    showCategoryOverlay(currentActiveCategory);
+    const coords = locs.map(loc => loc.coords);
+    if (coords.length > 0) {
+        if (window.innerWidth <= 768) {
+            const bottomPad = Math.round(window.innerHeight * 0.5) + 20;
+            fitCoordsToMap(coords, { paddingTopLeft: [40, 60], paddingBottomRight: [40, bottomPad], maxZoom: 18, duration: 800 });
+        } else {
+            fitCoordsToMap(coords, { padding: getMapPadding(), maxZoom: 18, duration: 800 });
+        }
+    }
 }
 
 // Rail Tier-1 highlight: which panel is open (single sync point).
@@ -1335,6 +1431,7 @@ function showAllLocations(animate = true, updateUrl = true) {
     document.querySelector('.stop-category-overlay')?.remove();
     currentOverlaySource = null;
     currentActiveCategory = null;
+    currentSubFilter = null;
     currentSelectedLocationId = null;
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
     updateCategoryPills();
@@ -1367,6 +1464,7 @@ function filterByCategory(categoryName) {
     // Toggle: clicking same category again resets to show all
     if (currentActiveCategory === categoryName) {
         currentActiveCategory = null;
+        currentSubFilter = null;
         document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
         updateCategoryPills();
         showAllLocations();
@@ -1374,6 +1472,7 @@ function filterByCategory(categoryName) {
     }
 
     currentActiveCategory = categoryName;
+    currentSubFilter = null;
     currentSelectedLocationId = null;
     updateURL({ type: categoryName });
 
@@ -1389,7 +1488,7 @@ function filterByCategory(categoryName) {
     updateCategoryPills();
 
     clearMarkers();
-    const catLocs = mapData.filter(loc => loc.locationType === categoryName && loc.coords);
+    const catLocs = categoryLocsFiltered(categoryName, true);
     rebuildPinMarkers(catLocs);
     const coords = catLocs.map(loc => loc.coords);
 
@@ -1420,6 +1519,7 @@ function applySavedFilter() {
     const ids = getSavedIds();
     if (!ids.length) { showToast('Tiada lokasi disimpan lagi — tekan Simpan pada mana-mana kad'); return; }
     currentActiveCategory = SAVED_FILTER;
+    currentSubFilter = null;
     currentSelectedLocationId = null;
     updateURL();
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
@@ -1444,6 +1544,8 @@ function filterByLocation(location) {
 
     currentSelectedLocationId = location.id;
     currentActiveCategory = null;
+    currentSubFilter = null;
+    renderSubPills();
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
     rebuildPinMarkers([location], true);
@@ -1459,6 +1561,8 @@ function showLocationOnMap(location) {
 
     currentSelectedLocationId = location.id;
     currentActiveCategory = null;
+    currentSubFilter = null;
+    renderSubPills();
     document.querySelectorAll('.stop-header').forEach(h => h.classList.remove('category-active'));
 
     rebuildPinMarkers([location], true);
@@ -1695,8 +1799,9 @@ function showLocationInfoOverlay(locationId) {
                 if (!opts.keepRoute) clearRoute();
                 if (currentOverlaySource === 'category') {
                     // Category overlay is still in DOM — restore category pins
+                    // (through the sub-filter, so chips and pins never disagree)
                     currentSelectedLocationId = null;
-                    rebuildPinMarkers(mapData.filter(l => l.locationType === currentActiveCategory && l.coords));
+                    rebuildPinMarkers(categoryLocsFiltered(currentActiveCategory, true));
                     updateURL({ type: currentActiveCategory });
                     currentOverlaySource = null;
                 } else {
@@ -1868,7 +1973,8 @@ function showNearbyOverlay(originId) {
 function showCategoryOverlay(categoryName) {
     const bgColor = getCategoryColor(categoryName);
     const textColor = getCategoryTextColor(categoryName);
-    const locs = mapData.filter(l => l.locationType === categoryName).sort(customSort);
+    const allLocs = mapData.filter(l => l.locationType === categoryName);
+    const locs = allLocs.filter(subFilterPasses).sort(customSort);
     const sidebar = document.getElementById('sidebar');
 
     let listHtml = '';
@@ -1895,7 +2001,7 @@ function showCategoryOverlay(categoryName) {
                 Salin Pautan Kategori
             </button>
         </div>
-        <div class="category-overlay-subtitle">${locs.length} lokasi</div>
+        <div class="category-overlay-subtitle">${currentSubFilter ? `${locs.length} daripada ${allLocs.length} lokasi` : `${locs.length} lokasi`}</div>
         <div class="category-overlay-list">${listHtml}</div>`;
 
     function wireCategoryOverlayButtons(overlayEl) {
@@ -2720,7 +2826,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html110'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html111'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
