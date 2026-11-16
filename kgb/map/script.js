@@ -57,7 +57,7 @@ const CONFIG_DEFAULTS = {
     base: { default: 'vector' },
     mask: { dimOutside: 0.45, dimColor: '#868c96', restrictPanning: true, panBuffer: 0.02, boundaryFillColor: '#1967d2', boundaryFillOpacity: 0.07 },
     detail: { footpaths: true, sports: true, sportColor: '#7fd08a', sportLine: '#ffffff', pathColor: '#a34d4d', pathOpacity: 0.5, sportOpacity: 0.85, sportLineOpacity: 0.9, trackColor: '#c26a5a', trackOpacity: 0.9 },
-    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20, shortcutRatio: 1.8, shortcutMaxM: 500, shortcutWalkMps: 1.4, maxInAppM: 1000 },
+    route: { loopSeconds: 14, dotSpacingM: 12, dotMax: 48, dotMaxSpeedMps: 20, maxInAppM: 1000 },
     // solo: place names that tint ONLY their containing footprint (no flood).
     // For OSM ways the tiles merge into one feature (e.g. DABS + Perdana) —
     // geometry alone cannot split them, so a human lists them here.
@@ -147,9 +147,6 @@ function applyAppConfig(json) {
         CONFIG.route.dotSpacingM = Math.min(200, Math.max(2, numOr(rt.dotSpacingM, CONFIG.route.dotSpacingM)));
         CONFIG.route.dotMax = Math.round(Math.min(200, Math.max(1, numOr(rt.dotMax, CONFIG.route.dotMax))));
         CONFIG.route.dotMaxSpeedMps = Math.min(200, Math.max(1, numOr(rt.dotMaxSpeedMps, CONFIG.route.dotMaxSpeedMps)));
-        CONFIG.route.shortcutRatio = Math.min(10, Math.max(1.1, numOr(rt.shortcutRatio, CONFIG.route.shortcutRatio)));
-        CONFIG.route.shortcutMaxM = Math.min(5000, Math.max(50, numOr(rt.shortcutMaxM, CONFIG.route.shortcutMaxM)));
-        CONFIG.route.shortcutWalkMps = Math.min(5, Math.max(0.5, numOr(rt.shortcutWalkMps, CONFIG.route.shortcutWalkMps)));
         CONFIG.route.maxInAppM = Math.min(5000, Math.max(100, numOr(rt.maxInAppM, CONFIG.route.maxInAppM)));
         const tn = json.tint || {};
         if (Array.isArray(tn.solo) && tn.solo.every(s => typeof s === 'string')) CONFIG.tint.solo = tn.solo.slice();
@@ -212,8 +209,6 @@ let directionsEnd = null;              // same shape
 let directionsActiveField = null;      // 'start' | 'end' | null — which field the shared dropdown feeds
 let directionsTravelMode = 'walk';     // 'walk' | 'drive' — persisted in localStorage
 let directionsTooFar = false;          // last computed pair exceeded maxInAppM from boundary
-// Shortcut fallback (walk only): { osrm: {geo,path,result}, direct: {...}, active } or null.
-let routeShortcut = null;
 try { if (localStorage.getItem('kgbMapTravelMode') === 'drive') directionsTravelMode = 'drive'; } catch (e) { }
 let directionsStartMarker = null;      // L.marker pin for the chosen start point
 let directionsEndMarker = null;        // L.marker pin for the chosen end point
@@ -2666,7 +2661,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html108'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html109'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -3447,29 +3442,9 @@ async function drawOSRMRoute(fromCoords, toCoords) {
         const built = buildRoutePath(route.geometry, fromCoords, toCoords);
         const osrmResult = { distance: route.distance, duration: route.duration, mode: isDrive ? 'drive' : 'walk' };
 
-        // Shortcut fallback (walk only): OSM footway gaps make the router loop
-        // around roads while pedestrians cut straight across. When the detour
-        // ratio is bad, offer a direct beeline — default-selected. Self-retires
-        // once the missing footways are mapped in OSM (ratio stops triggering).
-        routeShortcut = null;
-        hideShortcutToggle();
-        if (!isDrive) {
-            const bee = haversineM(fromCoords, toCoords);
-            if (bee > 0 && bee <= CONFIG.route.shortcutMaxM && route.distance > bee * CONFIG.route.shortcutRatio) {
-                const dGeo = { type: 'LineString', coordinates: [[fromCoords[1], fromCoords[0]], [toCoords[1], toCoords[0]]] };
-                routeShortcut = {
-                    osrm: { geo: built.main, path: built.path, result: osrmResult },
-                    direct: { geo: dGeo, path: dGeo.coordinates, result: { distance: bee, duration: bee / CONFIG.route.shortcutWalkMps, mode: 'walk' } },
-                    active: 'direct',
-                };
-                selectRoutePath('direct');
-                return Object.assign({}, routeShortcut.direct.result, { via: 'terus' });
-            }
-        }
         renderRouteGeometry(built.main, built.path);
-        const result = Object.assign({}, osrmResult, { via: null });
-        updateDirectionsRouteInfo(result);
-        return result;
+        updateDirectionsRouteInfo(osrmResult);
+        return osrmResult;
     } catch (err) {
         console.warn('Route fetch failed:', err);
         return null;
@@ -3486,43 +3461,6 @@ function renderRouteGeometry(geo, path) {
         startRouteAnimation();
         buildRouteDot(path);
     }
-}
-
-// Shortcut toggle (walk only): single source shows the ACTIVE path; the
-// buttons carry both distances so the comparison survives without a second layer.
-function renderShortcutToggle() {
-    const box = document.getElementById('directions-shortcut');
-    const sc = routeShortcut;
-    if (!box) return;
-    if (!sc) { box.innerHTML = ''; box.style.display = 'none'; return; }
-    box.style.display = '';
-    box.innerHTML =
-        `<div class="directions-shortcut-label">Pilih laluan:</div>` +
-        `<div class="directions-shortcut-row">` +
-        `<button data-which="direct" class="${sc.active === 'direct' ? 'active' : ''}">Laluan terus · ${formatDist(sc.direct.result.distance)}</button>` +
-        `<button data-which="osrm" class="${sc.active === 'osrm' ? 'active' : ''}">Ikut jalan · ${formatDist(sc.osrm.result.distance)}</button>` +
-        `</div>`;
-    box.querySelectorAll('button[data-which]').forEach(btn => {
-        btn.addEventListener('click', () => selectRoutePath(btn.dataset.which));
-    });
-}
-
-function hideShortcutToggle() {
-    const box = document.getElementById('directions-shortcut');
-    if (!box) return;
-    box.innerHTML = '';
-    box.style.display = 'none';
-}
-
-function selectRoutePath(which) {
-    const sc = routeShortcut;
-    if (!sc || (which !== 'osrm' && which !== 'direct')) return;
-    sc.active = which;
-    const useDirect = which === 'direct';
-    const pick = useDirect ? sc.direct : sc.osrm;
-    renderRouteGeometry(pick.geo, pick.path);
-    updateDirectionsRouteInfo(Object.assign({}, pick.result, { via: useDirect ? 'terus' : 'jalan' }));
-    renderShortcutToggle();
 }
 
 // Marching-ants crawl on the white dash overlay. MapLibre has no dash-offset,
@@ -3679,8 +3617,6 @@ function clearRoute() {
     stopRouteAnimation();
     clearRouteDot();
     routeGeoJSON = null;
-    routeShortcut = null;
-    hideShortcutToggle();
     try {
         if (map && map.getSource('osrm-route')) {
             map.getSource('osrm-route').setData({ type: 'FeatureCollection', features: [] });
@@ -3740,8 +3676,7 @@ function updateDirectionsRouteInfo(result) {
     } else if (result === null) {
         infoEl.textContent = '';
     } else {
-        const via = result.via === 'terus' ? ' · laluan terus' : (result.via === 'jalan' ? ' · ikut jalan' : '');
-        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (${result.mode === 'drive' ? 'memandu' : 'jalan kaki'})${via}`;
+        infoEl.textContent = `${(result.distance / 1000).toFixed(1)} km · ${Math.round(result.duration / 60)} minit (${result.mode === 'drive' ? 'memandu' : 'jalan kaki'})`;
     }
 }
 

@@ -68,14 +68,11 @@
     "trackOpacity": 0.9
   },
   "route": {
-    "_note": "Walk shortcut fallback: when OSRM distance exceeds shortcutRatio × beeline (and beeline is within shortcutMaxM), offer a direct beeline at shortcutWalkMps pace, default-selected. Drive mode never triggers. Self-retires once missing footways are mapped in OSM. maxInAppM: endpoints further than this from the campus boundary skip in-app routing — external providers take over.",
+    "_note": "maxInAppM: endpoints further than this from the campus boundary skip in-app routing — external providers take over.",
     "loopSeconds": 14,
     "dotSpacingM": 12,
     "dotMax": 48,
     "dotMaxSpeedMps": 20,
-    "shortcutRatio": 1.8,
-    "shortcutMaxM": 500,
-    "shortcutWalkMps": 1.4,
     "maxInAppM": 1000
   },
   "tint": {

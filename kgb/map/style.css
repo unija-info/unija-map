@@ -3212,35 +3212,6 @@ body.is-pitched .ml-stem { height: var(--pin-stem-height, 26px); }
 #pin-popup .popup-btn-light { background: #f1f3f4; color: #202124; }
 #pin-popup .popup-btn-light:hover { background: #e2e4e7; }
 
-/* Directions shortcut toggle (walk only: Laluan terus vs Ikut jalan) */
-#directions-shortcut { padding: 0 12px 8px; }
-.directions-shortcut-label {
-    font-size: 11px;
-    color: #5f6368;
-    margin-bottom: 6px;
-}
-.directions-shortcut-row {
-    display: flex;
-    gap: 8px;
-}
-.directions-shortcut-row button {
-    flex: 1;
-    border: 1px solid #dadce0;
-    background: #fff;
-    border-radius: 8px;
-    padding: 8px 4px;
-    font-size: 12px;
-    font-weight: 700;
-    font-family: 'Google Sans', sans-serif;
-    color: #202124;
-    cursor: pointer;
-}
-.directions-shortcut-row button.active {
-    background: #e8f0fe;
-    border-color: #1967d2;
-    color: #1967d2;
-}
-
 /* Directions external fallback row (under the route info) */
 #directions-external { padding: 8px 12px 10px; }
 .directions-external-label {
