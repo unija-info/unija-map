@@ -36,6 +36,7 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Phase-2 sub-filter chips (`html111`): data-driven gender/fakulti chip row under category pills
 - Rich details + subplaces (`html112→html113`, script v1.5.0→v1.5.1): styled `details` (breaks/bold/links/tel/mailto), `##` unit dropdowns, subplace search + `#slug/unit` links, `· N sub lokasi` badges — `details`-only, no extra columns
 - Multi-photo gallery (`html114→html116`): filename-auto (`<NUMBER>-2/-3/-4`, max 3 extras) swipe gallery in info card, dots + `1/N` counter + `‹` `›` arrows, single-photo cards unchanged
+- Details images + lightbox (`html117`): `![caption](file)` embeds photos in details (folder-auto), 2+ consecutive become a mini-carousel, tap for fullscreen viewer
 
 ---
 

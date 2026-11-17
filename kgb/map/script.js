@@ -1810,9 +1810,9 @@ function showLocationInfoOverlay(locationId) {
     {
         const secs = location._sections || parseDetailSections(location.details);
         let infoHtml = '';
-        if (secs.intro) infoHtml += renderRichText(secs.intro);
+        if (secs.intro) infoHtml += renderRichText(secs.intro, photoBaseFor(location));
         secs.sections.forEach(sec => {
-            const body = sec.body ? renderRichText(sec.body) : '<span class="detail-section-empty">Tiada maklumat tambahan.</span>';
+            const body = sec.body ? renderRichText(sec.body, photoBaseFor(location)) : '<span class="detail-section-empty">Tiada maklumat tambahan.</span>';
             infoHtml += `<details class="detail-section" data-subplace="${escapeHtml(sec.title)}"><summary>${escapeHtml(sec.title)}</summary><div class="detail-section-body">${body}</div></details>`;
         });
         if (infoHtml) {
@@ -1930,6 +1930,21 @@ function showLocationInfoOverlay(locationId) {
     `;
 
     function wireButtons(overlayEl) {
+        // Details images → lightbox (delegated: survives in-place re-renders).
+        wireDetailCarousels(overlayEl);
+        overlayEl.addEventListener('click', (e) => {
+            const slide = e.target.closest && e.target.closest('.detail-carousel-track img, .detail-img img');
+            if (!slide || !overlayEl.contains(slide)) return;
+            const caro = slide.closest('.detail-carousel');
+            if (caro) {
+                const slides = Array.from(caro.querySelectorAll('.detail-carousel-track img'));
+                openLightbox(slides.map(im => ({ url: im.currentSrc || im.src, cap: im.dataset.cap || im.alt || '' })), Math.max(0, slides.indexOf(slide)));
+            } else {
+                const fig = slide.closest('.detail-img');
+                const capEl = fig && fig.querySelector('figcaption');
+                openLightbox([{ url: slide.currentSrc || slide.src, cap: (capEl && capEl.textContent) || '' }], 0);
+            }
+        });
         // Overlay removal must never depend solely on `animationend` — a missed
         // event strands the card in the DOM (seen: card stuck under the
         // Directions panel). The timer finishes the job if the event never fires.
@@ -2598,7 +2613,7 @@ function matchLocationsByTerm(term) {
         if ((loc.number || '').toLowerCase().includes(lowerTerm)) return true;
         if ((loc.place || '').toLowerCase().includes(lowerTerm)) return true;
         if ((loc.shortForm || '').toLowerCase().includes(lowerTerm)) return true;
-        if ((loc.details || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((stripDetailImages(loc.details) || '').toLowerCase().includes(lowerTerm)) return true;
         if ((loc.alias || '').toLowerCase().includes(lowerTerm)) return true;
         if ((loc.locationType || '').toLowerCase().includes(lowerTerm)) return true;
         if ((loc.gender || '').toLowerCase().includes(lowerTerm)) return true;
@@ -2608,9 +2623,9 @@ function matchLocationsByTerm(term) {
             for (const sec of loc._sections.sections) {
                 if (sec.title.toLowerCase().includes(lowerTerm)) return true;
                 if (sec.aliases.some(a => a.toLowerCase().includes(lowerTerm))) return true;
-                if (sec.body.toLowerCase().includes(lowerTerm)) return true;
+                if (stripDetailImages(sec.body).toLowerCase().includes(lowerTerm)) return true;
                 // Hyphen/diacritic-proof fallback: 'comaei' vs 'CoMAE-i'.
-                if (normSub(lowerTerm).length >= 4 && normSub(sec.title + ' ' + sec.aliases.join(' ') + ' ' + sec.body).includes(normSub(lowerTerm))) return true;
+                if (normSub(lowerTerm).length >= 4 && normSub(sec.title + ' ' + sec.aliases.join(' ') + ' ' + stripDetailImages(sec.body)).includes(normSub(lowerTerm))) return true;
             }
         }
         return false;
@@ -2648,8 +2663,32 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function renderRichText(src) {
-    let h = escapeHtml(src);
+let detailImages = [];
+function renderRichText(src, imgBase) {
+    // Images: `![caption](file)` (file resolves into this place's own photo
+    // folder; full URLs used as-is) tokenized before escaping so no markup
+    // or autolinker touches them. Bare image URLs / bare filenames alone on
+    // a line also embed. Consecutive image lines become one swipe carousel.
+    detailImages = [];
+    const tok = (cap, url) => { detailImages.push({ cap, url }); return `~DIMG${detailImages.length - 1}~`; };
+    let s = String(src == null ? '' : src);
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, cap, tgt) => {
+        if (/^(https?:)?\/\//i.test(tgt) || tgt.charAt(0) === '/') return tok(cap.trim(), tgt);
+        if (!imgBase) return m;
+        // imgBase is the cover stem (…/folder/NUMBER) — resolve into the folder.
+        return tok(cap.trim(), imgBase.replace(/\/[^/]+$/, '') + '/' + tgt.replace(/^\.\//, ''));
+    });
+    s = s.split('\n').map(line => {
+        const t = line.trim();
+        const url = t.match(/^https?:\/\/\S+\.(?:jpg|jpeg|png|webp)(\?\S*)?$/i);
+        if (url) return tok('', url[0]);
+        if (imgBase) {
+            const file = t.match(/^([\w\-.]+)\.(jpg|jpeg|png|webp)$/i);
+            if (file) return tok('', imgBase.replace(/\/[^/]+$/, '') + '/' + file[0]);
+        }
+        return line;
+    }).join('\n');
+    let h = escapeHtml(s);
     h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     h = h.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
@@ -2662,7 +2701,158 @@ function renderRichText(src) {
         return `${pre}<a href="tel:+${tel}">${num}</a>`;
     });
     h = h.replace(/\n/g, '<br>');
-    return h;
+    return restoreDetailImages(h);
+}
+
+// Tokens → figures. Runs of tokens separated only by <br>/whitespace
+// (consecutive image lines) become one swipe carousel when 2+.
+function restoreDetailImages(h) {
+    const parts = h.split(/(~DIMG\d+~)/g);
+    let out = '', run = [];
+    const flushRun = () => {
+        if (!run.length) return;
+        out += run.length > 1 ? detailCarouselHtml(run) : detailFigureHtml(run[0]);
+        run = [];
+    };
+    parts.forEach(p => {
+        const m = typeof p === 'string' && p.match(/^~DIMG(\d+)~$/);
+        if (m && detailImages[+m[1]]) { run.push(detailImages[+m[1]]); return; }
+        if (run.length && /^(<br\s*\/?>|\s)*$/i.test(p)) return;
+        flushRun();
+        out += p;
+    });
+    flushRun();
+    return out;
+}
+
+function detailFigureHtml(it) {
+    const cap = it.cap ? `<figcaption>${escapeHtml(it.cap)}</figcaption>` : '';
+    return `<figure class="detail-img"><img src="${escapeHtml(it.url)}" alt="${escapeHtml(it.cap || 'Gambar')}" loading="lazy">${cap}</figure>`;
+}
+
+function detailCarouselHtml(items) {
+    const slides = items.map(it => `<img src="${escapeHtml(it.url)}" alt="${escapeHtml(it.cap || 'Gambar')}" loading="lazy" data-cap="${escapeHtml(it.cap || '')}">`).join('');
+    const dots = items.map((_, i) => `<button type="button" data-i="${i}" aria-label="Gambar ${i + 1}"></button>`).join('');
+    return `<div class="detail-carousel"><div class="detail-carousel-track">${slides}</div>`
+        + `<div class="detail-carousel-dots" hidden>${dots}</div>`
+        + `<div class="detail-carousel-count" hidden>1/${items.length}</div>`
+        + `<button type="button" class="detail-carousel-prev" aria-label="Gambar sebelumnya" hidden><span class="material-symbols-outlined">chevron_left</span></button>`
+        + `<button type="button" class="detail-carousel-next" aria-label="Gambar seterusnya" hidden><span class="material-symbols-outlined">chevron_right</span></button></div>`;
+}
+
+// Wire dots + counter + arrows + scroll sync for one details carousel.
+// Clicking a slide opens the lightbox at that slide.
+function wireOneDetailCarousel(caro) {
+    const track = caro.querySelector('.detail-carousel-track');
+    const dotsBox = caro.querySelector('.detail-carousel-dots');
+    const countBox = caro.querySelector('.detail-carousel-count');
+    const prevBtn = caro.querySelector('.detail-carousel-prev');
+    const nextBtn = caro.querySelector('.detail-carousel-next');
+    if (!track) return;
+    const imgs = () => Array.from(track.querySelectorAll('img'));
+    const curIdx = () => {
+        const list = imgs();
+        const w = track.clientWidth || 1;
+        return Math.min(list.length - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+    };
+    const goTo = (i) => {
+        const n = imgs().length;
+        track.scrollTo({ left: Math.min(n - 1, Math.max(0, i)) * track.clientWidth, behavior: 'smooth' });
+    };
+    const paint = () => {
+        const n = imgs().length;
+        const idx = curIdx();
+        if (dotsBox) Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle('on', i === idx));
+        if (countBox) countBox.textContent = `${idx + 1}/${n}`;
+        if (prevBtn) prevBtn.hidden = !(n > 1 && idx > 0);
+        if (nextBtn) nextBtn.hidden = !(n > 1 && idx < n - 1);
+    };
+    if (dotsBox) {
+        Array.from(dotsBox.children).forEach(d => {
+            d.addEventListener('click', (e) => { e.stopPropagation(); goTo(+d.dataset.i || 0); });
+        });
+        dotsBox.hidden = false;
+    }
+    if (countBox) countBox.hidden = false;
+    if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); goTo(curIdx() - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); goTo(curIdx() + 1); });
+    if (!track.dataset.detailSynced) {
+        track.dataset.detailSynced = '1';
+        let ticking = false;
+        track.addEventListener('scroll', () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => { ticking = false; paint(); });
+        }, { passive: true });
+    }
+    paint();
+}
+
+function wireDetailCarousels(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('.detail-carousel').forEach(wireOneDetailCarousel);
+}
+
+// Fullscreen viewer: large image + caption, wraparound ‹ ›, counter,
+// × + backdrop + Escape close. Items: [{url, cap}].
+function openLightbox(items, idx) {
+    closeLightbox();
+    if (!items || !items.length) return;
+    let cur = Math.min(items.length - 1, Math.max(0, idx || 0));
+    const lb = document.createElement('div');
+    lb.className = 'img-lightbox';
+    lb.innerHTML = `<div class="img-lightbox-backdrop"></div>
+        <figure class="img-lightbox-fig"><img class="img-lightbox-img" src="" alt=""></figure>
+        <div class="img-lightbox-count"></div>
+        <button type="button" class="img-lightbox-prev" aria-label="Gambar sebelumnya"><span class="material-symbols-outlined">chevron_left</span></button>
+        <button type="button" class="img-lightbox-next" aria-label="Gambar seterusnya"><span class="material-symbols-outlined">chevron_right</span></button>
+        <button type="button" class="img-lightbox-close" aria-label="Tutup">×</button>`;
+    document.body.appendChild(lb);
+    const img = lb.querySelector('.img-lightbox-img');
+    const count = lb.querySelector('.img-lightbox-count');
+    const fig = lb.querySelector('.img-lightbox-fig');
+    const paint = () => {
+        img.src = items[cur].url;
+        img.alt = items[cur].cap || 'Gambar';
+        let capEl = fig.querySelector('figcaption');
+        if (items[cur].cap) {
+            if (!capEl) { capEl = document.createElement('figcaption'); fig.appendChild(capEl); }
+            capEl.textContent = items[cur].cap;
+        } else if (capEl) capEl.remove();
+        count.textContent = items.length > 1 ? `${cur + 1}/${items.length}` : '';
+        lb.querySelector('.img-lightbox-prev').style.display = items.length > 1 ? '' : 'none';
+        lb.querySelector('.img-lightbox-next').style.display = items.length > 1 ? '' : 'none';
+    };
+    lb.querySelector('.img-lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); cur = (cur - 1 + items.length) % items.length; paint(); });
+    lb.querySelector('.img-lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); cur = (cur + 1) % items.length; paint(); });
+    const onKey = (e) => {
+        if (e.key === 'Escape') closeLightbox();
+        else if (e.key === 'ArrowLeft' && items.length > 1) { cur = (cur - 1 + items.length) % items.length; paint(); }
+        else if (e.key === 'ArrowRight' && items.length > 1) { cur = (cur + 1) % items.length; paint(); }
+    };
+    lb._onKey = onKey;
+    document.addEventListener('keydown', onKey);
+    lb.querySelector('.img-lightbox-close').addEventListener('click', () => closeLightbox());
+    lb.querySelector('.img-lightbox-backdrop').addEventListener('click', () => closeLightbox());
+    lb._prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    paint();
+}
+
+function closeLightbox() {
+    const lb = document.querySelector('.img-lightbox');
+    if (!lb) return;
+    if (lb._onKey) document.removeEventListener('keydown', lb._onKey);
+    if (lb._prevOverflow !== undefined) document.body.style.overflow = lb._prevOverflow;
+    lb.remove();
+}
+
+// Image markup stripped for search/snippet contexts so `png` etc. never match.
+function stripDetailImages(s) {
+    return String(s || '')
+        .replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
+        .replace(/^https?:\/\/\S+\.(?:jpg|jpeg|png|webp)(\?\S*)?$/gim, ' ')
+        .replace(/^[\w\-.]+\.(?:jpg|jpeg|png|webp)$/gim, ' ');
 }
 
 // { intro, sections: [{title, aliases[], body}] }. Titles display canonical;
@@ -2704,8 +2894,10 @@ function detailSnippet(loc, maxLen) {
     let s = secs.intro;
     if (!s && secs.sections.length) s = secs.sections[0].title;
     if (!s) s = (loc.details || '').trim();
+    s = stripDetailImages(s);
     s = s.replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-    s = s.split('\n')[0].trim();
+    const firstLine = s.split('\n').map(l => l.trim()).filter(l => l)[0] || '';
+    s = firstLine;
     maxLen = maxLen || 140;
     if (s.length > maxLen) s = s.slice(0, maxLen - 1).trim() + '…';
     return s;
@@ -3141,7 +3333,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html116'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html117'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);

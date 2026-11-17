@@ -61,6 +61,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 ## 8. Kongsi Dengan Tepat
 
 * Setiap paparan ada pautannya sendiri: semua lokasi, satu kategori (`?type=...`), satu tempat (`#nama-tempat`) — atau satu unit dalam bangunan (`#nama-tempat/nama-unit`, contoh tempat U13 yang terus membuka dropdown CoMAE-i).
+* Gambar dalam info: tulis `![Keterangan](P4-2.png)` (nama fail sahaja — automatik dari folder gambar tempat itu) atau pautan penuh; dua gambar berturut-turut menjadi karusel leret, tekan mana-mana gambar untuk paparan penuh.
 * Kongsi pautan itu — penerima nampak **tepat apa yang anda nampak**.
 
 ## 9. Paparan Telefon vs Komputer
