@@ -2491,7 +2491,41 @@ body, html {
 /* [hidden] must win over the flex layout above — empty dots stay invisible
    on single-photo cards instead of leaving a blank flex box behind. */
 .info-overlay-dots[hidden],
-.info-overlay-count[hidden] { display: none; }
+.info-overlay-count[hidden],
+.info-overlay-prev[hidden],
+.info-overlay-next[hidden] { display: none; }
+/* Swipe fix: the faded placeholder sits above the track — never let it eat
+   touches, or mobile swipes go to the card's vertical scroller instead. */
+.info-overlay-image-placeholder { pointer-events: none; }
+/* Gesture hint: let the browser start a horizontal pan on the track even
+   inside the vertically-dragging bottom sheet. */
+.info-overlay-image-wrap.has-gallery .info-overlay-track {
+    touch-action: pan-x pan-y;
+}
+/* Gallery arrows: guaranteed tap path (mobile) + discoverability (desktop).
+   Edge arrows hide via paint() — no ‹ on photo 1, no › on the last. */
+.info-overlay-prev,
+.info-overlay-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+}
+.info-overlay-prev { left: 8px; }
+.info-overlay-next { right: 8px; }
+.info-overlay-prev .material-symbols-outlined,
+.info-overlay-next .material-symbols-outlined { font-size: 24px; }
 .info-overlay-count {
     position: absolute;
     right: 8px;

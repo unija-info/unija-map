@@ -1719,14 +1719,27 @@ function buildGalleryChrome(wrap) {
     const track = wrap.querySelector('.info-overlay-track');
     const dotsBox = wrap.querySelector('.info-overlay-dots');
     const countBox = wrap.querySelector('.info-overlay-count');
+    const prevBtn = wrap.querySelector('.info-overlay-prev');
+    const nextBtn = wrap.querySelector('.info-overlay-next');
     if (!track || !dotsBox || !countBox) return;
     const imgs = () => Array.from(track.querySelectorAll('img'));
-    const paint = () => {
+    const curIdx = () => {
         const list = imgs();
         const w = wrap.clientWidth || 1;
-        const idx = Math.min(list.length - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+        return Math.min(list.length - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+    };
+    const goTo = (i) => {
+        const list = imgs();
+        const clamped = Math.min(list.length - 1, Math.max(0, i));
+        track.scrollTo({ left: clamped * wrap.clientWidth, behavior: 'smooth' });
+    };
+    const paint = () => {
+        const list = imgs();
+        const idx = curIdx();
         Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle('on', i === idx));
         countBox.textContent = `${idx + 1}/${list.length}`;
+        if (prevBtn) prevBtn.hidden = !(list.length > 1 && idx > 0);
+        if (nextBtn) nextBtn.hidden = !(list.length > 1 && idx < list.length - 1);
     };
     dotsBox.innerHTML = '';
     imgs().forEach((_, i) => {
@@ -1735,10 +1748,18 @@ function buildGalleryChrome(wrap) {
         d.setAttribute('aria-label', `Gambar ${i + 1}`);
         d.addEventListener('click', (e) => {
             e.stopPropagation();
-            track.scrollTo({ left: i * wrap.clientWidth, behavior: 'smooth' });
+            goTo(i);
         });
         dotsBox.appendChild(d);
     });
+    if (prevBtn && !prevBtn.dataset.wired) {
+        prevBtn.dataset.wired = '1';
+        prevBtn.addEventListener('click', (e) => { e.stopPropagation(); goTo(curIdx() - 1); });
+    }
+    if (nextBtn && !nextBtn.dataset.wired) {
+        nextBtn.dataset.wired = '1';
+        nextBtn.addEventListener('click', (e) => { e.stopPropagation(); goTo(curIdx() + 1); });
+    }
     if (imgs().length > 1) {
         dotsBox.hidden = false;
         countBox.hidden = false;
@@ -1746,6 +1767,8 @@ function buildGalleryChrome(wrap) {
     } else {
         dotsBox.hidden = true;
         countBox.hidden = true;
+        if (prevBtn) prevBtn.hidden = true;
+        if (nextBtn) nextBtn.hidden = true;
     }
     if (!track.dataset.gallerySynced) {
         track.dataset.gallerySynced = '1';
@@ -1879,6 +1902,8 @@ function showLocationInfoOverlay(locationId) {
                 </div>
                 <div class="info-overlay-dots" hidden></div>
                 <div class="info-overlay-count" hidden></div>
+                <button class="info-overlay-prev" aria-label="Gambar sebelumnya" hidden><span class="material-symbols-outlined">chevron_left</span></button>
+                <button class="info-overlay-next" aria-label="Gambar seterusnya" hidden><span class="material-symbols-outlined">chevron_right</span></button>
                 <button class="info-overlay-back" aria-label="Kembali">
                     <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
                 </button>
@@ -3116,7 +3141,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html115'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html116'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
