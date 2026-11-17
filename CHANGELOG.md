@@ -33,6 +33,8 @@ MapLibre 3D migration for `kgb/map/` — full detail in [`kgb/map/CHANGELOG.md`]
 - Debug flags index (`html108`): `?debugpage` gains a pinned index of all debug flags with one-tap example links (new tabs)
 - Walk beeline removed (`html109`): `Laluan terus` retired, Arah OSRM-only in both modes
 - Gender + fakulti phase 1 (`html110`, script v1.4.0): Sheet `gender`/`fakulti` columns — search + info rows, short code with full name from `config.json faculty.names`
+- Phase-2 sub-filter chips (`html111`): data-driven gender/fakulti chip row under category pills
+- Rich details + subplaces (`html112→html113`, script v1.5.0→v1.5.1): styled `details` (breaks/bold/links/tel/mailto), `##` unit dropdowns, subplace search + `#slug/unit` links, `· N sub lokasi` badges — `details`-only, no extra columns
 
 ---
 

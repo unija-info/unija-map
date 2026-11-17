@@ -51,6 +51,7 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
     "alias": "Old/variant names, comma-separated — search-only",
     "gender": "Lelaki | Perempuan | Campuran — dorm assignment, blank = hidden",
     "fakulti": "Short code (FBK, FSSG, ...) — blank = hidden; full name from config.json faculty.names"
+    // phone/website REMOVED v1.5.1 (owner: details-only) — contacts live in details (auto tel:/mailto:)
   }
 ]
 ```
@@ -58,6 +59,7 @@ Data is fetched from `../data/kgb-map.json` (relative path from `kgb/map/`):
 **Key points:**
 - `alias` holds comma-separated old/variant names, matched by `matchLocationsByTerm()`; `getMatchedAlias(loc, term)` returns the single matched nickname for the `Juga dikenali sebagai 'X'` line (`.result-alias`). Missing/empty = no change. Empty search renders `Tiada hasil ditemui` + inert `📍 Cadang Lokasi` placeholder button (`.suggest-location-btn`, `data-placeholder="cadang-lokasi"` — no handler yet).
 - `gender`/`fakulti` (phase 1): Sheet-owned strings, searched by `matchLocationsByTerm()` (fakulti matches code AND `facultyFull()` mapped name); shown as `Jantina`/`Fakulti` info-overlay rows + a `gender · CODE — full` meta line in search/Arah results, all conditional on non-blank. `facultyLabel()` formats `CODE — full` (raw code when unmapped). Mapping lives in `config.json` `faculty.names` (validated in `applyAppConfig`, keys uppercased) so faculties change without code edits.
+- `details` is mini-markup + subplaces: `renderRichText()` escapes first, then line breaks, `**bold**`, `[text](url)`, bare URLs, MY phones (`tel:`), emails (`mailto:`). `## Title | alias…` headings split `parseDetailSections()` (cached as `loc._sections` in `processData()`) into `<details>` unit dropdowns — intro + titled bodies, empty body = italic placeholder. `detailSnippet()` gives one-line plain text for the photo card + result rows. `getMatchedSubplace()` (+ `normSub()` hyphen-proof fallback) drives the bold `Sub lokasi di sini:` line (`.result-subplace`); `pendingSubplace` auto-expands on card open (search tap, `#slug/unit` deep-link via `handleDeepLink`/`updateURL`).
 
 **Key points:**
 - `number` uses category prefix codes: `P` = Pentadbiran, `A`/`B` = Akademik, `K` = Kolej Kediaman, `F` = Fakulti, etc.

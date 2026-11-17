@@ -859,7 +859,7 @@ function showPinPopup(locationId, mode) {
         // name + subtitle, Butiran (info overlay) + Arah (in-app Directions).
         const folder = CATEGORY_SLUG[loc.locationType] ?? 'lain';
         const imgBase = `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${loc.number}`;
-        const sub = (loc.details && loc.details.trim()) ? loc.details : (loc.locationType || '');
+        const sub = escapeHtml(detailSnippet(loc) || (loc.locationType || ''));
         const arahHtml = loc.coords
             ? `<button class="popup-btn-light" data-location-id="${loc.id}">Arah</button>`
             : '';
@@ -1275,11 +1275,15 @@ function processData(rawData) {
     let idx = 0;
     return rawData
         .filter(item => item.number && item.number.trim() && item.place && item.place.trim())
-        .map(item => ({
-            ...item,
-            id: idx++,
-            coords: parseCoords(item.googleMapLink),
-        }));
+        .map(item => {
+            const loc = {
+                ...item,
+                id: idx++,
+                coords: parseCoords(item.googleMapLink),
+            };
+            loc._sections = parseDetailSections(item.details);
+            return loc;
+        });
 }
 
 // (removed: HTML markers replaced by canvas pin engine above)
@@ -1355,6 +1359,13 @@ function renderGroupedList() {
                 sf.className = 'location-short-form';
                 sf.textContent = ' (' + loc.shortForm + ')';
                 namePart.appendChild(sf);
+            }
+            if (loc._sections && loc._sections.sections.length) {
+                const badge = document.createElement('span');
+                badge.className = 'location-subloc-badge';
+                badge.textContent = ` · ${loc._sections.sections.length} sub lokasi`;
+                badge.title = loc._sections.sections.map(s => s.title).join(', ');
+                namePart.appendChild(badge);
             }
 
             btn.appendChild(badge);
@@ -1661,14 +1672,28 @@ function showLocationInfoOverlay(locationId) {
 
     let detailRowsHtml = '';
 
-    if (location.details && location.details.trim()) {
-        detailRowsHtml += `
+    // Rich details: intro styled, then one <details> dropdown per `##`
+    // subplace (title + optional | aliases). Zero sections → plain row.
+    {
+        const secs = location._sections || parseDetailSections(location.details);
+        let infoHtml = '';
+        if (secs.intro) infoHtml += renderRichText(secs.intro);
+        secs.sections.forEach(sec => {
+            const body = sec.body ? renderRichText(sec.body) : '<span class="detail-section-empty">Tiada maklumat tambahan.</span>';
+            infoHtml += `<details class="detail-section" data-subplace="${escapeHtml(sec.title)}"><summary>${escapeHtml(sec.title)}</summary><div class="detail-section-body">${body}</div></details>`;
+        });
+        if (infoHtml) {
+            detailRowsHtml += `
             <div class="info-overlay-detail-row">
                 <span class="material-symbols-outlined info-overlay-detail-icon">info</span>
                 <span class="info-overlay-detail-label">Info</span>
-                <span class="info-overlay-detail-value">${location.details}</span>
+                <span class="info-overlay-detail-value">${infoHtml}</span>
             </div>`;
+        }
     }
+
+    // Contacts live inside details (phones → tel:, emails → mailto:) —
+    // no separate columns, so nothing extra to render here.
 
     // Phase 1 new columns — blank = hidden (most pins have neither).
     if (location.gender && String(location.gender).trim()) {
@@ -1676,7 +1701,7 @@ function showLocationInfoOverlay(locationId) {
             <div class="info-overlay-detail-row">
                 <span class="material-symbols-outlined info-overlay-detail-icon">wc</span>
                 <span class="info-overlay-detail-label">Jantina</span>
-                <span class="info-overlay-detail-value">${String(location.gender).trim()}</span>
+                <span class="info-overlay-detail-value">${escapeHtml(String(location.gender).trim())}</span>
             </div>`;
     }
     {
@@ -1879,6 +1904,21 @@ function showLocationInfoOverlay(locationId) {
 
     const existingOverlay = document.querySelector('.stop-info-overlay');
 
+    // Search tap / unit deep-link: expand the matched subplace dropdown once.
+    function revealPendingSubplace(root) {
+        if (!pendingSubplace || !root) return;
+        const want = pendingSubplace;
+        pendingSubplace = null;
+        try {
+            const el = root.querySelector(`details.detail-section[data-subplace="${want.replace(/"/g, '')}"]`);
+            if (el) {
+                el.open = true;
+                setTimeout(() => { try { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { } }, 150);
+                updateURL({ type: DESIRED_ORDER.includes(currentActiveCategory) ? currentActiveCategory : null, location, subplace: want });
+            }
+        } catch (e) { }
+    }
+
     if (existingOverlay) {
         // Update in place: cross-fade so sidebar never shows through
         placeInfoOverlay(existingOverlay); // reparent if breakpoint crossed while open
@@ -1887,6 +1927,7 @@ function showLocationInfoOverlay(locationId) {
         setTimeout(() => {
             existingOverlay.innerHTML = innerHTMLString;
             wireButtons(existingOverlay);
+            revealPendingSubplace(existingOverlay);
             existingOverlay.style.opacity = '1';
         }, 120);
     } else {
@@ -1895,6 +1936,7 @@ function showLocationInfoOverlay(locationId) {
         overlay.className = 'stop-info-overlay';
         overlay.innerHTML = innerHTMLString;
         wireButtons(overlay);
+        revealPendingSubplace(overlay);
         placeInfoOverlay(overlay);
 
         // On mobile, expand bottom sheet to half height
@@ -1980,10 +2022,11 @@ function showCategoryOverlay(categoryName) {
     let listHtml = '';
     locs.forEach(loc => {
         const isNoCoords = !loc.coords;
+        const nSub = (loc._sections && loc._sections.sections.length) || 0;
         listHtml += `
             <button class="category-btn${isNoCoords ? ' no-coords' : ''}" data-loc-id="${loc.id}">
                 <span class="location-number-badge" style="background:${bgColor}; color:${textColor};">${loc.number}</span>
-                <span class="location-place-name">${loc.place}${loc.shortForm && loc.shortForm.trim() ? `<span class="location-short-form"> (${loc.shortForm})</span>` : ''}</span>
+                <span class="location-place-name">${loc.place}${loc.shortForm && loc.shortForm.trim() ? `<span class="location-short-form"> (${loc.shortForm})</span>` : ''}${nSub ? `<span class="location-subloc-badge"> · ${nSub} sub lokasi</span>` : ''}</span>
             </button>`;
     });
 
@@ -2409,17 +2452,27 @@ function getMapPadding() {
 
 function matchLocationsByTerm(term) {
     const lowerTerm = term.toLowerCase();
-    return mapData.filter(loc =>
-        (loc.number || '').toLowerCase().includes(lowerTerm) ||
-        (loc.place || '').toLowerCase().includes(lowerTerm) ||
-        (loc.shortForm || '').toLowerCase().includes(lowerTerm) ||
-        (loc.details || '').toLowerCase().includes(lowerTerm) ||
-        (loc.alias || '').toLowerCase().includes(lowerTerm) ||
-        (loc.locationType || '').toLowerCase().includes(lowerTerm) ||
-        (loc.gender || '').toLowerCase().includes(lowerTerm) ||
-        (loc.fakulti || '').toLowerCase().includes(lowerTerm) ||
-        facultyFull(loc.fakulti).toLowerCase().includes(lowerTerm)
-    );
+    return mapData.filter(loc => {
+        if ((loc.number || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.place || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.shortForm || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.details || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.alias || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.locationType || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.gender || '').toLowerCase().includes(lowerTerm)) return true;
+        if ((loc.fakulti || '').toLowerCase().includes(lowerTerm)) return true;
+        if (facultyFull(loc.fakulti).toLowerCase().includes(lowerTerm)) return true;
+        if (loc._sections) {
+            for (const sec of loc._sections.sections) {
+                if (sec.title.toLowerCase().includes(lowerTerm)) return true;
+                if (sec.aliases.some(a => a.toLowerCase().includes(lowerTerm))) return true;
+                if (sec.body.toLowerCase().includes(lowerTerm)) return true;
+                // Hyphen/diacritic-proof fallback: 'comaei' vs 'CoMAE-i'.
+                if (normSub(lowerTerm).length >= 4 && normSub(sec.title + ' ' + sec.aliases.join(' ') + ' ' + sec.body).includes(normSub(lowerTerm))) return true;
+            }
+        }
+        return false;
+    });
 }
 
 // fakulti holds a short code ("FSSG"); CONFIG.faculty.names maps it to the
@@ -2440,6 +2493,111 @@ function facultyLabel(code) {
     const full = facultyFull(short);
     return full ? `${short} — ${full}` : short;
 }
+
+// ===== RICH DETAILS (styled text + subplaces) =====
+// details is owner-typed Sheet text. Rendered escaped-first (no raw HTML),
+// then mini-markup: **bold**, [text](url), bare URLs, MY phones (tel:),
+// emails (mailto:), newlines → <br>. Subplaces: `## Title | alias, …`
+// headings split the body into <details> dropdowns; text before the first
+// heading is the intro. Zero headings → today's plain rendering.
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderRichText(src) {
+    let h = escapeHtml(src);
+    h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    h = h.replace(/([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '<a href="mailto:$1">$1</a>');
+    // Malaysian phones: +609-6687943, 09-668 7943, 013-980 1234…
+    h = h.replace(/(^|[\s(])(\+?60[\s-]?\d[\d\s-]{5,}\d|0\d[\d\s-]{5,}\d)/g, (m, pre, num) => {
+        const digits = num.replace(/\D/g, '');
+        if (digits.length < 9 || digits.length > 12) return m;
+        const tel = digits[0] === '0' ? '60' + digits.slice(1) : (digits.slice(0, 2) === '60' ? digits : '60' + digits);
+        return `${pre}<a href="tel:+${tel}">${num}</a>`;
+    });
+    h = h.replace(/\n/g, '<br>');
+    return h;
+}
+
+// { intro, sections: [{title, aliases[], body}] }. Titles display canonical;
+// aliases (after |) are search-only. Results cached per location in processData.
+function parseDetailSections(details) {
+    const out = { intro: '', sections: [] };
+    if (!details || !String(details).trim()) return out;
+    const lines = String(details).split('\n');
+    let introLines = [], cur = null;
+    const flush = () => {
+        if (cur) {
+            cur.body = cur.bodyLines.join('\n').trim();
+            delete cur.bodyLines;
+            out.sections.push(cur);
+            cur = null;
+        }
+    };
+    lines.forEach(line => {
+        const m = line.match(/^##\s*(.+?)\s*$/);
+        if (m) {
+            flush();
+            const parts = m[1].split('|').map(s => s.trim()).filter(Boolean);
+            cur = { title: parts[0] || '', aliases: parts.slice(1), bodyLines: [] };
+        } else if (cur) {
+            cur.bodyLines.push(line);
+        } else {
+            introLines.push(line);
+        }
+    });
+    flush();
+    out.intro = introLines.join('\n').trim();
+    return out;
+}
+
+// Plain-text snippet for one-line contexts (photo card, result rows):
+// intro if present, else first section title, truncated, markup stripped.
+function detailSnippet(loc, maxLen) {
+    const secs = loc._sections || parseDetailSections(loc.details);
+    let s = secs.intro;
+    if (!s && secs.sections.length) s = secs.sections[0].title;
+    if (!s) s = (loc.details || '').trim();
+    s = s.replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    s = s.split('\n')[0].trim();
+    maxLen = maxLen || 140;
+    if (s.length > maxLen) s = s.slice(0, maxLen - 1).trim() + '…';
+    return s;
+}
+
+// Matched subplace canonical title for a term (title or alias substring), or ''.
+// Normalized fallback (non-alphanumerics stripped) so 'comaei' hits 'CoMAE-i'
+// and 'comae' hits alias 'Comae'; gated to 4+ chars to avoid noise.
+function normSub(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+function getMatchedSubplace(loc, term) {
+    if (!loc || !loc._sections || !term) return '';
+    const lowerTerm = String(term).toLowerCase().trim();
+    const normTerm = normSub(lowerTerm);
+    if (!lowerTerm) return '';
+    for (const sec of loc._sections.sections) {
+        if (sec.title.toLowerCase().includes(lowerTerm)) return sec.title;
+        for (const a of sec.aliases) {
+            if (a.toLowerCase().includes(lowerTerm)) return sec.title;
+        }
+        if (normTerm.length >= 4) {
+            if (normSub(sec.title).includes(normTerm)) return sec.title;
+            for (const a of sec.aliases) {
+                if (normSub(a).includes(normTerm)) return sec.title;
+            }
+        }
+    }
+    return '';
+}
+
+// Opens a card with one subplace dropdown expanded + scrolled into view.
+// Consumed once by showLocationInfoOverlay (search tap, unit deep-link).
+let pendingSubplace = null;
 
 // alias holds comma-separated old/variant names ("FKI lama, Blok E lama").
 // Returns the single matched nickname (trimmed) or '' when none matches.
@@ -2497,17 +2655,25 @@ function renderSearchResults(term) {
     // Render location results
     matchingLocations.slice(0, 12).forEach(loc => {
         const matchedAlias = getMatchedAlias(loc, term);
+        const matchedSub = getMatchedSubplace(loc, term);
         const metaBits = [];
-        if (loc.gender && String(loc.gender).trim()) metaBits.push(String(loc.gender).trim());
+        if (loc.gender && String(loc.gender).trim()) metaBits.push(escapeHtml(String(loc.gender).trim()));
         const fac = facultyLabel(loc.fakulti);
-        if (fac) metaBits.push(fac);
+        if (fac) metaBits.push(escapeHtml(fac));
+        const snip = detailSnippet(loc);
+        let subLine = '';
+        if (matchedSub && loc._sections) {
+            const titles = loc._sections.sections.map(s => s.title === matchedSub ? `<strong>${escapeHtml(s.title)}</strong>` : escapeHtml(s.title));
+            subLine = `<div class="result-subplace">Sub lokasi di sini: ${titles.join(' / ')}</div>`;
+        }
         html += `
             <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                 <div class="result-content">
                     <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}${getSavedIds().includes(loc.id) ? '<span class="result-saved"> ★</span>' : ''}</div>
                     <div class="result-subtitle">${loc.locationType || ''}</div>
-                    ${loc.details ? `<div class="result-detail">${loc.details}</div>` : ''}
+                    ${snip ? `<div class="result-detail">${escapeHtml(snip)}</div>` : ''}
                     ${metaBits.length ? `<div class="result-detail">${metaBits.join(' · ')}</div>` : ''}
+                    ${subLine}
                     ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
                 </div>
             </div>
@@ -2560,6 +2726,7 @@ function initSearchDropdown() {
             const locationId = parseInt(item.dataset.id);
             const loc = mapData.find(l => l.id === locationId);
             if (loc) {
+                pendingSubplace = getMatchedSubplace(loc, searchBar.value.trim()) || null;
                 if (window.innerWidth > 768) {
                     filterByLocation(loc);
                 } else {
@@ -2643,7 +2810,7 @@ function slugify(text) {
         .replace(/^-+|-+$/g, '');
 }
 
-function updateURL({ type = null, location = null } = {}) {
+function updateURL({ type = null, location = null, subplace = null } = {}) {
     const url = new URL(window.location.href);
     if (type) {
         url.searchParams.set('type', slugify(type));
@@ -2651,7 +2818,7 @@ function updateURL({ type = null, location = null } = {}) {
         url.searchParams.delete('type');
     }
     if (location) {
-        url.hash = slugify(location.place);
+        url.hash = slugify(location.place) + (subplace ? '/' + slugify(subplace) : '');
     } else {
         url.hash = '';
     }
@@ -2704,8 +2871,14 @@ function handleDeepLink() {
     const locSlug = window.location.hash.slice(1);
 
     if (locSlug) {
-        const loc = mapData.find(l => slugify(l.place) === locSlug);
+        const parts = locSlug.split('/');
+        const loc = mapData.find(l => slugify(l.place) === parts[0]);
         if (!loc) return;
+        // Unit deep-link (#slug/unit): expand that subplace on open.
+        if (parts[1] && loc._sections) {
+            const hit = loc._sections.sections.find(s => slugify(s.title) === parts[1] || s.aliases.some(a => slugify(a) === parts[1]));
+            if (hit) pendingSubplace = hit.title;
+        }
         if (loc.coords) {
             if (window.innerWidth > 768) filterByLocation(loc);
             else showLocationOnMap(loc);
@@ -2826,7 +2999,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html111'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html113'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
@@ -3999,16 +4172,25 @@ function renderDirectionsResults(term, field) {
         matchingLocations.slice(0, 12).forEach(loc => {
             if (otherField && otherField.type === 'location' && otherField.id === loc.id) return;
             const matchedAlias = getMatchedAlias(loc, term);
+            const matchedSub = getMatchedSubplace(loc, term);
             const metaBits = [];
-            if (loc.gender && String(loc.gender).trim()) metaBits.push(String(loc.gender).trim());
+            if (loc.gender && String(loc.gender).trim()) metaBits.push(escapeHtml(String(loc.gender).trim()));
             const fac = facultyLabel(loc.fakulti);
-            if (fac) metaBits.push(fac);
+            if (fac) metaBits.push(escapeHtml(fac));
+            const snip = detailSnippet(loc);
+            let subLine = '';
+            if (matchedSub && loc._sections) {
+                const titles = loc._sections.sections.map(s => s.title === matchedSub ? `<strong>${escapeHtml(s.title)}</strong>` : escapeHtml(s.title));
+                subLine = `<div class="result-subplace">Sub lokasi di sini: ${titles.join(' / ')}</div>`;
+            }
             html += `
                 <div class="search-result-item location" data-type="location" data-id="${loc.id}">
                     <div class="result-content">
                         <div class="result-title">${loc.number}: ${loc.place}${loc.shortForm ? ' (' + loc.shortForm + ')' : ''}</div>
                         <div class="result-subtitle">${loc.locationType || ''}</div>
+                        ${snip ? `<div class="result-detail">${escapeHtml(snip)}</div>` : ''}
                         ${metaBits.length ? `<div class="result-detail">${metaBits.join(' · ')}</div>` : ''}
+                        ${subLine}
                         ${matchedAlias ? `<div class="result-alias">Juga dikenali sebagai '${matchedAlias}'</div>` : ''}
                     </div>
                 </div>

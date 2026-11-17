@@ -170,6 +170,49 @@ body, html {
     color: white;
 }
 
+/* Rich details: subplace dropdowns, sub-location lines, contact chips */
+.info-overlay-detail-value details.detail-section {
+    margin: 6px 0;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.info-overlay-detail-value details.detail-section summary {
+    padding: 8px 10px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #f8f9fa;
+    list-style: none;
+}
+.info-overlay-detail-value details.detail-section summary::-webkit-details-marker { display: none; }
+.info-overlay-detail-value details.detail-section summary::before {
+    content: 'expand_more';
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' -25, 'opsz' 24;
+    vertical-align: -4px;
+    margin-right: 4px;
+    color: #5f6368;
+}
+.info-overlay-detail-value details.detail-section[open] summary::before { content: 'expand_less'; }
+.info-overlay-detail-value .detail-section-body {
+    padding: 8px 10px;
+    border-top: 1px solid #eee;
+}
+.info-overlay-detail-value .detail-section-empty { color: #9aa0a6; font-style: italic; }
+.info-overlay-detail-value a { color: #1967d2; }
+.result-subplace {
+    font-size: 12px;
+    color: #5f6368;
+    margin-top: 2px;
+}
+.result-subplace strong { color: #202124; }
+.location-subloc-badge {
+    font-size: 11px;
+    font-weight: 400;
+    color: #5f6368;
+    white-space: nowrap;
+}
+
 /* Edge fades hide at the scrolled-to end (synced by syncPillFades()) */
 #category-pills.pills-at-start {
     -webkit-mask-image: linear-gradient(to right, black, black calc(100% - 20px), transparent);

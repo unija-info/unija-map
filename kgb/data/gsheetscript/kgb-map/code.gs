@@ -1,6 +1,6 @@
 // ------------------ USER CONFIGURATION ------------------
 // (1) FILL IN YOUR DETAILS HERE
-const SCRIPT_VERSION = '1.4.0 (2026-11-16: +gender, +fakulti)';
+const SCRIPT_VERSION = '1.5.1 (2026-11-17: phone/website folded into details)';
 const USER_CONFIG = {
   GITHUB_USERNAME: "unija-info", // Your GitHub username
   REPO_NAME: "unija-map", // The name of your GitHub repository
