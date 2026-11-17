@@ -2673,11 +2673,64 @@ body, html {
     max-height: 80vh;
     border-radius: 8px;
 }
-.img-lightbox-fig figcaption {
+/* Swipeable viewer track (html119): each slide centers its photo; pinch
+   zoom transforms the img directly, panning is touch-handled in JS. */
+.img-lightbox-track {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    touch-action: pan-x pan-y;
+}
+.img-lightbox-track::-webkit-scrollbar { display: none; }
+.img-lightbox-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+}
+.img-lightbox-slide img {
+    max-width: 94vw;
+    max-height: 76vh;
+    border-radius: 8px;
+    touch-action: pan-x pan-y;
+}
+.img-lightbox-cap {
     color: #fff;
     font-size: 13px;
     margin-top: 8px;
+    max-width: 90vw;
 }
+.img-lightbox-cap:empty { display: none; }
+.img-lightbox-dots {
+    position: absolute;
+    bottom: 52px;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: none;
+}
+.img-lightbox-dots[hidden] { display: none; }
+.img-lightbox-dots button {
+    pointer-events: auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.55);
+}
+.img-lightbox-dots button.on { background: #fff; }
 .img-lightbox-count {
     position: absolute;
     bottom: 16px;

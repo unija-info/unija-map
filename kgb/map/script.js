@@ -2801,42 +2801,131 @@ function wireDetailCarousels(root) {
     root.querySelectorAll('.detail-carousel').forEach(wireOneDetailCarousel);
 }
 
-// Fullscreen viewer: large image + caption, wraparound ‹ ›, counter,
-// × + backdrop + Escape close. Items: [{url, cap}].
+// Fullscreen viewer: swipeable track (dots + counter + wraparound ‹ ›),
+// tap/swipe to move, pinch or double-tap to zoom (1–4×) with drag-to-pan
+// while zoomed, × + backdrop + Escape close. Items: [{url, cap}].
 function openLightbox(items, idx) {
     closeLightbox();
     if (!items || !items.length) return;
-    let cur = Math.min(items.length - 1, Math.max(0, idx || 0));
+    const n = items.length;
+    let cur = Math.min(n - 1, Math.max(0, idx || 0));
     const lb = document.createElement('div');
     lb.className = 'img-lightbox';
+    const slides = items.map(it =>
+        `<div class="img-lightbox-slide"><img src="${escapeHtml(it.url)}" alt="${escapeHtml(it.cap || 'Gambar')}"><div class="img-lightbox-cap">${escapeHtml(it.cap || '')}</div></div>`).join('');
+    const dots = items.map((_, i) => `<button type="button" data-i="${i}" aria-label="Gambar ${i + 1}"></button>`).join('');
     lb.innerHTML = `<div class="img-lightbox-backdrop"></div>
-        <figure class="img-lightbox-fig"><img class="img-lightbox-img" src="" alt=""></figure>
+        <div class="img-lightbox-track">${slides}</div>
+        <div class="img-lightbox-dots"${n > 1 ? '' : ' hidden'}>${dots}</div>
         <div class="img-lightbox-count"></div>
-        <button type="button" class="img-lightbox-prev" aria-label="Gambar sebelumnya"><span class="material-symbols-outlined">chevron_left</span></button>
-        <button type="button" class="img-lightbox-next" aria-label="Gambar seterusnya"><span class="material-symbols-outlined">chevron_right</span></button>
+        <button type="button" class="img-lightbox-prev" aria-label="Gambar sebelumnya"${n > 1 ? '' : ' hidden'}><span class="material-symbols-outlined">chevron_left</span></button>
+        <button type="button" class="img-lightbox-next" aria-label="Gambar seterusnya"${n > 1 ? '' : ' hidden'}><span class="material-symbols-outlined">chevron_right</span></button>
         <button type="button" class="img-lightbox-close" aria-label="Tutup">×</button>`;
     document.body.appendChild(lb);
-    const img = lb.querySelector('.img-lightbox-img');
+    const track = lb.querySelector('.img-lightbox-track');
+    const dotsBox = lb.querySelector('.img-lightbox-dots');
     const count = lb.querySelector('.img-lightbox-count');
-    const fig = lb.querySelector('.img-lightbox-fig');
-    const paint = () => {
-        img.src = items[cur].url;
-        img.alt = items[cur].cap || 'Gambar';
-        let capEl = fig.querySelector('figcaption');
-        if (items[cur].cap) {
-            if (!capEl) { capEl = document.createElement('figcaption'); fig.appendChild(capEl); }
-            capEl.textContent = items[cur].cap;
-        } else if (capEl) capEl.remove();
-        count.textContent = items.length > 1 ? `${cur + 1}/${items.length}` : '';
-        lb.querySelector('.img-lightbox-prev').style.display = items.length > 1 ? '' : 'none';
-        lb.querySelector('.img-lightbox-next').style.display = items.length > 1 ? '' : 'none';
+    const curImg = () => track.children[cur] && track.children[cur].querySelector('img');
+    // ---- zoom state (reset on slide change) ----
+    let scale = 1, tx = 0, ty = 0;
+    const applyZoom = () => {
+        const img = curImg();
+        if (!img) return;
+        if (scale <= 1) { scale = 1; tx = 0; ty = 0; img.style.transform = ''; return; }
+        const ex = Math.max(0, img.clientWidth * (scale - 1) / 2);
+        const ey = Math.max(0, img.clientHeight * (scale - 1) / 2);
+        tx = Math.min(ex, Math.max(-ex, tx));
+        ty = Math.min(ey, Math.max(-ey, ty));
+        img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
     };
-    lb.querySelector('.img-lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); cur = (cur - 1 + items.length) % items.length; paint(); });
-    lb.querySelector('.img-lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); cur = (cur + 1) % items.length; paint(); });
+    const resetZoom = () => {
+        track.querySelectorAll('img').forEach(im => { im.style.transform = ''; });
+        scale = 1; tx = 0; ty = 0;
+    };
+    const paint = () => {
+        resetZoom();
+        if (dotsBox) Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle('on', i === cur));
+        count.textContent = n > 1 ? `${cur + 1}/${n}` : '';
+    };
+    const goTo = (i) => {
+        cur = ((i % n) + n) % n;
+        track.scrollTo({ left: cur * track.clientWidth, behavior: 'smooth' });
+        paint();
+    };
+    if (dotsBox) Array.from(dotsBox.children).forEach(d => {
+        d.addEventListener('click', (e) => { e.stopPropagation(); goTo(+d.dataset.i || 0); });
+    });
+    lb.querySelector('.img-lightbox-prev').addEventListener('click', (e) => { e.stopPropagation(); goTo(cur - 1); });
+    lb.querySelector('.img-lightbox-next').addEventListener('click', (e) => { e.stopPropagation(); goTo(cur + 1); });
+    let ticking = false;
+    track.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            const w = track.clientWidth || 1;
+            const ni = Math.min(n - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+            if (ni !== cur) { cur = ni; paint(); }
+        });
+    }, { passive: true });
+    // ---- pinch-to-zoom + drag-to-pan + double-tap toggle ----
+    let pinchD0 = 0, pinchS0 = 1, panX0 = 0, panY0 = 0, panTX0 = 0, panTY0 = 0;
+    let lastTapT = 0, lastTapX = 0, lastTapY = 0, movedFar = false;
+    const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    track.addEventListener('touchstart', (e) => {
+        movedFar = false;
+        if (e.touches.length === 2) {
+            pinchD0 = dist(e.touches[0], e.touches[1]) || 1;
+            pinchS0 = scale;
+        } else if (e.touches.length === 1 && scale > 1) {
+            panX0 = e.touches[0].clientX; panY0 = e.touches[0].clientY;
+            panTX0 = tx; panTY0 = ty;
+        }
+    }, { passive: true });
+    track.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            movedFar = true;
+            const d = dist(e.touches[0], e.touches[1]) || 1;
+            scale = Math.min(4, Math.max(1, pinchS0 * d / pinchD0));
+            applyZoom();
+        } else if (e.touches.length === 1 && scale > 1) {
+            e.preventDefault();
+            const dx = e.touches[0].clientX - panX0, dy = e.touches[0].clientY - panY0;
+            if (Math.abs(dx) + Math.abs(dy) > 8) movedFar = true;
+            tx = panTX0 + dx; ty = panTY0 + dy;
+            applyZoom();
+        }
+    }, { passive: false });
+    track.addEventListener('touchend', (e) => {
+        if (e.touches.length > 0) return;
+        const t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        const now = Date.now();
+        const quickDouble = !movedFar && now - lastTapT < 300 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 40;
+        if (quickDouble) {
+            if (scale <= 1) {
+                const img = curImg();
+                if (img) {
+                    const r = img.getBoundingClientRect();
+                    scale = 2;
+                    tx = (r.left + r.width / 2 - t.clientX) * 2;
+                    ty = (r.top + r.height / 2 - t.clientY) * 2;
+                    applyZoom();
+                }
+            } else {
+                scale = 1; applyZoom();
+            }
+            lastTapT = 0;
+            return;
+        }
+        if (scale <= 1) { scale = 1; tx = 0; ty = 0; }
+        lastTapT = now; lastTapX = t.clientX; lastTapY = t.clientY;
+    }, { passive: true });
     const onKey = (e) => {
         if (e.key === 'Escape') closeLightbox();
-        else if (e.key === 'ArrowLeft' && items.length > 1) { cur = (cur - 1 + items.length) % items.length; paint(); }
-        else if (e.key === 'ArrowRight' && items.length > 1) { cur = (cur + 1) % items.length; paint(); }
+        else if (e.key === 'ArrowLeft' && n > 1) goTo(cur - 1);
+        else if (e.key === 'ArrowRight' && n > 1) goTo(cur + 1);
     };
     lb._onKey = onKey;
     document.addEventListener('keydown', onKey);
@@ -3341,7 +3430,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html118'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html119'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);
