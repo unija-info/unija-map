@@ -2052,8 +2052,9 @@ function showLocationInfoOverlay(locationId) {
         overlay.innerHTML = innerHTMLString;
         wireButtons(overlay);
         revealPendingSubplace(overlay);
-        maybeUpgradeGallery(overlay, location);
         placeInfoOverlay(overlay);
+        // After attach: the card is connected, so the extras probe may run.
+        maybeUpgradeGallery(overlay, location);
 
         // On mobile, expand bottom sheet to half height
         if (window.innerWidth <= 768 && sheetElement) {
@@ -3115,7 +3116,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html114'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html115'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);

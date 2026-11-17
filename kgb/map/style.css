@@ -2488,6 +2488,10 @@ body, html {
     background: rgba(255, 255, 255, 0.55);
 }
 .info-overlay-dots button.on { background: #fff; }
+/* [hidden] must win over the flex layout above — empty dots stay invisible
+   on single-photo cards instead of leaving a blank flex box behind. */
+.info-overlay-dots[hidden],
+.info-overlay-count[hidden] { display: none; }
 .info-overlay-count {
     position: absolute;
     right: 8px;
