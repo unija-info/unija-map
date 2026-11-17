@@ -2526,6 +2526,30 @@ body, html {
 .info-overlay-next { right: 8px; }
 .info-overlay-prev .material-symbols-outlined,
 .info-overlay-next .material-symbols-outlined { font-size: 24px; }
+
+/* Stacked detail rows (html61): icon + LABEL header on top, value full-width
+   below. Appended last so it wins over the desktop side-by-side flex row;
+   mobile has no competing rules. Dividers from above still apply. */
+.info-overlay-detail-row {
+    display: block;
+    padding: 6px 0;
+}
+.info-overlay-detail-icon {
+    vertical-align: -4px;
+    margin-right: 4px;
+}
+.info-overlay-detail-label {
+    font-size: 11px;
+    color: #5f6368;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.info-overlay-detail-value {
+    display: block;
+    margin-top: 4px;
+    line-height: 1.4;
+}
 .info-overlay-count {
     position: absolute;
     right: 8px;
