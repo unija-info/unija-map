@@ -23,7 +23,7 @@ Always confirm the active branch with `git status -sb` at session start. Never p
 
 - `node --check` on every `script.js` edit. No exceptions. Gate on `$LASTEXITCODE` — a trailing `; echo OK` masks failures in PowerShell.
 - Serve locally (`python -m http.server` — this box: `python`, `python3` is a dead Store stub) + fetch the page to prove it serves. Kill the server after.
-- In-app browser works via code mode (`tools.browser.*`: open/wait/console/evaluate/screenshot) — use it to see the map yourself; owner screenshots still outrank it for real-device issues. State what the owner should check (exact pins, exact gestures, exact console lines).
+- In-app browser works via code mode (`tools.browser.*`: open/wait/console/evaluate/screenshot) — use it to see the map yourself; owner screenshots still outrank it for real-device issues. State what the owner should check (exact pins, exact gestures, exact console lines). Evaluate scripts: no `\n` literals (mangled by the call layer — use `String.fromCharCode(10)`), no angle brackets (use textContent/indexOf assertions).
 - After verification-affecting edits (CSS/JS), bump the `?v=` cache-bust on the changed asset in `index.html` so phones can't run stale code.
 
 ## CSS + third-party-map-library rule (learned 2026-10-19, do not repeat)

@@ -1648,6 +1648,116 @@ function toggleExternalMapsMenu(btn, loc) {
 
 // ===== INFO OVERLAY =====
 
+// Multi-photo gallery (auto by filename, zero Sheet work): cover is
+// images/<folder>/<NUMBER>.jpg (png/webp fallback as today); extras are
+// <NUMBER>-2, -3, -4 probed in order, stopping at the first all-missing
+// number. Popup keeps the single cover; the info card upgrades to a swipe
+// gallery (dots + 1/N counter) only when extras actually resolve.
+const MAX_EXTRA_PHOTOS = 3;
+function photoBaseFor(loc) {
+    const folder = CATEGORY_SLUG[loc.locationType] ?? 'lain';
+    return `https://raw.githubusercontent.com/unija-info/unija-map/main/kgb/data/kgb-map/images/${folder}/${loc.number}`;
+}
+// Resolve one photo stem trying jpg → png → webp. Resolves URL or ''.
+function resolvePhoto(stem) {
+    const exts = ['.jpg', '.png', '.webp'];
+    return new Promise((resolve) => {
+        let i = 0;
+        const img = new Image();
+        img.onload = () => resolve(stem + exts[i]);
+        img.onerror = () => {
+            i++;
+            if (i >= exts.length) resolve('');
+            else img.src = stem + exts[i];
+        };
+        img.src = stem + exts[0];
+    });
+}
+// Probe -2..-4 stems in order; stop at the first all-missing. Never rejects.
+async function probeExtraPhotos(imgBase, maxExtra) {
+    const out = [];
+    for (let n = 2; n < 2 + (maxExtra || MAX_EXTRA_PHOTOS); n++) {
+        const hit = await resolvePhoto(`${imgBase}-${n}`);
+        if (!hit) break;
+        out.push(hit);
+    }
+    return out;
+}
+// Upgrade an open card to a swipe gallery when extras exist. No-op for
+// single-photo places (dots/counter stay hidden, cover behaves as today).
+function maybeUpgradeGallery(root, loc) {
+    if (!root || !root.isConnected) return;
+    const wrap = root.querySelector('.info-overlay-image-wrap');
+    const track = wrap && wrap.querySelector('.info-overlay-track');
+    if (!wrap || !track || wrap.dataset.galleryProbed) return;
+    wrap.dataset.galleryProbed = '1';
+    probeExtraPhotos(photoBaseFor(loc), MAX_EXTRA_PHOTOS).then(extraUrls => {
+        if (!extraUrls.length || !root.isConnected) return;
+        const hidePh = () => {
+            const ph = wrap.querySelector('.info-overlay-image-placeholder');
+            if (ph) ph.style.opacity = '0';
+        };
+        extraUrls.forEach(src => {
+            const img = document.createElement('img');
+            img.className = 'info-overlay-image';
+            img.alt = '';
+            img.loading = 'lazy';
+            img.style.opacity = '0';
+            img.onload = () => { img.style.opacity = '1'; hidePh(); };
+            img.onerror = () => { img.remove(); buildGalleryChrome(wrap); };
+            img.src = src;
+            track.appendChild(img);
+        });
+        wrap.classList.add('has-gallery');
+        const first = track.querySelector('img');
+        if (first && first.style.opacity === '1') hidePh();
+        buildGalleryChrome(wrap);
+    }).catch(() => {});
+}
+// (Re)build dots + counter from the track's current images; scroll syncs both.
+function buildGalleryChrome(wrap) {
+    const track = wrap.querySelector('.info-overlay-track');
+    const dotsBox = wrap.querySelector('.info-overlay-dots');
+    const countBox = wrap.querySelector('.info-overlay-count');
+    if (!track || !dotsBox || !countBox) return;
+    const imgs = () => Array.from(track.querySelectorAll('img'));
+    const paint = () => {
+        const list = imgs();
+        const w = wrap.clientWidth || 1;
+        const idx = Math.min(list.length - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+        Array.from(dotsBox.children).forEach((d, i) => d.classList.toggle('on', i === idx));
+        countBox.textContent = `${idx + 1}/${list.length}`;
+    };
+    dotsBox.innerHTML = '';
+    imgs().forEach((_, i) => {
+        const d = document.createElement('button');
+        d.type = 'button';
+        d.setAttribute('aria-label', `Gambar ${i + 1}`);
+        d.addEventListener('click', (e) => {
+            e.stopPropagation();
+            track.scrollTo({ left: i * wrap.clientWidth, behavior: 'smooth' });
+        });
+        dotsBox.appendChild(d);
+    });
+    if (imgs().length > 1) {
+        dotsBox.hidden = false;
+        countBox.hidden = false;
+        paint();
+    } else {
+        dotsBox.hidden = true;
+        countBox.hidden = true;
+    }
+    if (!track.dataset.gallerySynced) {
+        track.dataset.gallerySynced = '1';
+        let ticking = false;
+        track.addEventListener('scroll', () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => { ticking = false; paint(); });
+        }, { passive: true });
+    }
+}
+
 function showLocationInfoOverlay(locationId) {
     if (currentInfoOverlayLocationId === locationId) return;
     // Cards live in the sheet on mobile — unhide it (peek) if buried.
@@ -1754,17 +1864,21 @@ function showLocationInfoOverlay(locationId) {
     const innerHTMLString = `
         <div class="info-overlay-content">
             <div class="info-overlay-image-wrap">
+                <div class="info-overlay-track">
                 <img class="info-overlay-image" src="${imgBase}.jpg" alt="${location.place}"
-                     onload="this.style.opacity='1';this.nextElementSibling.style.opacity='0';"
+                     onload="this.closest('.info-overlay-image-wrap').querySelector('.info-overlay-image-placeholder').style.opacity='0';this.style.opacity='1';"
                      onerror="
                        if(this.src.endsWith('.jpg')){this.src=this.src.replace(/\\.jpg$/,'.png');}
                        else if(this.src.endsWith('.png')){this.src=this.src.replace(/\\.png$/,'.webp');}
                        else{this.style.opacity='0';}
                      " />
+                </div>
                 <div class="info-overlay-image-placeholder">
                     <span class="material-symbols-outlined">hide_image</span>
                     <span>Tiada Gambar</span>
                 </div>
+                <div class="info-overlay-dots" hidden></div>
+                <div class="info-overlay-count" hidden></div>
                 <button class="info-overlay-back" aria-label="Kembali">
                     <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
                 </button>
@@ -1928,6 +2042,7 @@ function showLocationInfoOverlay(locationId) {
             existingOverlay.innerHTML = innerHTMLString;
             wireButtons(existingOverlay);
             revealPendingSubplace(existingOverlay);
+            maybeUpgradeGallery(existingOverlay, location);
             existingOverlay.style.opacity = '1';
         }, 120);
     } else {
@@ -1937,6 +2052,7 @@ function showLocationInfoOverlay(locationId) {
         overlay.innerHTML = innerHTMLString;
         wireButtons(overlay);
         revealPendingSubplace(overlay);
+        maybeUpgradeGallery(overlay, location);
         placeInfoOverlay(overlay);
 
         // On mobile, expand bottom sheet to half height
@@ -2999,7 +3115,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html113'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html114'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);

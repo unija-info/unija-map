@@ -38,7 +38,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 ## 5. Maklumat Sesuatu Tempat
 
-* Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar besar, diikuti nama, baris singkatan dan baris kategori (tekan kategori untuk menapis), dan info tambahan — termasuk baris **Jantina** (contoh blok asrama `Perempuan`) dan **Fakulti** (`FSSG — Fakulti Sains Sosial Gunaan`) bila berkenaan. Nombor telefon dalam info boleh terus ditekan untuk menelefon, e-mel untuk menghantar e-mel, pautan untuk dibuka. Bangunan dengan unit dalaman (contoh U13: CoMAE-i, Bendahari, Dewan Senat) menunjukkan **dropdown boleh kembang** — tekan untuk dedah alamat dan nombor unit tersebut. Pin yang dipilih membesar sedikit dengan ring putih, dan **bangunannya bertukar hijau-teal** supaya senang kenal.
+* Tekan mana-mana pin di peta (atau nama dalam senarai) untuk melihat **kad maklumat**: gambar besar (sesetengah tempat ada beberapa gambar — leret ke tepi, titik dan `1/3` menunjukkan gambar semasa), diikuti nama, baris singkatan dan baris kategori (tekan kategori untuk menapis), dan info tambahan — termasuk baris **Jantina** (contoh blok asrama `Perempuan`) dan **Fakulti** (`FSSG — Fakulti Sains Sosial Gunaan`) bila berkenaan. Nombor telefon dalam info boleh terus ditekan untuk menelefon, e-mel untuk menghantar e-mel, pautan untuk dibuka. Bangunan dengan unit dalaman (contoh U13: CoMAE-i, Bendahari, Dewan Senat) menunjukkan **dropdown boleh kembang** — tekan untuk dedah alamat dan nombor unit tersebut. Pin yang dipilih membesar sedikit dengan ring putih, dan **bangunannya bertukar hijau-teal** supaya senang kenal.
 * Di komputer, tekan pin dahulu membuka **kad kecil bergambar** (nama + info ringkas) — tekan **Butiran** untuk kad penuh, atau **Arah** untuk terus membuka panel arah ke tempat itu.
 * Baris butang bulat di bawah gambar: **Arah** (buka panel arah ke sini), **Simpan** (tandai tempat — jadi emas, kekal walaupun tutup aplikasi), **Dekat** (5 tempat paling hampir berserta jarak), **Maps** (pilih aplikasi — Google Maps, Apple Maps atau Waze — pautan dibina dari koordinat pin, bukan lagi pautan tetap dalam helaian data) dan **Kongsi** (salin pautan terus ke tempat itu — kirim dalam WhatsApp dan penerima akan buka peta tepat di lokasi tersebut).
 * Ikon **★ Disimpan** di bar sisi kiri (dengan kiraan dalam tooltip) menapis peta kepada tempat simpanan anda sahaja — senarai kategori tidak terusik; senarai dan hasil carian menandakan tempat simpanan dengan ★ emas.
@@ -60,7 +60,7 @@ Peta interaktif untuk mencari **115 lokasi** di UniSZA Kampus Gong Badak — ter
 
 ## 8. Kongsi Dengan Tepat
 
-* Setiap paparan ada pautannya sendiri: semua lokasi, satu kategori (`?type=...`), atau satu tempat (`#nama-tempat`).
+* Setiap paparan ada pautannya sendiri: semua lokasi, satu kategori (`?type=...`), satu tempat (`#nama-tempat`) — atau satu unit dalam bangunan (`#nama-tempat/nama-unit`, contoh tempat U13 yang terus membuka dropdown CoMAE-i).
 * Kongsi pautan itu — penerima nampak **tepat apa yang anda nampak**.
 
 ## 9. Paparan Telefon vs Komputer
