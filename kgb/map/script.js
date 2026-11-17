@@ -1931,10 +1931,18 @@ function showLocationInfoOverlay(locationId) {
 
     function wireButtons(overlayEl) {
         // Details images → lightbox (delegated: survives in-place re-renders).
+        // Cover photo too: the whole track (single cover or gallery extras).
         wireDetailCarousels(overlayEl);
         overlayEl.addEventListener('click', (e) => {
-            const slide = e.target.closest && e.target.closest('.detail-carousel-track img, .detail-img img');
+            const slide = e.target.closest && e.target.closest('.detail-carousel-track img, .detail-img img, .info-overlay-track img');
             if (!slide || !overlayEl.contains(slide)) return;
+            const coverTrack = slide.closest('.info-overlay-track');
+            if (coverTrack) {
+                const photos = Array.from(coverTrack.querySelectorAll('img')).filter(im => im.style.display !== 'none' && im.style.opacity !== '0');
+                if (!photos.length) return;
+                openLightbox(photos.map(im => ({ url: im.currentSrc || im.src, cap: location.place || '' })), Math.max(0, photos.indexOf(slide)));
+                return;
+            }
             const caro = slide.closest('.detail-carousel');
             if (caro) {
                 const slides = Array.from(caro.querySelectorAll('.detail-carousel-track img'));
@@ -3333,7 +3341,7 @@ function initClearSearchButton() {
 // because updateURL() only touches ?type= and #hash.
 const DEBUG = (() => { try { return new URLSearchParams(window.location.search).has('debug'); } catch (e) { return false; } })();
 const DEBUG_PAGE = (() => { try { return new URLSearchParams(window.location.search).has('debugpage'); } catch (e) { return false; } })();
-const APP_VERSION = 'html117'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
+const APP_VERSION = 'html118'; // must match ?v= in index.html — shown in ?debugpage to prove fresh code
 
 function dlog(...args) {
     if (DEBUG || DEBUG_PAGE) console.log(...args);

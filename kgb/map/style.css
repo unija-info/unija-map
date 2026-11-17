@@ -2449,6 +2449,7 @@ body, html {
     position: absolute;
     inset: 0;
 }
+.info-overlay-track img { cursor: zoom-in; }
 .info-overlay-image-wrap.has-gallery .info-overlay-track {
     display: flex;
     overflow-x: auto;
